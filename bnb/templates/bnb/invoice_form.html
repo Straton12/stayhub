@@ -1,0 +1,275 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}New invoice — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_invoice_list' %}" class="invf-back">← Back to invoices</a>
+  <h1 class="invf-title">Create Invoice</h1>
+  <p class="muted">Select a booking to automatically pull in guest details and amounts.</p>
+</div>
+
+<form method="post" class="invf" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors or form.errors %}
+    <div class="invf-alert invf-alert-error" role="alert">
+      <div class="invf-alert-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <strong>Please correct the errors below.</strong>
+      </div>
+      {% if form.non_field_errors %}
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      {% endif %}
+      {% if form.errors %}
+        <ul class="invf-alert-list">
+          {% for field in form %}
+            {% if field.errors %}
+              {% for err in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <section class="invf-section">
+    <div class="invf-grid">
+
+      {# Prominent Booking Selection #}
+      <div class="invf-field invf-full {% if form.booking.errors %}has-error{% endif %}">
+        <label for="{{ form.booking.id_for_label }}">Select Booking <span class="req">*</span></label>
+        {{ form.booking }}
+        <small class="invf-help">You can only invoice a booking that exists in the system.</small>
+        {% for err in form.booking.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Invoice number #}
+      <div class="invf-field {% if form.invoice_number.errors %}has-error{% endif %}">
+        <label for="{{ form.invoice_number.id_for_label }}">Invoice number</label>
+        {{ form.invoice_number }}
+        <small class="invf-help">Leave blank to auto-generate.</small>
+        {% for err in form.invoice_number.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Status #}
+      <div class="invf-field {% if form.status.errors %}has-error{% endif %}">
+        <label for="{{ form.status.id_for_label }}">Status</label>
+        {{ form.status }}
+        {% for err in form.status.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Guest Name #}
+      <div class="invf-field {% if form.guest_name.errors %}has-error{% endif %}">
+        <label for="{{ form.guest_name.id_for_label }}">Guest name</label>
+        {{ form.guest_name }}
+        {% for err in form.guest_name.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Guest Email #}
+      <div class="invf-field {% if form.guest_email.errors %}has-error{% endif %}">
+        <label for="{{ form.guest_email.id_for_label }}">Guest email</label>
+        {{ form.guest_email }}
+        {% for err in form.guest_email.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Issue Date #}
+      <div class="invf-field {% if form.issue_date.errors %}has-error{% endif %}">
+        <label for="{{ form.issue_date.id_for_label }}">Issue date</label>
+        {{ form.issue_date }}
+        {% for err in form.issue_date.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Due Date #}
+      <div class="invf-field {% if form.due_date.errors %}has-error{% endif %}">
+        <label for="{{ form.due_date.id_for_label }}">Due date</label>
+        {{ form.due_date }}
+        {% for err in form.due_date.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Subtotal #}
+      <div class="invf-field {% if form.subtotal.errors %}has-error{% endif %}">
+        <label for="{{ form.subtotal.id_for_label }}">Subtotal (KES)</label>
+        {{ form.subtotal }}
+        {% for err in form.subtotal.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Tax Amount #}
+      <div class="invf-field {% if form.tax_amount.errors %}has-error{% endif %}">
+        <label for="{{ form.tax_amount.id_for_label }}">Tax amount (KES)</label>
+        {{ form.tax_amount }}
+        {% for err in form.tax_amount.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Total #}
+      <div class="invf-field {% if form.total.errors %}has-error{% endif %}">
+        <label for="{{ form.total.id_for_label }}">Total (KES)</label>
+        {{ form.total }}
+        {% for err in form.total.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Amount Paid #}
+      <div class="invf-field {% if form.amount_paid.errors %}has-error{% endif %}">
+        <label for="{{ form.amount_paid.id_for_label }}">Amount paid (KES)</label>
+        {{ form.amount_paid }}
+        {% for err in form.amount_paid.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# Notes #}
+      <div class="invf-field invf-full {% if form.notes.errors %}has-error{% endif %}">
+        <label for="{{ form.notes.id_for_label }}">Notes</label>
+        {{ form.notes }}
+        {% for err in form.notes.errors %}<small class="invf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+    </div>
+  </section>
+
+  <div class="invf-actions">
+    <a href="{% url 'bnb_invoice_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">Create invoice</button>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .mb { margin-bottom: 18px; }
+  .invf-back {
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    text-decoration: none; transition: color .15s;
+  }
+  .invf-back:hover { color: var(--text); }
+  .invf-title {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    margin-top: 6px; color: var(--text);
+  }
+
+  .invf {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; padding: 8px 26px 24px;
+    box-shadow: var(--shadow-sm); max-width: 960px;
+  }
+  @media (max-width: 640px) {
+    .invf { padding: 8px 16px 18px; border-radius: 14px; }
+  }
+
+  .invf-section { padding: 22px 0; }
+  .invf-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px;
+  }
+  .invf-field.invf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .invf-grid { grid-template-columns: 1fr; }
+  }
+
+  .invf-field label {
+    font-size: 12.5px; font-weight: 700; color: var(--text-2);
+    margin-bottom: 6px; display: block; letter-spacing: 0.01em;
+  }
+  .invf-field .req { color: #ef4444; margin-left: 2px; }
+
+  /* Emphasize booking dropdown */
+  .invf-field.invf-full label { color: var(--brand-1); font-size: 14px; }
+  .invf-field.invf-full select { 
+    border: 2px dashed #cbd5e1; background: #f8fafc; 
+    padding: 14px; font-weight: 600;
+  }
+  .invf-field.invf-full select:focus { 
+    border-style: solid; background: #fff; 
+  }
+
+  .invf-field input:not([type="checkbox"]),
+  .invf-field select,
+  .invf-field textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #f8fafc; color: var(--text);
+    font-family: inherit; outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .invf-field textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+
+  .invf-field select {
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: right 10px center;
+    background-size: 14px; padding-right: 32px;
+  }
+
+  .invf-field input:hover,
+  .invf-field select:hover,
+  .invf-field textarea:hover { border-color: #cbd5e1; }
+  .invf-field input:focus,
+  .invf-field select:focus,
+  .invf-field textarea:focus {
+    border-color: var(--brand-1); background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .invf-field input[type="number"]::-webkit-outer-spin-button,
+  .invf-field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .invf-field input[type="number"] { -moz-appearance: textfield; }
+
+  .invf-help {
+    display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted-2);
+  }
+
+  .invf-field.has-error input,
+  .invf-field.has-error select,
+  .invf-field.has-error textarea {
+    border-color: #ef4444; background: #fef2f2;
+  }
+  .invf-field.has-error input:focus,
+  .invf-field.has-error select:focus,
+  .invf-field.has-error textarea:focus {
+    border-color: #dc2626; background: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.14);
+  }
+  .invf-error {
+    display: block; margin-top: 5px; font-size: 11.5px;
+    font-weight: 600; color: #b91c1c;
+  }
+
+  .invf-alert {
+    margin: 18px 0 0; padding: 14px 16px; border-radius: 12px;
+    font-size: 13px; line-height: 1.55;
+  }
+  .invf-alert p { margin: 0; }
+  .invf-alert p + p { margin-top: 4px; }
+  .invf-alert-error {
+    background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+  }
+  .invf-alert-head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; font-weight: 800;
+  }
+  .invf-alert-head svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .invf-alert-list {
+    margin: 6px 0 0; padding-left: 20px; font-size: 12.5px; font-weight: 500;
+  }
+  .invf-alert-list li + li { margin-top: 4px; }
+
+  .invf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 22px; border-top: 1px solid var(--line-2); flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .invf-actions { flex-direction: column-reverse; }
+    .invf-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .invf-field input, .invf-field select, .invf-field textarea,
+    .invf-back { transition: none; }
+  }
+</style>
+{% endblock %}

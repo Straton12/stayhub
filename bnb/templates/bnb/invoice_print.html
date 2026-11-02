@@ -1,0 +1,438 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice {{ invoice.invoice_number }} — {{ invoice.booking.property.organization.name }}</title>
+<style>
+  /* ============================================================
+     A4 PRINT STYLES
+     Uses system fonts for a clean, native document feel.
+     ============================================================ */
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+  
+  * { box-sizing: border-box; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    color: #1e293b;
+    line-height: 1.5;
+    background: #e2e8f0;
+    margin: 0;
+    padding: 40px 20px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* The Paper Canvas */
+  .paper {
+    background: #fff;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px;
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(15,23,42,0.15);
+    position: relative;
+  }
+
+  /* ---------- Header Section ---------- */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #0f172a;
+  }
+  
+  .company-info {
+    max-width: 60%;
+  }
+  .company-name {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+  }
+  .company-details {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+  }
+
+  .invoice-info {
+    text-align: right;
+  }
+  .invoice-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .invoice-meta {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.8;
+  }
+  .invoice-meta strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  /* ---------- Billed To Section ---------- */
+  .billed-to {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .billed-to-block {
+    max-width: 60%;
+  }
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.8px;
+    margin: 0 0 8px 0;
+  }
+  .guest-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+  }
+  .guest-details {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+  .status-badge.paid { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .status-badge.overdue { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+  /* ---------- Line Items Table ---------- */
+  .line-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+  }
+  .line-items th {
+    text-align: left;
+    padding: 12px 10px;
+    border-bottom: 2px solid #0f172a;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+  }
+  .line-items td {
+    padding: 16px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+    vertical-align: top;
+  }
+  .line-items .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .item-title { font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .item-desc { font-size: 12.5px; color: #64748b; }
+
+  /* ---------- Totals ---------- */
+  .totals {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 40px;
+  }
+  .totals-table {
+    width: 50%;
+    min-width: 300px;
+    border-collapse: collapse;
+  }
+  .totals-table td {
+    padding: 10px 0;
+    font-size: 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .totals-table .label {
+    text-align: left;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .totals-table .value {
+    text-align: right;
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .totals-table .grand-total td {
+    border-top: 2px solid #0f172a;
+    border-bottom: 2px solid #0f172a;
+    font-size: 18px;
+    font-weight: 800;
+    padding: 14px 0;
+  }
+  .totals-table .grand-total .label { color: #0f172a; }
+  
+  .totals-table .balance-row td {
+    border-bottom: none;
+    padding-top: 14px;
+    font-size: 16px;
+  }
+  .text-green { color: #047857 !important; }
+  .text-red { color: #b91c1c !important; }
+
+  /* ---------- Notes & Footer ---------- */
+  .notes-section {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px dashed #cbd5e1;
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+  }
+  .notes-section strong { color: #0f172a; }
+  
+  .footer {
+    margin-top: 60px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  /* ============================================================
+     PRINT BEHAVIOR
+     Hides the button and removes background/shadow for paper.
+     ============================================================ */
+  @media print {
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+    }
+    .paper {
+      box-shadow: none;
+      padding: 0;
+      max-width: none;
+      border-radius: 0;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .line-items tr { page-break-inside: avoid; }
+  }
+
+  /* Floating Print Button for Screen */
+  .print-btn-wrap {
+    text-align: center;
+    margin-top: 32px;
+    margin-bottom: 20px;
+  }
+  .print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .print-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99,102,241,0.4);
+  }
+  .print-btn:active {
+    transform: translateY(1px);
+  }
+  .print-btn svg {
+    width: 18px; height: 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="paper">
+  
+  <!-- Header -->
+  <div class="header">
+    <div class="company-info">
+      <h1 class="company-name">{{ invoice.organization.name|default:"StayHub" }}</h1>
+      <div class="company-details">
+        {% if invoice.booking.property.location_label %}
+          {{ invoice.booking.property.location_label }}<br>
+        {% endif %}
+        {% if invoice.organization.email %}
+          {{ invoice.organization.email }}<br>
+        {% endif %}
+        {% if invoice.organization.phone %}
+          {{ invoice.organization.phone }}
+        {% endif %}
+      </div>
+    </div>
+    <div class="invoice-info">
+      <h2 class="invoice-title">Invoice</h2>
+      <div class="invoice-meta">
+        <strong>#{{ invoice.invoice_number }}</strong><br>
+        Issued: {{ invoice.issue_date|date:"d M Y" }}<br>
+        {% if invoice.due_date %}
+          Due: {{ invoice.due_date|date:"d M Y" }}<br>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Billed To & Status -->
+  <div class="billed-to">
+    <div class="billed-to-block">
+      <h3 class="section-label">Billed To</h3>
+      <p class="guest-name">{{ invoice.guest_name }}</p>
+      <div class="guest-details">
+        {% if invoice.guest_email %}{{ invoice.guest_email }}<br>{% endif %}
+        {% if invoice.booking %}
+          Booking Ref: #{{ invoice.booking.id }}<br>
+          Property: {{ invoice.booking.property.name }}<br>
+          {% if invoice.booking.check_in %}
+            Stay: {{ invoice.booking.check_in|date:"d M" }} — {{ invoice.booking.check_out|date:"d M Y" }} ({{ invoice.booking.nights }} night{{ invoice.booking.nights|pluralize }})
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <div style="margin-bottom: 8px;">
+        <span class="section-label">Status</span>
+      </div>
+      {% if invoice.balance <= 0 %}
+        <span class="status-badge paid">Paid in Full</span>
+      {% elif invoice.is_overdue %}
+        <span class="status-badge overdue">Overdue</span>
+      {% else %}
+        <span class="status-badge">{{ invoice.get_status_display }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Line Items -->
+  <table class="line-items">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="item-title">
+            {% if invoice.booking %}
+              {{ invoice.booking.property.name }} — Accommodation
+            {% else %}
+              Services Rendered
+            {% endif %}
+          </div>
+          <div class="item-desc">
+            {% if invoice.booking %}
+              {% if invoice.booking.nights %}{{ invoice.booking.nights }} night(s){% endif %}
+              {% if invoice.booking.guests %} for {{ invoice.booking.guests }} guest(s){% endif %}
+            {% else %}
+              Invoice for booking #{{ invoice.id }}
+            {% endif %}
+          </div>
+        </td>
+        <td class="num">KES {{ invoice.subtotal|floatformat:2|intcomma }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <div class="totals">
+    <table class="totals-table">
+      <tr>
+        <td class="label">Subtotal</td>
+        <td class="value">KES {{ invoice.subtotal|floatformat:2|intcomma }}</td>
+      </tr>
+      {% if invoice.tax_amount > 0 %}
+        <tr>
+          <td class="label">Tax / VAT</td>
+          <td class="value">KES {{ invoice.tax_amount|floatformat:2|intcomma }}</td>
+        </tr>
+      {% endif %}
+      
+      <tr class="grand-total">
+        <td class="label">Total</td>
+        <td class="value">KES {{ invoice.total|floatformat:2|intcomma }}</td>
+      </tr>
+      
+      {% if invoice.amount_paid > 0 %}
+        <tr>
+          <td class="label">Amount Paid</td>
+          <td class="value text-green">- KES {{ invoice.amount_paid|floatformat:2|intcomma }}</td>
+        </tr>
+        <tr class="balance-row">
+          <td class="label" style="font-weight: 800; color: #0f172a;">Balance Due</td>
+          <td class="value {% if invoice.balance > 0 %}text-red{% else %}text-green{% endif %}" style="font-size: 18px; font-weight: 800;">
+            KES {{ invoice.balance|floatformat:2|intcomma }}
+          </td>
+        </tr>
+      {% endif %}
+    </table>
+  </div>
+
+  <!-- Notes -->
+  {% if invoice.notes %}
+    <div class="notes-section">
+      <strong>Notes:</strong><br>
+      {{ invoice.notes|linebreaksbr }}
+    </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <div class="footer">
+    Thank you for choosing {{ invoice.organization.name|default:"StayHub" }}.<br>
+    If you have any questions about this invoice, please contact us.
+  </div>
+
+</div>
+
+<!-- Print Button (Hidden on actual print) -->
+<div class="print-btn-wrap no-print">
+  <button onclick="window.print()" class="print-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9"/>
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+      <rect x="6" y="14" width="12" height="8"/>
+    </svg>
+    Print to PDF
+  </button>
+</div>
+
+</body>
+</html>

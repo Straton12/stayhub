@@ -1,0 +1,201 @@
+{% extends 'bnb/propertiessub_base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit rule{% else %}Add pricing rule{% endif %} — BnB{% endblock %}
+
+{% block content %}
+
+<div class="prf-head">
+  <a href="{% url 'bnb_pricing_rules' %}" class="prf-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to pricing rules
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ rule.label }}"{% else %}Add a pricing rule{% endif %}</h1>
+  <p class="muted">Rules can be a note, an amount, a percentage, or a multiplier.</p>
+</div>
+
+<form method="post" class="prf">
+  {% csrf_token %}
+
+  <div class="prf-grid">
+    <div class="prf-field prf-full">
+      <label for="label">Label <span class="req">*</span></label>
+      <input type="text" id="label" name="label" required
+             value="{{ rule.label|default:'' }}"
+             placeholder="e.g. Cleaning fee, Minimum stay, Weekly discount"
+             maxlength="120">
+    </div>
+
+    <div class="prf-field">
+      <label for="rule_type">Rule type</label>
+      <select id="rule_type" name="rule_type">
+        {% for key, lbl in rule_type_choices %}
+          <option value="{{ key }}" {% if rule.rule_type == key %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="prf-field">
+      <label for="value_type">Value type</label>
+      <select id="value_type" name="value_type">
+        {% for key, lbl in value_type_choices %}
+          <option value="{{ key }}" {% if rule.value_type == key %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="prf-field prf-full">
+      <label for="value">Value</label>
+      <input type="number" step="0.01" id="value" name="value"
+             value="{{ rule.value|default:0 }}">
+      <p class="prf-hint">
+        Ignored when value type is "Note". For percentages enter just the number
+        (e.g. <b>5</b> for 5%). For multipliers enter a decimal (e.g. <b>1.5</b>).
+      </p>
+    </div>
+
+    <div class="prf-field prf-full">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="3"
+                placeholder="Optional — explain what this rule does.">{{ rule.description|default:'' }}</textarea>
+    </div>
+
+    <div class="prf-field">
+      <label for="property">Applies to</label>
+      <select id="property" name="property">
+        <option value="">All properties (organisation-wide)</option>
+        {% for p in properties %}
+          <option value="{{ p.id }}" {% if rule.applies_to_property_id == p.id %}selected{% endif %}>            {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="prf-field">
+      <label for="display_order">Display order</label>
+      <input type="number" id="display_order" name="display_order" min="0"
+             value="{{ rule.display_order|default:10 }}">
+      <p class="prf-hint">Lower numbers appear first.</p>
+    </div>
+
+    <div class="prf-field prf-full">
+      <label class="prf-check">
+        <input type="checkbox" name="is_active" value="1"
+               {% if rule.is_active or mode == 'create' %}checked{% endif %}>
+        <span>Active — apply this rule in pricing calculations</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="prf-actions">
+    <a href="{% url 'bnb_pricing_rules' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"/>
+      </svg>
+      {% if mode == 'edit' %}Save changes{% else %}Add rule{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .prf-head { margin-bottom: 22px; }
+  .prf-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    margin-left: -8px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+  }
+  .prf-back:hover { color: var(--brand-1); background: rgba(14,165,233,0.06); }
+  .prf-back svg { width: 13px; height: 13px; }
+  .prf-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .prf-head p { font-size: 13px; }
+
+  .prf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 22px 26px;
+    box-shadow: var(--shadow-sm);
+    max-width: 720px;
+  }
+  .prf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-bottom: 22px;
+  }
+  .prf-field.prf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .prf-grid { grid-template-columns: 1fr; } }
+
+  .prf-field label {
+    display: block;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .prf-field .req { color: #ef4444; }
+  .prf-field input,
+  .prf-field select,
+  .prf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .prf-field textarea { min-height: 80px; resize: vertical; }
+  .prf-field input:hover,
+  .prf-field select:hover,
+  .prf-field textarea:hover { border-color: #cbd5e1; }
+  .prf-field input:focus,
+  .prf-field select:focus,
+  .prf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .prf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 5px;
+    line-height: 1.55;
+  }
+  .prf-check {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    padding-top: 4px;
+  }
+  .prf-check input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--brand-1);
+    cursor: pointer;
+  }
+
+  .prf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+  }
+</style>
+{% endblock %}

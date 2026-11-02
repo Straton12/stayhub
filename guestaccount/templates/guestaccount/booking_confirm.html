@@ -1,0 +1,718 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}Review &amp; pay — {{ booking.reference }}{% endblock %}
+
+{% block ga_content %}
+
+<div class="bc-crumb">
+  <a href="{% url 'guestaccount:home' %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    My bookings
+  </a>
+</div>
+
+<div class="bc-header">
+  <span class="bc-badge">Step 2 of 2</span>
+  <h1>Review &amp; pay</h1>
+  <p>Check the details below, pick how you want to pay, then confirm.</p>
+
+  {# Payment policy chip — updates live via JS #}
+  {% if booking.payment_policy %}
+    <span class="bc-policy policy-{{ booking.payment_policy }}" id="bcHeaderPolicy">
+      {% if booking.payment_policy == 'pay_now' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+        </svg>
+        Paying now
+      {% elif booking.payment_policy == 'pay_deposit' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        Deposit only ({{ booking.listing.deposit_percent|default:0 }}%)
+      {% elif booking.payment_policy == 'pay_on_arrival' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12h18"/><path d="m15 6 6 6-6 6"/><circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+        Pay on arrival
+      {% elif booking.payment_policy == 'pay_on_delivery' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+        </svg>
+        Pay on delivery
+      {% elif booking.payment_policy == 'pay_on_completion' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+        </svg>
+        Pay on completion
+      {% endif %}
+    </span>
+  {% endif %}
+</div>
+
+<div class="bc-layout">
+
+  <!-- LEFT: Summary -->
+  <section class="bc-main">
+
+    <div class="bc-block">
+      <h3>What you're booking</h3>
+      <div class="bc-listing">
+        <div class="bc-listing-cover">
+          {% if booking.listing.cover_image %}
+            <img src="{{ booking.listing.cover_image.url }}" alt="{{ booking.listing.title }}">
+          {% elif booking.listing.cover_image_url %}
+            <img src="{{ booking.listing.cover_image_url }}" alt="{{ booking.listing.title }}">
+          {% else %}
+            <div class="bc-listing-fallback">
+              {% if listing.category.icon == 'bed' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+              {% elif listing.category.icon == 'globe' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              {% elif listing.category.icon == 'utensils' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+              {% elif listing.category.icon == 'shirt' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+              {% elif listing.category.icon == 'car' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          {% if booking.billing_unit == 'per_night' and booking.nights %}
+            <span class="bc-cover-nights">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+              {{ booking.nights }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="bc-listing-body">
+          <span class="bc-cat">{{ listing.category.name }}</span>
+          <h4 class="bc-listing-title">{{ listing.title }}</h4>
+          {% if listing.location %}
+            <div class="bc-loc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ listing.location }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bc-block">
+      <h3>Booking details</h3>
+      <dl class="bc-details">
+        <div class="bc-detail">
+          <dt>Reference</dt>
+          <dd><span class="bc-mono">{{ booking.reference }}</span></dd>
+        </div>
+        <div class="bc-detail">
+          <dt>Name</dt>
+          <dd>{{ booking.customer_name }}</dd>
+        </div>
+        {% if booking.customer_email %}
+        <div class="bc-detail">
+          <dt>Email</dt>
+          <dd>{{ booking.customer_email }}</dd>
+        </div>
+        {% endif %}
+        {% if booking.customer_phone %}
+        <div class="bc-detail">
+          <dt>Phone</dt>
+          <dd>{{ booking.customer_phone }}</dd>
+        </div>
+        {% endif %}
+        {% if booking.start_date %}
+        <div class="bc-detail">
+          <dt>{% if listing.category.slug == 'stays' %}Check in{% elif listing.category.slug == 'tours' or listing.category.slug == 'transport' %}Travel date{% else %}Date{% endif %}</dt>
+          <dd>{{ booking.start_date|date:"D, d M Y" }}</dd>
+        </div>
+        {% endif %}
+        {% if booking.end_date %}
+        <div class="bc-detail">
+          <dt>Check out</dt>
+          <dd>{{ booking.end_date|date:"D, d M Y" }}</dd>
+        </div>
+        {% endif %}
+        <div class="bc-detail">
+          <dt>Quantity</dt>
+          <dd>{{ booking.quantity }}</dd>
+        </div>
+        {% if booking.guest_note %}
+        <div class="bc-detail bc-detail-full">
+          <dt>Your note</dt>
+          <dd>{{ booking.guest_note }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    {# ---------- Payment method picker ---------- #}
+    <div class="bc-block">
+      <h3>How would you like to pay?</h3>
+      <p class="bc-pay-help">Pick a method. You can change this before confirming.</p>
+
+      <div class="bc-pay-options" role="radiogroup" aria-label="Payment method">
+        {% for policy in allowed_payment_policies %}
+          <label class="bc-pay-option {% if policy == booking.payment_policy %}is-selected{% endif %}"
+                 data-policy="{{ policy }}">
+            <input type="radio"
+                   name="payment_policy"
+                   value="{{ policy }}"
+                   form="bcPayForm"
+                   {% if policy == booking.payment_policy %}checked{% endif %}>
+            <span class="bc-pay-radio" aria-hidden="true"></span>
+
+            <span class="bc-pay-icon" aria-hidden="true">
+              {% if policy == 'pay_now' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+                </svg>
+              {% elif policy == 'pay_on_arrival' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h18"/><path d="m15 6 6 6-6 6"/>
+                  <circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/>
+                </svg>
+              {% elif policy == 'pay_on_delivery' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                </svg>
+              {% elif policy == 'pay_on_completion' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                </svg>
+              {% elif policy == 'pay_deposit' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+              {% endif %}
+            </span>
+
+            <span class="bc-pay-body">
+              <strong class="bc-pay-title">
+                {% if policy == 'pay_now' %}Pay now
+                {% elif policy == 'pay_on_arrival' %}Pay on arrival
+                {% elif policy == 'pay_on_delivery' %}Pay on delivery
+                {% elif policy == 'pay_on_completion' %}Pay on completion
+                {% elif policy == 'pay_deposit' %}Pay a deposit
+                {% else %}{{ policy|title }}{% endif %}
+              </strong>
+              <span class="bc-pay-desc">
+                {% if policy == 'pay_now' %}
+                  Pay securely online now — your booking is confirmed instantly.
+                {% elif policy == 'pay_on_arrival' %}
+                  Reserve now, pay when you arrive. The host will confirm your request.
+                {% elif policy == 'pay_on_delivery' %}
+                  Pay in cash or mobile money when your order is delivered.
+                {% elif policy == 'pay_on_completion' %}
+                  Pay once the service is complete.
+                {% elif policy == 'pay_deposit' %}
+                  Pay {{ listing.deposit_percent|default:0 }}% now, the rest later.
+                {% endif %}
+              </span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if booking.details %}
+    <div class="bc-block">
+      <h3>Additional info</h3>
+      <dl class="bc-details">
+        {% for k, v in booking.details.items %}
+          {% if v %}
+            <div class="bc-detail">
+              <dt>{{ k|title|cut:"_" }}</dt>
+              <dd>{{ v }}</dd>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </dl>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- RIGHT: Payment panel -->
+  <aside class="bc-aside">
+    <div class="bc-pay">
+      <h4>Price breakdown</h4>
+
+      {% if booking.billing_unit == 'per_night' %}
+        <div class="bc-sum-row">
+          <span>KES {{ booking.unit_price|floatformat:0 }} × {{ booking.nights }} night{{ booking.nights|pluralize }}</span>
+          <strong>KES {{ booking.subtotal|floatformat:0 }}</strong>
+        </div>
+      {% else %}
+        <div class="bc-sum-row">
+          <span>KES {{ booking.unit_price|floatformat:0 }} × {{ booking.quantity }}</span>
+          <strong>KES {{ booking.subtotal|floatformat:0 }}</strong>
+        </div>
+      {% endif %}
+
+      <div class="bc-sum-divider"></div>
+
+      <div class="bc-sum-row bc-sum-total">
+        <span>Total</span>
+        <strong>KES {{ booking.total_amount|floatformat:0 }}</strong>
+      </div>
+
+      {# Single form — the selected payment_policy is submitted with it #}
+      <form method="post" class="bc-pay-form" id="bcPayForm">
+        {% csrf_token %}
+
+        {# Hidden input mirrors the selected radio, since radios live outside the form #}
+        <input type="hidden" name="payment_policy" id="bcPolicyHidden"
+               value="{{ booking.payment_policy }}">
+
+        <button type="submit" class="bc-pay-btn" id="bcPayBtn">
+          {# Content updated by JS depending on the selected policy #}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span id="bcPayBtnLabel">Pay KES {{ booking.total_amount|floatformat:0 }}</span>
+        </button>
+        <p class="bc-pay-note" id="bcPayNote">
+          You'll be redirected to a secure payment page.
+        </p>
+      </form>
+
+      <div class="bc-trust">
+        <div class="bc-trust-row">
+          <span class="bc-trust-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+          M-Pesa &amp; card supported
+        </div>
+        <div class="bc-trust-row">
+          <span class="bc-trust-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </span>
+          Receipt issued instantly
+        </div>
+        <div class="bc-trust-row">
+          <span class="bc-trust-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </span>
+          Secure &amp; private
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     BOOKING CONFIRM · REVIEW & PAY
+     ================================================================ */
+
+  .bc-crumb { padding: 18px 0 0; font-size: 12.5px; }
+  .bc-crumb a {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--muted, #5b657a); text-decoration: none; font-weight: 600;
+    padding: 4px 8px; margin-left: -8px; border-radius: 8px;
+    transition: color 0.15s cubic-bezier(0.4,0,0.2,1), background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bc-crumb a:hover { color: var(--brand-1, #6366f1); background: rgba(99,102,241,0.06); }
+  .bc-crumb svg { width: 13px; height: 13px; }
+
+  .bc-header { padding: 14px 0 20px; }
+  .bc-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+    text-transform: uppercase; margin-bottom: 10px;
+    border: 1px solid #e0e7ff;
+  }
+  .bc-header h1 {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.4px;
+    margin-bottom: 6px; color: var(--text, #0b1220);
+  }
+  .bc-header p {
+    font-size: 13.5px; color: var(--muted, #5b657a); margin-bottom: 12px;
+  }
+
+  .bc-policy {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px 5px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.02em; border: 1px solid transparent;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .bc-policy svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .bc-policy.policy-pay_now           { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+  .bc-policy.policy-pay_deposit       { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bc-policy.policy-pay_on_arrival    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .bc-policy.policy-pay_on_delivery   { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .bc-policy.policy-pay_on_completion { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .bc-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px; align-items: start; padding-bottom: 60px;
+  }
+  @media (max-width: 900px) { .bc-layout { grid-template-columns: 1fr; } }
+  .bc-main { display: flex; flex-direction: column; gap: 16px; }
+
+  .bc-block {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px; padding: 22px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04),
+                0 1px 3px rgba(15,23,42,0.03);
+  }
+  .bc-block h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted, #5b657a); font-weight: 800; margin-bottom: 16px;
+  }
+
+  /* Listing row */
+  .bc-listing { display: flex; gap: 14px; align-items: center; }
+  .bc-listing-cover {
+    position: relative; flex: 0 0 92px;
+    width: 92px; height: 92px; border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    display: grid; place-items: center; color: #6366f1;
+    border: 1px solid var(--line, #eaedf4);
+  }
+  .bc-listing-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bc-listing-fallback svg { width: 34px; height: 34px; opacity: 0.85; }
+
+  .bc-cover-nights {
+    position: absolute; bottom: 6px; left: 6px;
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px 2px 5px; border-radius: 999px;
+    background: rgba(15,23,42,0.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    color: #fff; font-size: 10px; font-weight: 800;
+    line-height: 1; letter-spacing: 0.02em;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+  }
+  .bc-cover-nights svg { width: 9px; height: 9px; color: #c4b5fd; }
+  .bc-listing-body { min-width: 0; }
+
+  .bc-cat {
+    display: inline-block; padding: 3px 8px; border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+    text-transform: uppercase; margin-bottom: 6px;
+    border: 1px solid #e0e7ff;
+  }
+  .bc-listing-title {
+    font-size: 15px; font-weight: 700; color: var(--text, #0b1220);
+    letter-spacing: -0.2px; margin-bottom: 5px;
+  }
+  .bc-loc {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--muted, #5b657a);
+  }
+  .bc-loc svg { width: 12px; height: 12px; color: var(--muted-2, #8b94a8); flex-shrink: 0; }
+
+  /* Detail grid */
+  .bc-details {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+  }
+  @media (max-width: 520px) { .bc-details { grid-template-columns: 1fr; } }
+  .bc-detail { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .bc-detail-full { grid-column: 1 / -1; }
+  .bc-detail dt {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted-2, #8b94a8); font-weight: 700;
+  }
+  .bc-detail dd {
+    font-size: 13.5px; color: var(--text, #0b1220); font-weight: 500;
+    word-break: break-word; line-height: 1.5;
+  }
+  .bc-mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; font-weight: 700; color: #334155;
+    background: #f1f5f9; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 1px 6px; letter-spacing: 0.02em;
+  }
+
+  /* ---- Payment method picker (inside the confirm page) ---- */
+  .bc-pay-help {
+    font-size: 12.5px;
+    color: var(--muted, #5b657a);
+    margin: -10px 0 16px;
+    line-height: 1.5;
+  }
+
+  .bc-pay-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) {
+    .bc-pay-options { grid-template-columns: 1fr; }
+  }
+
+  .bc-pay-option {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1.5px solid var(--line, #eaedf4);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .bc-pay-option:hover { border-color: #c7d2fe; background: #f8faff; }
+  .bc-pay-option.is-selected {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.10);
+  }
+  .bc-pay-option input[type="radio"] {
+    position: absolute; opacity: 0; pointer-events: none;
+    width: 1px; height: 1px;
+  }
+  .bc-pay-option:focus-within { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+  .bc-pay-radio {
+    flex: 0 0 20px; width: 20px; height: 20px;
+    margin-top: 2px;
+    border: 2px solid #cbd5e1; border-radius: 50%;
+    background: #fff; position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .bc-pay-option input:checked ~ .bc-pay-radio {
+    border-color: #6366f1; background: #6366f1;
+  }
+  .bc-pay-option input:checked ~ .bc-pay-radio::after {
+    content: ""; position: absolute; inset: 4px;
+    border-radius: 50%; background: #fff;
+  }
+
+  .bc-pay-icon {
+    flex: 0 0 38px; width: 38px; height: 38px;
+    border-radius: 10px; display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .bc-pay-icon svg { width: 18px; height: 18px; }
+
+  .bc-pay-option.is-selected[data-policy="pay_on_arrival"] .bc-pay-icon,
+  .bc-pay-option.is-selected[data-policy="pay_now"]       .bc-pay-icon {
+    background: #ecfdf5; color: #047857; border-color: #a7f3d0;
+  }
+  .bc-pay-option.is-selected[data-policy="pay_on_delivery"]   .bc-pay-icon,
+  .bc-pay-option.is-selected[data-policy="pay_on_completion"] .bc-pay-icon {
+    background: #fff7ed; color: #c2410c; border-color: #fed7aa;
+  }
+  .bc-pay-option.is-selected[data-policy="pay_deposit"] .bc-pay-icon {
+    background: #fffbeb; color: #92400e; border-color: #fde68a;
+  }
+
+  .bc-pay-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .bc-pay-title {
+    font-size: 14px; font-weight: 700;
+    color: var(--text, #0b1220); letter-spacing: -0.1px;
+  }
+  .bc-pay-desc {
+    font-size: 12.5px; color: var(--muted, #5b657a); line-height: 1.55;
+  }
+
+  /* ---- Payment panel ---- */
+  .bc-aside { position: sticky; top: 88px; }
+  @media (max-width: 900px) { .bc-aside { position: static; } }
+
+  .bc-pay {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px; padding: 22px;
+    box-shadow: 0 20px 48px -16px rgba(15,23,42,0.10),
+                0 8px 18px -10px rgba(15,23,42,0.05);
+  }
+  .bc-pay h4 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted, #5b657a); font-weight: 800; margin-bottom: 14px;
+  }
+  .bc-sum-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 0; font-size: 13px; color: var(--muted, #5b657a);
+  }
+  .bc-sum-row span { min-width: 0; }
+  .bc-sum-row strong {
+    color: var(--text, #0b1220); font-weight: 600; white-space: nowrap;
+  }
+  .bc-sum-divider { height: 1px; background: var(--line-2, #f2f4fa); margin: 10px 0; }
+  .bc-sum-total {
+    padding-top: 12px; border-top: 1px dashed var(--line, #eaedf4);
+    font-size: 13.5px; color: var(--text, #0b1220); font-weight: 700;
+  }
+  .bc-sum-total strong {
+    font-size: 18px; font-weight: 800; color: var(--brand-1, #6366f1);
+    letter-spacing: -0.4px;
+  }
+
+  .bc-pay-form { margin-top: 18px; }
+  .bc-pay-btn {
+    width: 100%; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 14px 18px; border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 14.5px; font-weight: 800;
+    letter-spacing: 0.01em; font-family: inherit; cursor: pointer;
+    transition: filter 0.15s cubic-bezier(0.4,0,0.2,1),
+                transform 0.08s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.2s cubic-bezier(0.4,0,0.2,1),
+                background 0.2s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 12px 26px -8px rgba(99,102,241,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .bc-pay-btn:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 34px -8px rgba(99,102,241,0.65);
+  }
+  .bc-pay-btn:active { transform: translateY(1px); }
+  .bc-pay-btn:focus-visible { outline: 3px solid rgba(99,102,241,0.35); outline-offset: 2px; }
+  .bc-pay-btn svg { width: 16px; height: 16px; }
+
+  /* Emerald variant when the guest chose a pay-later policy */
+  .bc-pay-btn.is-confirm {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 12px 26px -8px rgba(16,185,129,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .bc-pay-btn.is-confirm:hover {
+    box-shadow: 0 16px 34px -8px rgba(16,185,129,0.65);
+  }
+
+  .bc-pay-note {
+    margin-top: 10px; font-size: 11.5px;
+    color: var(--muted-2, #8b94a8); text-align: center;
+  }
+
+  .bc-trust {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid var(--line-2, #f2f4fa);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .bc-trust-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12.5px; color: var(--muted, #5b657a); font-weight: 500;
+  }
+  .bc-trust-ico {
+    flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+  }
+  .bc-trust-ico svg { width: 11px; height: 11px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}
+
+
+{% block ga_extra_js %}
+<script>
+  (function () {
+    var options = document.querySelectorAll('.bc-pay-option');
+    if (!options.length) return;
+
+    var headerChip = document.getElementById('bcHeaderPolicy');
+    var hiddenPolicy = document.getElementById('bcPolicyHidden');
+    var payBtn = document.getElementById('bcPayBtn');
+    var payBtnLabel = document.getElementById('bcPayBtnLabel');
+    var payNote = document.getElementById('bcPayNote');
+
+    var total = "{{ booking.total_amount|floatformat:0 }}";
+
+    var chipText = {
+      pay_now:           'Paying now',
+      pay_deposit:       'Deposit only',
+      pay_on_arrival:    'Pay on arrival',
+      pay_on_delivery:   'Pay on delivery',
+      pay_on_completion: 'Pay on completion'
+    };
+
+    var chipIcon = {
+      pay_now: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>',
+      pay_deposit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      pay_on_arrival: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><path d="m15 6 6 6-6 6"/><circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/></svg>',
+      pay_on_delivery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+      pay_on_completion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+    };
+
+    var PAY_LATER = ['pay_on_arrival', 'pay_on_delivery', 'pay_on_completion'];
+
+    function sync() {
+      var selected = null;
+      options.forEach(function (opt) {
+        var input = opt.querySelector('input[type="radio"]');
+        var isOn = input && input.checked;
+        opt.classList.toggle('is-selected', isOn);
+        if (isOn) selected = input.value;
+      });
+      if (!selected) return;
+
+      // Mirror onto the hidden form input
+      if (hiddenPolicy) hiddenPolicy.value = selected;
+
+      // Header chip
+      if (headerChip) {
+        headerChip.className = 'bc-policy policy-' + selected;
+        headerChip.innerHTML = (chipIcon[selected] || '') + ' ' + (chipText[selected] || selected);
+      }
+
+      // Button label + colour
+      if (payBtn && payBtnLabel) {
+        if (PAY_LATER.indexOf(selected) !== -1) {
+          payBtn.classList.add('is-confirm');
+          payBtnLabel.textContent = 'Confirm booking';
+          if (payNote) payNote.textContent = "No payment needed now. You'll pay " + (chipText[selected] || selected).toLowerCase() + '.';
+        } else if (selected === 'pay_deposit') {
+          payBtn.classList.remove('is-confirm');
+          payBtnLabel.textContent = 'Pay deposit · KES ' + total;
+          if (payNote) payNote.textContent = "You'll be redirected to a secure payment page.";
+        } else {
+          payBtn.classList.remove('is-confirm');
+          payBtnLabel.textContent = 'Pay KES ' + total;
+          if (payNote) payNote.textContent = "You'll be redirected to a secure payment page.";
+        }
+      }
+    }
+
+    options.forEach(function (opt) {
+      var input = opt.querySelector('input[type="radio"]');
+      if (input) input.addEventListener('change', sync);
+    });
+
+    sync();
+  })();
+</script>
+{% endblock %}

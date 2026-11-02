@@ -1,0 +1,295 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Goods Received — Restaurant{% endblock %}
+{% block page_title %}Goods Received Notes{% endblock %}
+{% block breadcrumb %}<span class="crumb">Procurement › GRN</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="grn-header">
+  <div>
+    <h1>Goods Received Notes</h1>
+    <p>
+      {% if receipts %}
+        {{ receipts|length }} delivery receipt{{ receipts|length|pluralize }} recorded.
+      {% else %}
+        No deliveries recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px; flex-wrap:wrap;">
+    <a href="{% url 'restaurant_po_list' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="16" y2="17"/>
+      </svg>
+      Purchase Orders
+    </a>
+  </div>
+</div>
+
+{% if receipts %}
+
+<!-- ============ KPIs ============ -->
+<div class="grn-kpis">
+  <div class="grn-kpi">
+    <div class="grn-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="grn-kpi-value">{{ receipts|length }}</div>
+      <div class="grn-kpi-label">Total Deliveries</div>
+    </div>
+  </div>
+
+  <div class="grn-kpi">
+    <div class="grn-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="grn-kpi-value" id="kpiValue">KES 0</div>
+      <div class="grn-kpi-label">Total Value</div>
+    </div>
+  </div>
+
+  <div class="grn-kpi">
+    <div class="grn-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="grn-kpi-value" id="kpiMonth">0</div>
+      <div class="grn-kpi-label">This Month</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>GRN #</th>
+        <th>Received Date</th>
+        <th>Purchase Order</th>
+        <th>Supplier</th>
+        <th class="right">Total Value</th>
+        <th>Received By</th>
+        <th style="width:80px; text-align:center;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for grn in receipts %}
+      <tr onclick="window.location='{% url 'restaurant_grn_detail' grn.id %}';" style="cursor: pointer;">
+        
+        <td>
+          <span class="grn-ref">{{ grn.reference|default:grn.id }}</span>
+        </td>
+
+        <td>
+          <div class="grn-date">{{ grn.received_date|date:"M j, Y" }}</div>
+          <div class="grn-time">Recorded {{ grn.created_at|date:"H:i" }}</div>
+        </td>
+
+        <td>
+          <a href="{% url 'restaurant_po_detail' grn.purchase_order.id %}" 
+             class="grn-po-link" onclick="event.stopPropagation();">
+            {{ grn.purchase_order.reference }}
+          </a>
+        </td>
+
+        <td>
+          <div class="grn-supplier">
+            <div class="grn-supplier-avatar">{{ grn.purchase_order.supplier.name|slice:":1"|upper }}</div>
+            <span>{{ grn.purchase_order.supplier.name }}</span>
+          </div>
+        </td>
+
+        <td class="right">
+          <div class="grn-value">KES {{ grn.total_value|floatformat:2 }}</div>
+        </td>
+
+        <td>
+          {% if grn.received_by %}
+            <div class="grn-user">
+              <div class="grn-user-avatar">{{ grn.received_by.username|slice:":1"|upper }}</div>
+              <span>{{ grn.received_by.username }}</span>
+            </div>
+          {% else %}
+            <span class="muted">System</span>
+          {% endif %}
+        </td>
+
+        <td class="center" onclick="event.stopPropagation();">
+          <a href="{% url 'restaurant_grn_detail' grn.id %}" class="btn secondary sm" title="View GRN">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="grn-empty">
+  <div class="grn-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  </div>
+  <h4>No goods received yet</h4>
+  <p class="muted">
+    When you receive goods against a Purchase Order, the delivery will appear here as a Goods Received Note.
+  </p>
+  <a href="{% url 'restaurant_po_list' %}" class="btn" style="margin-top:14px;">View Purchase Orders</a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= GRN List ================= */
+
+  .grn-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .grn-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .grn-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .grn-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .grn-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .grn-kpi-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .grn-kpi-icon svg { width: 20px; height: 20px; }
+  .grn-kpi-icon.k-amber { background: #fef3c7; color: #b45309; }
+  .grn-kpi-icon.k-green { background: #ecfdf5; color: #047857; }
+  .grn-kpi-icon.k-blue  { background: #eff6ff; color: #1d4ed8; }
+
+  .grn-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .grn-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Table cells ---- */
+  .grn-ref {
+    display: inline-block; padding: 3px 9px; border-radius: 6px;
+    background: #f1f5f9; border: 1px solid var(--line); color: var(--text-2);
+    font-size: 11.5px; font-weight: 800; letter-spacing: 0.4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .grn-date { font-size: 13px; font-weight: 700; color: var(--text); }
+  .grn-time { font-size: 11.5px; color: var(--muted-2); margin-top: 2px; }
+
+  .grn-po-link {
+    font-size: 12.5px; font-weight: 700; color: var(--brand-2);
+    text-decoration: none; padding: 3px 8px; border-radius: 6px;
+    background: #fffbeb; border: 1px solid #fde68a;
+    transition: all 0.15s;
+  }
+  .grn-po-link:hover { background: var(--brand-1); color: #fff; border-color: var(--brand-2); }
+
+  .grn-supplier { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .grn-supplier-avatar {
+    width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px;
+    display: grid; place-items: center; background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 800; font-size: 11px;
+  }
+
+  .grn-value { font-size: 13.5px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .grn-user { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+  .grn-user-avatar {
+    width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(135deg, #fbbf24, #f97316); color: #fff;
+    font-size: 10px; font-weight: 800;
+  }
+
+  /* ---- Empty state ---- */
+  .grn-empty {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .grn-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .grn-empty-ico svg { width: 30px; height: 30px; }
+  .grn-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(6), td:nth-child(6) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .grn-header h1 { font-size: 20px; }
+    .grn-header { flex-direction: column; align-items: stretch; }
+    th:nth-child(2), td:nth-child(2) { display: none; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // --- KPI counters computed client-side ---
+    var rows = document.querySelectorAll('tbody tr');
+    var totalValue = 0;
+    var thisMonthCount = 0;
+    
+    var now = new Date();
+    var currentMonth = now.getMonth();
+    var currentYear = now.getFullYear();
+
+    rows.forEach(function (r) {
+      // 1. Total Value
+      var valueEl = r.querySelector('.grn-value');
+      if (valueEl) {
+        var val = parseFloat((valueEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(val)) totalValue += val;
+      }
+
+      // 2. This Month Count
+      var dateEl = r.querySelector('.grn-date');
+      if (dateEl) {
+        var parsedDate = new Date(dateEl.textContent);
+        if (parsedDate.getMonth() === currentMonth && parsedDate.getFullYear() === currentYear) {
+          thisMonthCount++;
+        }
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiValue', 'KES ' + totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+    setText('kpiMonth', thisMonthCount);
+  })();
+</script>
+{% endblock %}

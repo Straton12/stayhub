@@ -1,0 +1,51 @@
+{% extends 'bnb/bookingssub_base.html' %}
+{% block title %}{% if guest %}Edit{% else %}Add{% endif %} guest — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_guest_list' %}" style="font-size:12.5px;color:var(--muted);font-weight:700;">← Back to guests</a>
+  <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.4px;margin-top:6px;">
+    {% if guest %}Edit {{ guest.full_name }}{% else %}Add a guest{% endif %}
+  </h1>
+</div>
+
+<form method="post" class="gf" novalidate>
+  {% csrf_token %}
+
+  <section class="gf-section">
+    <h2>Profile</h2>
+    <div class="gf-grid">
+      <div class="gf-field gf-full"><label for="{{ form.full_name.id_for_label }}">Full name <span class="req">*</span></label>{{ form.full_name }}</div>
+      <div class="gf-field"><label for="{{ form.email.id_for_label }}">Email</label>{{ form.email }}</div>
+      <div class="gf-field"><label for="{{ form.phone.id_for_label }}">Phone</label>{{ form.phone }}</div>
+      <div class="gf-field"><label for="{{ form.country.id_for_label }}">Country</label>{{ form.country }}</div>
+      <div class="gf-field"><label for="{{ form.id_number.id_for_label }}">ID number</label>{{ form.id_number }}</div>
+      <div class="gf-field gf-full"><label for="{{ form.notes.id_for_label }}">Notes</label>{{ form.notes }}</div>
+    </div>
+  </section>
+
+  <div class="gf-actions">
+    <a href="{% url 'bnb_guest_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      {% if guest %}Save changes{% else %}Add guest{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .gf { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; padding: 8px 26px 24px; }
+  .gf-section { padding: 22px 0; }
+  .gf-section h2 { font-size: 15px; font-weight: 800; margin-bottom: 16px; }
+  .gf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .gf-field.gf-full { grid-column: 1/-1; }
+  @media (max-width: 640px) { .gf-grid { grid-template-columns: 1fr; } }
+  .gf-field label { font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; display: block; }
+  .gf-field .req { color: #ef4444; }
+  .gf-field input, .gf-field select, .gf-field textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 14px; background: #f8fafc; font-family: inherit; outline: none; }
+  .gf-field input:focus, .gf-field select:focus, .gf-field textarea:focus { border-color: var(--brand-1); background: #fff; box-shadow: 0 0 0 4px rgba(14,165,233,0.13); }
+  .gf-field textarea { min-height: 90px; resize: vertical; }
+  .gf-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 22px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+</style>
+{% endblock %}

@@ -1,0 +1,905 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}Book {{ listing.title }}{% endblock %}
+
+{% block ga_content %}
+
+<div class="bn-crumb">
+  <a href="{% url 'marketplace:listing_detail' listing.slug %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to listing
+  </a>
+</div>
+
+<div class="bn-header">
+  <div>
+    <h1>Book this {{ listing.category.name|lower }}</h1>
+    <p>Fill in your details, review the total, then pay securely.</p>
+
+    {% if payment_policy %}
+      <span class="bn-policy policy-{{ payment_policy }}" id="bnHeaderPolicy">
+        {% if payment_policy == 'pay_now' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+          </svg>
+          Pay online to confirm
+        {% elif payment_policy == 'pay_deposit' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          Deposit now, rest later
+        {% elif payment_policy == 'pay_on_arrival' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h18"/><path d="m15 6 6 6-6 6"/><circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+          Pay on arrival
+        {% elif payment_policy == 'pay_on_delivery' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+          </svg>
+          Pay on delivery
+        {% elif payment_policy == 'pay_on_completion' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+          </svg>
+          Pay on completion
+        {% endif %}
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bn-layout">
+
+  <!-- FORM -->
+  <form method="post" class="bn-form" id="bnForm">
+    {% csrf_token %}
+
+    <!-- Section 1: Your details -->
+    <section class="bn-section">
+      <header class="bn-section-head">
+        <span class="bn-step">1</span>
+        <div>
+          <h2>Your details</h2>
+          <p>So the business can reach you about this booking.</p>
+        </div>
+      </header>
+
+      <div class="bn-grid">
+        <div class="bn-field bn-full">
+          <label for="customer_name">Full name <span class="req">*</span></label>
+          <input class="bn-input" type="text" id="customer_name" name="customer_name"
+                 value="{{ user.display_name|default:user.username }}" required>
+        </div>
+        <div class="bn-field">
+          <label for="customer_email">Email</label>
+          <input class="bn-input" type="email" id="customer_email" name="customer_email"
+                 value="{{ user.email }}">
+        </div>
+        <div class="bn-field">
+          <label for="customer_phone">Phone</label>
+          <input class="bn-input" type="text" id="customer_phone" name="customer_phone"
+                 value="{{ user.phone }}" placeholder="+254 7XX XXX XXX">
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Payment method -->
+    <section class="bn-section">
+      <header class="bn-section-head">
+        <span class="bn-step">2</span>
+        <div>
+          <h2>How would you like to pay?</h2>
+          <p>Choose a payment method. You can change it later from your booking.</p>
+        </div>
+      </header>
+
+      <div class="bn-pay-options" role="radiogroup" aria-label="Payment method">
+        {% for policy in allowed_payment_policies %}
+          <label class="bn-pay-option {% if policy == payment_policy %}is-selected{% endif %}">
+            <input type="radio"
+                   name="payment_policy"
+                   value="{{ policy }}"
+                   {% if policy == payment_policy %}checked{% endif %}
+                   data-policy="{{ policy }}">
+
+            <span class="bn-pay-radio" aria-hidden="true"></span>
+
+            <span class="bn-pay-icon" aria-hidden="true">
+              {% if policy == 'pay_now' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+                </svg>
+              {% elif policy == 'pay_on_arrival' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h18"/><path d="m15 6 6 6-6 6"/>
+                  <circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/>
+                </svg>
+              {% elif policy == 'pay_on_delivery' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                </svg>
+              {% elif policy == 'pay_on_completion' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                </svg>
+              {% elif policy == 'pay_deposit' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+              {% endif %}
+            </span>
+
+            <span class="bn-pay-body">
+              <strong class="bn-pay-title">
+                {% if policy == 'pay_now' %}Pay now
+                {% elif policy == 'pay_on_arrival' %}Pay on arrival
+                {% elif policy == 'pay_on_delivery' %}Pay on delivery
+                {% elif policy == 'pay_on_completion' %}Pay on completion
+                {% elif policy == 'pay_deposit' %}Pay a deposit
+                {% else %}{{ policy|title }}{% endif %}
+              </strong>
+              <span class="bn-pay-desc">
+                {% if policy == 'pay_now' %}
+                  Pay securely online now — your booking is confirmed instantly.
+                {% elif policy == 'pay_on_arrival' %}
+                  Reserve now, pay when you arrive. The host will confirm your request.
+                {% elif policy == 'pay_on_delivery' %}
+                  Pay in cash or mobile money when your order is delivered.
+                {% elif policy == 'pay_on_completion' %}
+                  Pay once the service is complete.
+                {% elif policy == 'pay_deposit' %}
+                  Pay {{ listing.deposit_percent|default:0 }}% now, the rest later.
+                {% endif %}
+              </span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Section 3: Category-specific -->
+    <section class="bn-section">
+      <header class="bn-section-head">
+        <span class="bn-step">3</span>
+        <div>
+          <h2>
+            {% if listing.category.slug == 'stays' %}Stay details
+            {% elif listing.category.slug == 'tours' %}Trip details
+            {% elif listing.category.slug == 'food' %}Delivery details
+            {% elif listing.category.slug == 'laundry' %}Pickup details
+            {% elif listing.category.slug == 'transport' %}Trip details
+            {% else %}Details{% endif %}
+          </h2>
+          <p>What you need from the business.</p>
+        </div>
+      </header>
+
+      <div class="bn-grid">
+        {% if listing.category.slug == 'stays' %}
+          <div class="bn-field">
+            <label for="start_date">Check in <span class="req">*</span></label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}" required>
+          </div>
+          <div class="bn-field">
+            <label for="end_date">Check out <span class="req">*</span></label>
+            <input class="bn-input" type="date" id="end_date" name="end_date" min="{{ tomorrow }}" required>
+          </div>
+          <div class="bn-field bn-full">
+            <label for="guests">Number of guests</label>
+            <input class="bn-input" type="number" id="guests" name="guests" min="1" value="1">
+          </div>
+
+        {% elif listing.category.slug == 'tours' %}
+          <div class="bn-field">
+            <label for="start_date">Travel date <span class="req">*</span></label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}" required>
+          </div>
+          <div class="bn-field">
+            <label for="end_date">Return date</label>
+            <input class="bn-input" type="date" id="end_date" name="end_date" min="{{ tomorrow }}">
+          </div>
+          <div class="bn-field">
+            <label for="quantity">Travellers</label>
+            <input class="bn-input" type="number" id="quantity" name="quantity" min="1" value="1">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="pickup">Pickup location</label>
+            <input class="bn-input" type="text" id="pickup" name="pickup" placeholder="Hotel, airport, address…">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="guide_language">Preferred language</label>
+            <input class="bn-input" type="text" id="guide_language" name="guide_language" placeholder="e.g. English, French">
+          </div>
+
+        {% elif listing.category.slug == 'food' %}
+          <div class="bn-field">
+            <label for="quantity">Quantity</label>
+            <input class="bn-input" type="number" id="quantity" name="quantity" min="1" value="1">
+          </div>
+          <div class="bn-field">
+            <label for="start_date">When needed</label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="delivery_address">Delivery address</label>
+            <input class="bn-input" type="text" id="delivery_address" name="delivery_address" placeholder="Where should we deliver?">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="order_notes">Special instructions</label>
+            <textarea class="bn-input" id="order_notes" name="order_notes" rows="3" placeholder="Allergies, spice level, etc."></textarea>
+          </div>
+
+        {% elif listing.category.slug == 'laundry' %}
+          <div class="bn-field">
+            <label for="start_date">Pickup date</label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}">
+          </div>
+          <div class="bn-field">
+            <label for="quantity">Number of items</label>
+            <input class="bn-input" type="number" id="quantity" name="quantity" min="1" value="1">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="pickup_address">Pickup address</label>
+            <input class="bn-input" type="text" id="pickup_address" name="pickup_address" placeholder="Where should we collect from?">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="items_description">What needs washing</label>
+            <textarea class="bn-input" id="items_description" name="items_description" rows="3" placeholder="e.g. 5 shirts, 3 trousers, 1 duvet"></textarea>
+          </div>
+
+        {% elif listing.category.slug == 'transport' %}
+          <div class="bn-field">
+            <label for="start_date">Travel date <span class="req">*</span></label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}" required>
+          </div>
+          <div class="bn-field">
+            <label for="quantity">Passengers</label>
+            <input class="bn-input" type="number" id="quantity" name="quantity" min="1" value="1">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="pickup">Pickup location</label>
+            <input class="bn-input" type="text" id="pickup" name="pickup">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="dropoff">Dropoff location</label>
+            <input class="bn-input" type="text" id="dropoff" name="dropoff">
+          </div>
+          <div class="bn-field bn-full">
+            <label for="pickup_time">Pickup time</label>
+            <input class="bn-input" type="time" id="pickup_time" name="pickup_time">
+          </div>
+
+        {% else %}
+          <div class="bn-field">
+            <label for="start_date">Date</label>
+            <input class="bn-input" type="date" id="start_date" name="start_date" min="{{ today }}">
+          </div>
+          <div class="bn-field">
+            <label for="quantity">Quantity</label>
+            <input class="bn-input" type="number" id="quantity" name="quantity" min="1" value="1">
+          </div>
+        {% endif %}
+
+        <div class="bn-field bn-full">
+          <label for="guest_note">Anything else?</label>
+          <textarea class="bn-input" id="guest_note" name="guest_note" rows="2" placeholder="Optional note to the business"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="bn-actions">
+      <a href="{% url 'marketplace:listing_detail' listing.slug %}" class="bn-btn bn-btn-ghost">Cancel</a>
+      <button type="submit" class="bn-btn bn-btn-primary">
+        Continue
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+  <!-- SIDEBAR: summary -->
+  <aside class="bn-aside">
+    <div class="bn-listing">
+      <div class="bn-listing-cover">
+        {% if listing.cover_image %}
+          <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}">
+        {% elif listing.cover_image_url %}
+          <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}">
+        {% else %}
+          <div class="bn-listing-fallback">
+            {% if listing.category.icon == 'bed' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+            {% elif listing.category.icon == 'globe' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            {% elif listing.category.icon == 'utensils' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+            {% elif listing.category.icon == 'shirt' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+            {% elif listing.category.icon == 'car' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="bn-listing-body">
+        <span class="bn-listing-cat">{{ listing.category.name }}</span>
+        <h3 class="bn-listing-title">{{ listing.title }}</h3>
+        {% if listing.location %}
+          <div class="bn-listing-loc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ listing.location }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="bn-summary">
+      <h4>Live price estimate</h4>
+
+      <div class="bn-sum-row">
+        <span>Unit price</span>
+        <strong>KES {{ listing.price|floatformat:0 }}</strong>
+      </div>
+
+      <div class="bn-sum-row">
+        <span>Unit</span>
+        <strong>{{ listing.price_unit }}</strong>
+      </div>
+
+      {# Live quantity / nights line — updated by JS #}
+      <div class="bn-sum-row" id="bnQtyRow" style="display:none;">
+        <span id="bnQtyLabel">× 1</span>
+        <strong id="bnQtySubtotal">KES 0</strong>
+      </div>
+
+      <div class="bn-sum-divider"></div>
+
+      <div class="bn-sum-row bn-sum-total">
+        <span>Estimated total</span>
+        <strong id="bnTotal">KES {{ listing.price|floatformat:0 }}</strong>
+      </div>
+
+      <p class="bn-sum-note">
+        Final amount is confirmed on the next step.
+      </p>
+    </div>
+
+    <div class="bn-tip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <div>
+        <strong>Secure checkout</strong>
+        <span>M-Pesa &amp; card supported. Your receipt is issued instantly.</span>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     BOOKING NEW · FORM + LIVE PRICE PREVIEW + PAYMENT PICKER
+     ================================================================ */
+
+  /* ---- Breadcrumb ---- */
+  .bn-crumb { padding: 18px 0 0; font-size: 12.5px; }
+  .bn-crumb a {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--muted, #5b657a); text-decoration: none; font-weight: 600;
+    padding: 4px 8px; margin-left: -8px; border-radius: 8px;
+    transition: color 0.15s cubic-bezier(0.4,0,0.2,1), background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bn-crumb a:hover { color: var(--brand-1, #6366f1); background: rgba(99,102,241,0.06); }
+  .bn-crumb svg { width: 13px; height: 13px; }
+
+  /* ---- Header ---- */
+  .bn-header { padding: 14px 0 22px; }
+  .bn-header h1 {
+    font-size: 24px; font-weight: 800; color: var(--text, #0b1220);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .bn-header p {
+    font-size: 13.5px; color: var(--muted, #5b657a); margin-bottom: 12px;
+  }
+
+  /* ---- Payment policy chip ---- */
+  .bn-policy {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px 5px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.02em; border: 1px solid transparent;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .bn-policy svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .bn-policy.policy-pay_now           { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+  .bn-policy.policy-pay_deposit       { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bn-policy.policy-pay_on_arrival    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .bn-policy.policy-pay_on_delivery   { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .bn-policy.policy-pay_on_completion { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  /* ---- Layout ---- */
+  .bn-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px; align-items: start; padding-bottom: 60px;
+  }
+  @media (max-width: 900px) { .bn-layout { grid-template-columns: 1fr; } }
+
+  /* ---- Form card ---- */
+  .bn-form {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04),
+                0 1px 3px rgba(15,23,42,0.03);
+    padding: 6px 26px 24px;
+  }
+  .bn-section { padding: 24px 0; border-bottom: 1px solid var(--line-2, #f2f4fa); }
+  .bn-section:last-of-type { border-bottom: none; }
+
+  .bn-section-head {
+    display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px;
+  }
+  .bn-step {
+    flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; font-size: 13px; font-weight: 800;
+    box-shadow: 0 8px 18px -6px rgba(99,102,241,0.45),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .bn-section-head h2 {
+    font-size: 15px; font-weight: 800; color: var(--text, #0b1220);
+    letter-spacing: -0.2px; margin-bottom: 3px;
+  }
+  .bn-section-head p { font-size: 12.5px; color: var(--muted, #5b657a); }
+
+  /* ---- Fields grid ---- */
+  .bn-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px;
+  }
+  .bn-field.bn-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .bn-grid { grid-template-columns: 1fr; } }
+
+  .bn-field { display: flex; flex-direction: column; }
+  .bn-field label {
+    font-size: 12.5px; font-weight: 600; color: var(--text-2, #334155);
+    margin-bottom: 7px;
+  }
+  .bn-field .req { color: #ef4444; margin-left: 2px; }
+
+  .bn-input {
+    width: 100%; padding: 11px 13px;
+    border: 1px solid var(--line, #eaedf4); border-radius: 11px;
+    font-size: 14px; background: #fff; color: var(--text, #0b1220);
+    outline: none;
+    transition: border-color 0.15s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.15s cubic-bezier(0.4,0,0.2,1);
+    font-family: inherit;
+  }
+  .bn-input::placeholder { color: var(--muted-2, #8b94a8); }
+  .bn-input:hover { border-color: #cbd5e1; }
+  .bn-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  textarea.bn-input { resize: vertical; min-height: 60px; }
+
+  /* ---- Payment method picker ---- */
+  .bn-pay-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) {
+    .bn-pay-options { grid-template-columns: 1fr; }
+  }
+
+  .bn-pay-option {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1.5px solid var(--line, #eaedf4);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .bn-pay-option:hover {
+    border-color: #c7d2fe;
+    background: #f8faff;
+  }
+  .bn-pay-option.is-selected {
+    border-color: #6366f1;
+    background: #f5f3ff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.10);
+  }
+  .bn-pay-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px; height: 1px;
+  }
+  .bn-pay-option:focus-within {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+  }
+
+  /* Radio dot */
+  .bn-pay-radio {
+    flex: 0 0 20px;
+    width: 20px; height: 20px;
+    margin-top: 2px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    background: #fff;
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .bn-pay-option input:checked ~ .bn-pay-radio {
+    border-color: #6366f1;
+    background: #6366f1;
+  }
+  .bn-pay-option input:checked ~ .bn-pay-radio::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  /* Icon tile */
+  .bn-pay-icon {
+    flex: 0 0 38px;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .bn-pay-icon svg { width: 18px; height: 18px; }
+
+  /* Icon color shifts on selection (JS adds .is-selected to the <label>) */
+  .bn-pay-option.is-selected .bn-pay-icon {
+    background: #eef2ff; color: #4f46e5; border-color: #c7d2fe;
+  }
+  .bn-pay-option.is-selected[data-policy="pay_on_arrival"] .bn-pay-icon,
+  .bn-pay-option.is-selected[data-policy="pay_now"]       .bn-pay-icon {
+    background: #ecfdf5; color: #047857; border-color: #a7f3d0;
+  }
+  .bn-pay-option.is-selected[data-policy="pay_on_delivery"] .bn-pay-icon,
+  .bn-pay-option.is-selected[data-policy="pay_on_completion"] .bn-pay-icon {
+    background: #fff7ed; color: #c2410c; border-color: #fed7aa;
+  }
+  .bn-pay-option.is-selected[data-policy="pay_deposit"] .bn-pay-icon {
+    background: #fffbeb; color: #92400e; border-color: #fde68a;
+  }
+
+  /* Text body */
+  .bn-pay-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .bn-pay-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.1px;
+  }
+  .bn-pay-desc {
+    font-size: 12.5px;
+    color: var(--muted, #5b657a);
+    line-height: 1.55;
+  }
+
+  /* ---- Actions ---- */
+  .bn-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 22px; margin-top: 22px;
+    border-top: 1px solid var(--line-2, #f2f4fa); flex-wrap: wrap;
+  }
+
+  .bn-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 20px; border-radius: 999px;
+    font-size: 13.5px; font-weight: 700;
+    text-decoration: none; border: 1px solid transparent;
+    font-family: inherit; cursor: pointer; white-space: nowrap;
+    transition: filter 0.15s cubic-bezier(0.4,0,0.2,1),
+                transform 0.08s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.2s cubic-bezier(0.4,0,0.2,1),
+                background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bn-btn svg { width: 14px; height: 14px; }
+  .bn-btn:active { transform: translateY(1px); }
+  .bn-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+  .bn-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 12px 26px -8px rgba(99,102,241,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .bn-btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 34px -8px rgba(99,102,241,0.65);
+  }
+
+  .bn-btn-ghost {
+    background: #fff; color: var(--text-2, #334155);
+    border-color: var(--line, #eaedf4);
+  }
+  .bn-btn-ghost:hover {
+    background: #f8fafc; border-color: #cbd5e1; color: var(--text, #0b1220);
+  }
+
+  /* ---- Sidebar ---- */
+  .bn-aside {
+    display: flex; flex-direction: column; gap: 16px;
+    position: sticky; top: 88px;
+  }
+  @media (max-width: 900px) { .bn-aside { position: static; } }
+
+  .bn-listing {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04),
+                0 1px 3px rgba(15,23,42,0.03);
+  }
+  .bn-listing-cover {
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    display: grid; place-items: center; overflow: hidden;
+  }
+  .bn-listing-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bn-listing-fallback { color: #6366f1; }
+  .bn-listing-fallback svg { width: 42px; height: 42px; opacity: 0.85; }
+  .bn-listing-body { padding: 14px 16px; }
+  .bn-listing-cat {
+    display: inline-block; padding: 3px 8px; border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+    text-transform: uppercase; margin-bottom: 8px;
+    border: 1px solid #e0e7ff;
+  }
+  .bn-listing-title {
+    font-size: 14.5px; font-weight: 700; color: var(--text, #0b1220);
+    letter-spacing: -0.2px; margin-bottom: 6px; line-height: 1.3;
+  }
+  .bn-listing-loc {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--muted, #5b657a);
+  }
+  .bn-listing-loc svg { width: 12px; height: 12px; color: var(--muted-2, #8b94a8); }
+
+  .bn-summary {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 16px; padding: 18px;
+    box-shadow: 0 20px 48px -16px rgba(15,23,42,0.10),
+                0 8px 18px -10px rgba(15,23,42,0.05);
+  }
+  .bn-summary h4 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted, #5b657a); font-weight: 800; margin-bottom: 14px;
+  }
+  .bn-sum-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 0; font-size: 13px; color: var(--muted, #5b657a);
+  }
+  .bn-sum-row span { min-width: 0; }
+  .bn-sum-row strong {
+    color: var(--text, #0b1220); font-weight: 600; white-space: nowrap;
+  }
+  .bn-sum-divider { height: 1px; background: var(--line-2, #f2f4fa); margin: 10px 0; }
+  .bn-sum-total {
+    padding-top: 12px; border-top: 1px dashed var(--line, #eaedf4);
+    margin-top: 6px; font-size: 13.5px;
+    color: var(--text, #0b1220); font-weight: 700;
+  }
+  .bn-sum-total strong {
+    font-size: 18px; color: #6366f1; font-weight: 800;
+    letter-spacing: -0.4px;
+  }
+  .bn-sum-note {
+    margin-top: 10px; font-size: 11.5px;
+    color: var(--muted-2, #8b94a8); line-height: 1.5;
+  }
+
+  .bn-tip {
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    border-radius: 14px; padding: 14px 16px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .bn-tip svg {
+    width: 18px; height: 18px; color: #047857;
+    flex: 0 0 18px; margin-top: 1px;
+  }
+  .bn-tip strong {
+    display: block; font-size: 13px; font-weight: 800;
+    color: #065f46; margin-bottom: 2px;
+  }
+  .bn-tip span {
+    display: block; font-size: 12px; color: #047857; line-height: 1.55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}
+
+
+{% block ga_extra_js %}
+<script>
+  /* ================================================================
+     1. LIVE PRICE PREVIEW — no service fee
+        Subtotal = unit_price × nights  (per_night)
+                 = unit_price × quantity (per_item)
+        Total = Subtotal
+     ================================================================ */
+  (function () {
+    var form = document.getElementById('bnForm');
+    if (!form) return;
+
+    var unitPrice   = parseFloat("{{ listing.price|default:0 }}") || 0;
+    var billingUnit = "{{ billing_unit }}";
+
+    var qtyRow      = document.getElementById('bnQtyRow');
+    var qtyLabel    = document.getElementById('bnQtyLabel');
+    var qtySubtotal = document.getElementById('bnQtySubtotal');
+    var totalEl     = document.getElementById('bnTotal');
+
+    var startEl   = document.getElementById('start_date');
+    var endEl     = document.getElementById('end_date');
+    var qtyEl     = document.getElementById('quantity');
+    var guestsEl  = document.getElementById('guests');
+
+    function fmt(n) {
+      return 'KES ' + Math.round(n).toLocaleString('en-KE');
+    }
+
+    function daysBetween(a, b) {
+      if (!a || !b) return 0;
+      var d1 = new Date(a + 'T00:00:00');
+      var d2 = new Date(b + 'T00:00:00');
+      var diff = Math.round((d2 - d1) / 86400000);
+      return diff > 0 ? diff : 0;
+    }
+
+    function recalc() {
+      var subtotal = 0;
+      var unitCount = 1;
+      var unitWord = '';
+
+      if (billingUnit === 'per_night') {
+        var nights = 0;
+        if (startEl && endEl && startEl.value && endEl.value) {
+          nights = daysBetween(startEl.value, endEl.value);
+        } else if (startEl && startEl.value) {
+          nights = 1;
+        }
+        unitCount = Math.max(nights, 1);
+        unitWord = unitCount === 1 ? 'night' : 'nights';
+        subtotal = unitPrice * unitCount;
+
+        if (qtyRow) qtyRow.style.display = '';
+        if (qtyLabel) qtyLabel.textContent = '× ' + unitCount + ' ' + unitWord;
+        if (qtySubtotal) qtySubtotal.textContent = fmt(subtotal);
+
+      } else {
+        var qty = 1;
+        if (qtyEl && qtyEl.value) qty = parseInt(qtyEl.value, 10) || 1;
+        else if (guestsEl && guestsEl.value) qty = parseInt(guestsEl.value, 10) || 1;
+        unitCount = Math.max(qty, 1);
+        subtotal = unitPrice * unitCount;
+
+        if (qtyRow) qtyRow.style.display = '';
+        if (qtyLabel) qtyLabel.textContent = '× ' + unitCount;
+        if (qtySubtotal) qtySubtotal.textContent = fmt(subtotal);
+      }
+
+      if (totalEl) totalEl.textContent = fmt(subtotal);
+    }
+
+    ['input', 'change'].forEach(function (evt) {
+      if (startEl)  startEl.addEventListener(evt, recalc);
+      if (endEl)    endEl.addEventListener(evt, recalc);
+      if (qtyEl)    qtyEl.addEventListener(evt, recalc);
+      if (guestsEl) guestsEl.addEventListener(evt, recalc);
+    });
+
+    recalc();
+  })();
+
+  /* ================================================================
+     2. PAYMENT METHOD PICKER
+        • Keeps .is-selected in sync (works without :has())
+        • Sets data-policy on each label so icon colors can key off it
+        • Updates the header chip live
+     ================================================================ */
+  (function () {
+    var options = document.querySelectorAll('.bn-pay-option');
+    if (!options.length) return;
+
+    var headerChip = document.getElementById('bnHeaderPolicy');
+
+    // Copy each input's value onto its parent <label data-policy="...">
+    // so CSS can key icon colors off the label regardless of :has() support.
+    options.forEach(function (opt) {
+      var input = opt.querySelector('input[type="radio"]');
+      if (input) {
+        opt.dataset.policy = input.value;
+      }
+    });
+
+    // Human-readable labels for the header chip
+    var chipText = {
+      pay_now:           'Pay online to confirm',
+      pay_deposit:       'Deposit now, rest later',
+      pay_on_arrival:    'Pay on arrival',
+      pay_on_delivery:   'Pay on delivery',
+      pay_on_completion: 'Pay on completion'
+    };
+
+    function sync() {
+      options.forEach(function (opt) {
+        var input = opt.querySelector('input[type="radio"]');
+        var isOn = input && input.checked;
+        opt.classList.toggle('is-selected', isOn);
+
+        if (isOn && headerChip) {
+          var policy = input.value;
+          var txt = chipText[policy] || policy;
+
+          // Update the chip's class + text
+          headerChip.className = 'bn-policy policy-' + policy;
+          headerChip.innerHTML = chipIcon(policy) + txt;
+        }
+      });
+    }
+
+    function chipIcon(policy) {
+      var svgs = {
+        pay_now: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>',
+        pay_deposit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+        pay_on_arrival: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><path d="m15 6 6 6-6 6"/><circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/></svg>',
+        pay_on_delivery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+        pay_on_completion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+      };
+      return svgs[policy] || '';
+    }
+
+    options.forEach(function (opt) {
+      var input = opt.querySelector('input[type="radio"]');
+      if (input) input.addEventListener('change', sync);
+    });
+
+    sync();
+  })();
+</script>
+{% endblock %}

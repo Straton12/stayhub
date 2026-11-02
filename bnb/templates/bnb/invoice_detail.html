@@ -1,0 +1,354 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Invoice {{ invoice.invoice_number }} — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="ivd-head">
+  <div>
+    <a href="{% url 'bnb_invoice_list' %}" class="ivd-back">← Back to invoices</a>
+    <h1 class="ivd-title">Invoice {{ invoice.invoice_number }}</h1>
+    <div class="ivd-badges">
+      {% if invoice.is_overdue %}
+        <span class="ivd-badge ivd-badge-red">Overdue · {{ invoice.days_overdue }} days</span>
+      {% else %}
+        <span class="ivd-badge ivd-badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      {% endif %}
+      {% if invoice.due_date %}
+        <span class="ivd-badge ivd-badge-gray">Due {{ invoice.due_date|date:"d M Y" }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="ivd-head-actions">
+    {% if invoice.balance > 0 %}
+      <a href="{% url 'bnb_payment_add' %}" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Record payment
+      </a>
+    {% endif %}
+    
+    <!-- NEW PRINT BUTTON -->
+    <a href="{% url 'bnb_invoice_print' invoice.id %}" target="_blank" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Print
+    </a>
+    
+    <a href="{% url 'bnb_invoice_list' %}" class="btn secondary">All invoices</a>
+  </div>
+</div>
+
+{# ==================== AMOUNT SUMMARY ==================== #}
+<div class="ivd-summary">
+  <div class="ivd-sum-item">
+    <div class="ivd-sum-label">Total</div>
+    <div class="ivd-sum-value">KES {{ invoice.total|floatformat:0|intcomma }}</div>
+  </div>
+  <div class="ivd-sum-item">
+    <div class="ivd-sum-label">Paid</div>
+    <div class="ivd-sum-value ivd-sum-green">KES {{ invoice.amount_paid|floatformat:0|intcomma }}</div>
+  </div>
+  <div class="ivd-sum-item ivd-sum-highlight">
+    <div class="ivd-sum-label">Balance</div>
+    <div class="ivd-sum-value {% if invoice.balance > 0 %}ivd-sum-red{% else %}ivd-sum-green{% endif %}">
+      KES {{ invoice.balance|floatformat:0|intcomma }}
+    </div>
+  </div>
+</div>
+
+{# ==================== DETAILS GRID ==================== #}
+<div class="ivd-grid">
+
+  {# ---------- Guest + dates ---------- #}
+  <div class="ivd-card">
+    <h3 class="ivd-card-title">Details</h3>
+    <ul class="ivd-kv">
+      <li><span>Number</span><strong class="ivd-mono">{{ invoice.invoice_number }}</strong></li>
+      <li><span>Guest</span><strong>{{ invoice.guest_name }}</strong></li>
+      <li><span>Email</span><strong>{{ invoice.guest_email|default:"—" }}</strong></li>
+      <li><span>Issued</span><strong>{{ invoice.issue_date|date:"d M Y" }}</strong></li>
+      <li><span>Due</span><strong>{{ invoice.due_date|date:"d M Y"|default:"—" }}</strong></li>
+      {% if invoice.booking %}
+        <li>
+          <span>Booking</span>
+          <strong>
+            <a href="{% url 'bnb_booking_detail' invoice.booking.id %}" class="ivd-link">
+              {{ invoice.booking.guest_name }} · #{{ invoice.booking.id }}
+            </a>
+          </strong>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+
+  {# ---------- Amounts ---------- #}
+  <div class="ivd-card">
+    <h3 class="ivd-card-title">Amounts</h3>
+    <ul class="ivd-kv">
+      <li><span>Subtotal</span><strong>KES {{ invoice.subtotal|floatformat:0|intcomma }}</strong></li>
+      <li><span>Tax</span><strong>KES {{ invoice.tax_amount|floatformat:0|intcomma }}</strong></li>
+      <li class="ivd-kv-total"><span>Total</span><strong>KES {{ invoice.total|floatformat:0|intcomma }}</strong></li>
+      <li><span>Paid</span><strong class="ivd-green">KES {{ invoice.amount_paid|floatformat:0|intcomma }}</strong></li>
+      <li class="ivd-kv-total">
+        <span>Balance</span>
+        <strong class="{% if invoice.balance > 0 %}ivd-red{% else %}ivd-green{% endif %}">
+          KES {{ invoice.balance|floatformat:0|intcomma }}
+        </strong>
+      </li>
+    </ul>
+  </div>
+
+  {# ---------- Notes ---------- #}
+  {% if invoice.notes %}
+    <div class="ivd-card ivd-card-wide">
+      <h3 class="ivd-card-title">Notes</h3>
+      <div class="ivd-notes">{{ invoice.notes|linebreaks }}</div>
+    </div>
+  {% endif %}
+
+  {# ---------- Payments ---------- #}
+  <div class="ivd-card ivd-card-wide">
+    <div class="ivd-card-head">
+      <h3 class="ivd-card-title">Payments on this invoice</h3>
+      {% if payments %}
+        <span class="ivd-card-meta">{{ payments|length }} payment{{ payments|length|pluralize }}</span>
+      {% endif %}
+    </div>
+
+    {% if payments %}
+      <div class="table-wrap ivd-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th class="ivd-num">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in payments %}
+              <tr>
+                <td data-label="Date" class="ivd-date">{{ p.payment_date|date:"d M Y" }}</td>
+                <td data-label="Method">{{ p.get_method_display }}</td>
+                <td data-label="Reference">{{ p.reference|default:"—" }}</td>
+                <td data-label="Amount" class="ivd-num">
+                  <strong class="ivd-green">KES {{ p.amount|floatformat:0|intcomma }}</strong>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="ivd-tfoot-label">Total received</td>
+              <td class="ivd-num ivd-tfoot-value">KES {{ total_paid_via_payments|floatformat:0|intcomma }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    {% else %}
+      <div class="ivd-empty">
+        <div class="ivd-empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <h4>No payments recorded</h4>
+        <p class="muted">This invoice has not received any payments yet.</p>
+        {% if invoice.balance > 0 %}
+          <a href="{% url 'bnb_payment_add' %}" class="btn sm" style="margin-top:12px;">
+            Record the first payment
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .ivd-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ivd-back {
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    text-decoration: none; transition: color .15s;
+  }
+  .ivd-back:hover { color: var(--text); }
+  .ivd-title {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+    margin-top: 6px; color: var(--text);
+  }
+  .ivd-badges {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .ivd-badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 700; border: 1px solid transparent;
+  }
+  .ivd-badge-draft   { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .ivd-badge-sent    { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .ivd-badge-paid    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .ivd-badge-overdue { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .ivd-badge-void    { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+  .ivd-badge-red     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .ivd-badge-gray    { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  .ivd-head-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  @media (max-width: 640px) {
+    .ivd-head-actions { width: 100%; }
+    .ivd-head-actions .btn { flex: 1; justify-content: center; }
+  }
+
+  .ivd-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 18px;
+  }
+  @media (max-width: 640px) {
+    .ivd-summary { grid-template-columns: 1fr; }
+  }
+  .ivd-sum-item {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    padding: 16px 18px;
+  }
+  .ivd-sum-highlight {
+    border-color: #cbd5e1; background: linear-gradient(180deg, #ffffff, #f8fafc);
+  }
+  .ivd-sum-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px;
+    font-weight: 800; color: var(--muted-2); margin-bottom: 6px;
+  }
+  .ivd-sum-value {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .ivd-sum-green { color: #047857; }
+  .ivd-sum-red   { color: #b91c1c; }
+
+  .ivd-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 900px) { .ivd-grid { grid-template-columns: 1fr; } }
+
+  .ivd-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    padding: 18px 20px; min-width: 0;
+  }
+  .ivd-card-wide { grid-column: 1 / -1; }
+  @media (max-width: 900px) { .ivd-card-wide { grid-column: auto; } }
+
+  .ivd-card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px;
+  }
+  .ivd-card-title {
+    font-size: 12.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--muted); margin: 0;
+  }
+  .ivd-card-head .ivd-card-title { margin: 0; }
+  .ivd-card-meta {
+    font-size: 11px; font-weight: 700; color: var(--muted-2);
+    padding: 2px 8px; border-radius: 999px; background: #f1f5f9;
+  }
+
+  .ivd-kv { list-style: none; margin: 0; padding: 0; }
+  .ivd-kv li {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid var(--line-2);
+    font-size: 13px; align-items: baseline;
+  }
+  .ivd-kv li:last-child { border-bottom: none; }
+  .ivd-kv span { color: var(--muted); font-weight: 600; }
+  .ivd-kv strong {
+    color: var(--text); font-weight: 700;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .ivd-kv-total {
+    border-top: 2px solid var(--line-2);
+    border-bottom: none !important;
+    margin-top: 4px; padding-top: 12px; padding-bottom: 4px;
+  }
+  .ivd-kv-total strong { font-size: 14px; font-weight: 800; }
+  .ivd-mono {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+  }
+  .ivd-green { color: #047857 !important; }
+  .ivd-red   { color: #b91c1c !important; }
+  .ivd-link { color: var(--brand-1); text-decoration: none; font-weight: 700; }
+  .ivd-link:hover { text-decoration: underline; }
+
+  .ivd-notes {
+    font-size: 13.5px; color: var(--text-2); line-height: 1.65;
+  }
+  .ivd-notes p { margin: 0 0 8px; }
+  .ivd-notes p:last-child { margin-bottom: 0; }
+
+  .ivd-table { margin: 0; }
+  .ivd-table table { width: 100%; }
+  .ivd-table thead th {
+    text-align: left; font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted-2); padding: 10px 12px;
+    border-bottom: 1px solid var(--line-2);
+    background: #f8fafc; white-space: nowrap;
+  }
+  .ivd-table tbody td {
+    padding: 11px 12px; font-size: 12.5px;
+    border-bottom: 1px solid var(--line-2); color: var(--text-2);
+  }
+  .ivd-table tbody tr:last-child td { border-bottom: none; }
+  .ivd-table tbody tr:hover { background: #fafbff; }
+  .ivd-table tfoot td {
+    padding: 12px; border-top: 2px solid var(--line-2);
+    font-size: 13px; background: #fafbfd;
+  }
+  .ivd-tfoot-label {
+    font-weight: 700; color: var(--muted); text-align: right;
+  }
+  .ivd-tfoot-value {
+    font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums;
+  }
+  .ivd-date {
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .ivd-num {
+    text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+
+  .ivd-empty {
+    text-align: center; padding: 32px 20px;
+  }
+  .ivd-empty-ico {
+    width: 48px; height: 48px; margin: 0 auto 10px;
+    border-radius: 12px; display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;
+  }
+  .ivd-empty-ico svg { width: 22px; height: 22px; }
+  .ivd-empty h4 {
+    font-size: 13.5px; font-weight: 800; color: var(--text); margin-bottom: 4px;
+  }
+  .ivd-empty p {
+    font-size: 12.5px; max-width: 260px; margin: 0 auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ivd-back { transition: none; }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends 'bnb/operationssub_base.html' %}
+{% load humanize %}
+{% block title %}Staff — BnB{% endblock %}
+
+{% block content %}
+<div class="st-head">
+  <div>
+    <h1>Staff</h1>
+    <p class="muted">
+      {% if staff %}
+        {{ staff|length }} team member{{ staff|length|pluralize }}.
+      {% else %}
+        No team members yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_staff_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add staff
+  </a>
+</div>
+
+{% if staff %}
+  <div class="table-wrap">
+    <table class="st-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Property</th>
+          <th>Phone</th>
+          <th class="st-num">Salary</th>
+          <th>Status</th>
+          <th class="st-actions-col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in staff %}
+          <tr>
+            <td>
+              <div class="st-name">{{ s.full_name }}</div>
+              {% if s.email %}
+                <div class="st-sub">{{ s.email }}</div>
+              {% endif %}
+            </td>
+            <td><span class="tag">{{ s.get_role_display }}</span></td>
+            <td>{{ s.property.name|default:"—" }}</td>
+            <td>{{ s.phone|default:"—" }}</td>
+            <td class="st-num">KES {{ s.salary|floatformat:0|intcomma }}</td>
+            <td>
+              <span class="tag {% if s.is_active %}green{% else %}gray{% endif %}">
+                {{ s.is_active|yesno:"Active,Inactive" }}
+              </span>
+            </td>
+            <td class="st-actions-col">
+              <a href="{% url 'bnb_staff_edit' s.id %}" class="btn sm secondary">Edit</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="st-empty">
+    <div class="st-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <h4>No staff yet</h4>
+    <p class="muted">Add your team members to track roles and salaries.</p>
+    <a href="{% url 'bnb_staff_add' %}" class="btn" style="margin-top:14px;">Add staff</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .st-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .st-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text);
+  }
+  .st-head p { font-size: 13px; margin-top: 4px; }
+
+  /* ============================================================ */
+  /*  TABLE                                                       */
+  /* ============================================================ */
+  .st-table { width: 100%; border-collapse: collapse; }
+  .st-table thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+  .st-table tbody td {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--line-2);
+    vertical-align: middle;
+  }
+  .st-table tbody tr:last-child td { border-bottom: none; }
+  .st-table tbody tr:hover { background: #f8fafc; }
+
+  .st-name { font-weight: 700; color: var(--text); }
+  .st-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+
+  .st-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .st-actions-col { text-align: right; width: 1%; white-space: nowrap; }
+
+  /* Tag overrides (in case base css doesn't already) */
+  .st-table .tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+  }
+  .st-table .tag.green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .st-table .tag.gray  { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+
+  /* ============================================================ */
+  /*  EMPTY STATE                                                 */
+  /* ============================================================ */
+  .st-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+  }
+  .st-empty-ico {
+    width: 72px; height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: var(--brand-2);
+    border: 1px solid #bae6fd;
+  }
+  .st-empty-ico svg { width: 32px; height: 32px; }
+  .st-empty h4 { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+  .st-empty p { font-size: 13px; max-width: 320px; margin: 0 auto; }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 720px) {
+    .st-table thead { display: none; }
+    .st-table, .st-table tbody, .st-table tr, .st-table td { display: block; width: 100%; }
+    .st-table tbody tr {
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .st-table tbody td {
+      border: none;
+      padding: 4px 0;
+      text-align: left;
+    }
+    .st-table tbody td::before {
+      content: attr(data-label);
+      display: inline-block;
+      min-width: 90px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted-2);
+      margin-right: 8px;
+    }
+    .st-num { text-align: left; }
+    .st-actions-col { text-align: left; padding-top: 8px; }
+    .st-actions-col::before { content: none; }
+  }
+</style>
+{% endblock %}

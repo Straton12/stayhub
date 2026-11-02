@@ -1,0 +1,887 @@
+{% extends 'marketplace/manage/base.html' %}
+{% block title %}My listings — Marketplace{% endblock %}
+{% block page_title %}My marketplace listings{% endblock %}
+
+{% block content %}
+
+<!-- ============ HEADER ============ -->
+<div class="mh-header">
+  <div class="mh-header-text">
+    <h1>My listings</h1>
+    <p>Manage everything you publish on the StayHub marketplace — one place for all categories.</p>
+  </div>
+  <a href="{% url 'marketplace:manage_create' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add new listing
+  </a>
+</div>
+
+<!-- ============ TOP STATS (totals across all listings) ============ -->
+{% if totals %}
+  <div class="mh-totals">
+    <div class="mh-total">
+      <span class="mh-total-ico mh-total-ico-sky">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </span>
+      <div>
+        <span class="mh-total-num">{{ totals.total_views|default:0|floatformat:"0g" }}</span>
+        <span class="mh-total-lbl">Total views</span>
+      </div>
+    </div>
+
+    <div class="mh-total">
+      <span class="mh-total-ico mh-total-ico-emerald">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </span>
+      <div>
+        <span class="mh-total-num">{{ totals.total_bookings|default:0|floatformat:"0g" }}</span>
+        <span class="mh-total-lbl">Bookings</span>
+      </div>
+    </div>
+
+    <div class="mh-total">
+      <span class="mh-total-ico mh-total-ico-amber">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/>
+        </svg>
+      </span>
+      <div>
+        <span class="mh-total-num">{{ totals.total_reviews|default:0|floatformat:"0g" }}</span>
+        <span class="mh-total-lbl">Reviews</span>
+      </div>
+    </div>
+
+    <div class="mh-total">
+      <span class="mh-total-ico mh-total-ico-rose">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </span>
+      <div>
+        <span class="mh-total-num">{{ totals.total_saves|default:0|floatformat:"0g" }}</span>
+        <span class="mh-total-lbl">Saves</span>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<!-- ============ KPI STRIP (status filters) ============ -->
+<div class="mh-kpis">
+  <a href="?" class="mh-kpi {% if not status_filter %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.total }}</div>
+    <div class="mh-kpi-label">All listings</div>
+  </a>
+  <a href="?status=approved" class="mh-kpi mh-kpi-approved {% if status_filter == 'approved' %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.approved }}</div>
+    <div class="mh-kpi-label">
+      <span class="mh-kpi-dot"></span>
+      Live
+    </div>
+  </a>
+  <a href="?status=pending" class="mh-kpi mh-kpi-pending {% if status_filter == 'pending' %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.pending }}</div>
+    <div class="mh-kpi-label">
+      <span class="mh-kpi-dot"></span>
+      In review
+    </div>
+  </a>
+  <a href="?status=draft" class="mh-kpi mh-kpi-draft {% if status_filter == 'draft' %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.draft }}</div>
+    <div class="mh-kpi-label">Drafts</div>
+  </a>
+  <a href="?status=rejected" class="mh-kpi mh-kpi-rejected {% if status_filter == 'rejected' %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.rejected }}</div>
+    <div class="mh-kpi-label">Rejected</div>
+  </a>
+  <a href="?status=unpublished" class="mh-kpi mh-kpi-unpublished {% if status_filter == 'unpublished' %}active{% endif %}">
+    <div class="mh-kpi-value">{{ counts.unpublished }}</div>
+    <div class="mh-kpi-label">Hidden</div>
+  </a>
+</div>
+
+<!-- ============ TOOLBAR (search + category filter) ============ -->
+<form method="get" class="mh-toolbar">
+  <div class="mh-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Search by title or location…" autocomplete="off">
+  </div>
+
+  {% if categories %}
+    <div class="mh-select">
+      <select name="category" aria-label="Filter by category">
+        <option value="">All categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.slug }}"
+            {% if request.GET.category == cat.slug %}selected{% endif %}>
+            {{ cat.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  {% endif %}
+
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+
+  <button type="submit" class="btn secondary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Search
+  </button>
+
+  {% if q or request.GET.category or status_filter %}
+    <a href="{% url 'marketplace:manage_home' %}" class="btn ghost">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+        <polyline points="3 3 3 8 8 8"/>
+      </svg>
+      Reset
+    </a>
+  {% endif %}
+</form>
+
+<!-- ============ LISTINGS GRID ============ -->
+{% if listings %}
+  <div class="mh-grid">
+    {% for listing in listings %}
+      <article class="mh-card mh-card-{{ listing.status }}">
+
+        <!-- Cover -->
+        <div class="mh-cover">
+          {% if listing.cover_image %}
+            <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}" loading="lazy">
+          {% elif listing.cover_image_url %}
+            <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}" loading="lazy">
+          {% else %}
+            <div class="mh-cover-fallback" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="2"/>
+              </svg>
+            </div>
+          {% endif %}
+
+          <span class="mh-status mh-status-{{ listing.status }}">
+            <span class="dot"></span>
+            {{ listing.get_status_display }}
+          </span>
+
+          <span class="mh-cat">{{ listing.category.name }}</span>
+
+          {% if listing.is_blocked_now %}
+            <span class="mh-booked" title="Currently booked">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              Booked
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Body -->
+        <div class="mh-body">
+          <h3 class="mh-title">{{ listing.title }}</h3>
+
+          {% if listing.location %}
+            <div class="mh-loc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span>{{ listing.location }}</span>
+            </div>
+          {% endif %}
+
+          <!-- Micro stats row -->
+          <div class="mh-meta">
+            <span class="mh-meta-item" title="Views">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              {{ listing.view_count|default:0 }}
+            </span>
+            <span class="mh-meta-item" title="Bookings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ listing.booking_count|default:0 }}
+            </span>
+            <span class="mh-meta-item" title="Rating">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/>
+              </svg>
+              {% if listing.review_count %}
+                {{ listing.average_rating|floatformat:1 }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+            <span class="mh-meta-item mh-meta-saves" title="Saves">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              {{ listing.wishlist_count|default:0 }}
+            </span>
+          </div>
+
+          <div class="mh-price">
+            <strong>KES {{ listing.price|floatformat:0 }}</strong>
+            <span>{{ listing.price_unit }}</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="mh-actions">
+            <a href="{% url 'marketplace:manage_edit' listing.pk %}" class="btn sm mh-btn-edit" title="Edit listing">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>
+              </svg>
+              Edit
+            </a>
+
+            {% if listing.status == 'approved' and listing.is_active %}
+              <a href="{% url 'marketplace:manage_toggle' listing.pk %}" class="btn sm secondary"
+                 onclick="return confirm('Hide this listing from the marketplace?');">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                Hide
+              </a>
+            {% else %}
+              <a href="{% url 'marketplace:manage_toggle' listing.pk %}" class="btn sm success"
+                 onclick="return confirm('Publish this listing to the marketplace?');">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Publish
+              </a>
+            {% endif %}
+
+            <a href="{% url 'marketplace:manage_delete' listing.pk %}" class="btn sm danger-outline mh-btn-delete" title="Delete listing">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Footer links / notes -->
+          {% if listing.status == 'approved' and listing.is_active %}
+            <a href="{% url 'marketplace:listing_detail' listing.slug %}" class="mh-view" target="_blank" rel="noopener">
+              View on marketplace
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+          {% elif listing.status == 'rejected' and listing.rejection_note %}
+            <div class="mh-note mh-note-rejected">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{{ listing.rejection_note|truncatechars:120 }}</span>
+            </div>
+          {% elif listing.status == 'pending' %}
+            <div class="mh-note mh-note-pending">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span>Waiting for approval.</span>
+            </div>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+{% else %}
+  {# ----- Two empty states: filtered vs truly empty ----- #}
+  {% if q or request.GET.category or status_filter %}
+    <div class="mh-empty">
+      <div class="mh-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No listings match your filters</h4>
+      <p>
+        {% if q %}No results for "<strong>{{ q }}</strong>". {% endif %}
+        Try a different search or clear the filters.
+      </p>
+      <a href="{% url 'marketplace:manage_home' %}" class="btn secondary mh-empty-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+          <polyline points="3 3 3 8 8 8"/>
+        </svg>
+        Clear filters
+      </a>
+    </div>
+  {% else %}
+    <div class="mh-empty">
+      <div class="mh-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12h20"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <circle cx="12" cy="12" r="10"/>
+        </svg>
+      </div>
+      <h4>No listings yet</h4>
+      <p>Publish your first listing to reach guests across the region.</p>
+      <a href="{% url 'marketplace:manage_create' %}" class="btn mh-empty-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add your first listing
+      </a>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     MY LISTINGS — dashboard-style header + KPI strip + card grid
+     ============================================================ */
+
+  /* Header */
+  .mh-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .mh-header-text { min-width: 0; flex: 1; }
+  .mh-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  .mh-header p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+    max-width: 620px;
+  }
+
+  /* ============ Totals strip ============ */
+  .mh-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .mh-total {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mh-total-ico {
+    width: 40px; height: 40px; flex: 0 0 40px;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .mh-total-ico svg { width: 18px; height: 18px; }
+  .mh-total-ico-sky     { background: #eff6ff; color: #0369a1; border-color: #bae6fd; }
+  .mh-total-ico-emerald { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .mh-total-ico-amber   { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .mh-total-ico-rose    { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+
+  .mh-total-num {
+    display: block;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .mh-total-lbl {
+    display: block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin-top: 3px;
+  }
+
+  /* ============ KPI strip ============ */
+  .mh-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .mh-kpi {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s, background 0.15s;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .mh-kpi:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 6px 16px rgba(99,102,241,0.08);
+    transform: translateY(-1px);
+  }
+  .mh-kpi.active {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+    background: linear-gradient(180deg, #f5f3ff, #eef2ff);
+  }
+  .mh-kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .mh-kpi-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin-top: 5px;
+  }
+  .mh-kpi-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+  .mh-kpi-approved .mh-kpi-label    { color: #047857; }
+  .mh-kpi-pending .mh-kpi-label     { color: #b45309; }
+  .mh-kpi-rejected .mh-kpi-label    { color: #991b1b; }
+
+  /* ============ Toolbar ============ */
+  .mh-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .mh-search {
+    flex: 1 1 280px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .mh-search svg {
+    position: absolute;
+    left: 12px;
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .mh-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .mh-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+
+  .mh-select {
+    position: relative;
+    min-width: 170px;
+  }
+  .mh-select select {
+    width: 100%;
+    padding: 10px 34px 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .mh-select select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .mh-select svg {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 13px; height: 13px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+
+  /* ============ Card grid ============ */
+  .mh-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .mh-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .mh-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+
+  .mh-cover {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    overflow: hidden;
+  }
+  .mh-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .mh-cover-fallback {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    color: rgba(99,102,241,0.7);
+  }
+  .mh-cover-fallback svg { width: 42px; height: 42px; }
+
+  /* Status pill */
+  .mh-status {
+    position: absolute;
+    top: 10px; right: 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.95);
+    color: var(--text);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 6px rgba(15,23,42,0.12);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .mh-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .mh-status-approved    { color: #047857; }
+  .mh-status-pending     { color: #b45309; }
+  .mh-status-draft       { color: #475569; }
+  .mh-status-rejected    { color: #991b1b; }
+  .mh-status-unpublished { color: #475569; }
+
+  /* Category pill */
+  .mh-cat {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.75);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* Booked pill */
+  .mh-booked {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.85);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .mh-booked svg { width: 10px; height: 10px; }
+
+  /* Body */
+  .mh-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .mh-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mh-loc {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mh-loc svg { width: 12px; height: 12px; color: var(--muted-2); flex-shrink: 0; }
+
+  /* Micro stats */
+  .mh-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 11.5px;
+    color: var(--text-2);
+    font-weight: 700;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mh-meta::-webkit-scrollbar { display: none; }
+  .mh-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .mh-meta-item svg { width: 12px; height: 12px; color: var(--muted-2); flex-shrink: 0; }
+  .mh-meta-saves svg { color: #ef4444; }
+
+  /* Price */
+  .mh-price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .mh-price strong {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--brand-1);
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .mh-price span { font-size: 11.5px; color: var(--muted-2); font-weight: 600; }
+
+  /* Actions */
+  .mh-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+  .mh-actions .btn { flex: 0 0 auto; }
+  .mh-btn-edit { flex: 1 1 auto !important; justify-content: center; }
+  .mh-btn-delete { padding: 7px 10px !important; }
+
+  /* Danger outline button (delete) */
+  .btn.danger-outline {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fecaca;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.danger-outline:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+
+  /* Footer links */
+  .mh-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--brand-1);
+  }
+  .mh-view:hover { color: var(--brand-2); text-decoration: underline; }
+  .mh-view svg { width: 12px; height: 12px; }
+
+  /* Notes */
+  .mh-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .mh-note svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+  .mh-note-rejected {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .mh-note-pending {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+
+  /* ============ Empty state ============ */
+  .mh-empty {
+    text-align: center;
+    padding: 56px 24px 48px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mh-empty-ico {
+    width: 72px; height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: var(--brand-1);
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 8px 20px rgba(99,102,241,0.12);
+  }
+  .mh-empty-ico svg { width: 32px; height: 32px; }
+  .mh-empty h4 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .mh-empty p {
+    font-size: 13.5px;
+    color: var(--muted);
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.55;
+  }
+  .mh-empty p strong { color: var(--text); font-weight: 800; }
+  .mh-empty-btn { margin-top: 16px; }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 768px) {
+    .mh-header { flex-direction: column; align-items: stretch; }
+    .mh-header h1 { font-size: 19px; }
+    .mh-header .btn { justify-content: center; width: 100%; }
+    .mh-totals { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .mh-total { padding: 12px 14px; gap: 10px; }
+    .mh-total-ico { width: 34px; height: 34px; flex-basis: 34px; }
+    .mh-total-ico svg { width: 16px; height: 16px; }
+    .mh-total-num { font-size: 17px; }
+    .mh-total-lbl { font-size: 9.5px; }
+    .mh-kpis { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .mh-kpi { padding: 12px 14px; }
+    .mh-kpi-value { font-size: 18px; }
+    .mh-kpi-label { font-size: 9.5px; }
+    .mh-search, .mh-select { flex: 1 1 100%; }
+    .mh-toolbar { gap: 8px; }
+  }
+  @media (max-width: 480px) {
+    .mh-grid { grid-template-columns: 1fr; gap: 12px; }
+    .mh-empty { padding: 44px 18px 32px; border-radius: 16px; }
+    .mh-empty-ico { width: 60px; height: 60px; border-radius: 16px; }
+    .mh-empty-ico svg { width: 26px; height: 26px; }
+    .mh-kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mh-card,
+    .mh-card:hover,
+    .mh-kpi,
+    .mh-kpi:hover {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+</style>
+{% endblock %}

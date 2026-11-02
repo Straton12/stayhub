@@ -1,0 +1,258 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}Record revenue — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_revenue_list' %}" class="rf-back">← Back to revenue</a>
+  <h1 class="rf-title">Record revenue</h1>
+</div>
+
+<form method="post" class="rf" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="rf-alert rf-alert-error" role="alert">
+      {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <section class="rf-section">
+    <div class="rf-grid">
+
+      {# ---------- Title (required, full width) ---------- #}
+      <div class="rf-field rf-full {% if form.title.errors %}has-error{% endif %}">
+        <label for="{{ form.title.id_for_label }}">
+          Title <span class="req">*</span>
+        </label>
+        {{ form.title }}
+        {% for err in form.title.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Property ---------- #}
+      <div class="rf-field {% if form.property.errors %}has-error{% endif %}">
+        <label for="{{ form.property.id_for_label }}">Property</label>
+        {{ form.property }}
+        {% for err in form.property.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Linked booking ---------- #}
+      <div class="rf-field {% if form.booking.errors %}has-error{% endif %}">
+        <label for="{{ form.booking.id_for_label }}">Linked booking</label>
+        {{ form.booking }}
+        {% for err in form.booking.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Source ---------- #}
+      <div class="rf-field {% if form.source.errors %}has-error{% endif %}">
+        <label for="{{ form.source.id_for_label }}">Source</label>
+        {{ form.source }}
+        {% for err in form.source.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Amount (required) ---------- #}
+      <div class="rf-field {% if form.amount.errors %}has-error{% endif %}">
+        <label for="{{ form.amount.id_for_label }}">
+          Amount (KES) <span class="req">*</span>
+        </label>
+        {{ form.amount }}
+        {% for err in form.amount.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Date ---------- #}
+      <div class="rf-field {% if form.revenue_date.errors %}has-error{% endif %}">
+        <label for="{{ form.revenue_date.id_for_label }}">Date</label>
+        {{ form.revenue_date }}
+        {% for err in form.revenue_date.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Notes (full width) ---------- #}
+      <div class="rf-field rf-full {% if form.notes.errors %}has-error{% endif %}">
+        <label for="{{ form.notes.id_for_label }}">Notes</label>
+        {{ form.notes }}
+        {% for err in form.notes.errors %}<small class="rf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+    </div>
+  </section>
+
+  <div class="rf-actions">
+    <a href="{% url 'bnb_revenue_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">Record revenue</button>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .mb { margin-bottom: 18px; }
+  .rf-back {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .rf-back:hover { color: var(--text); }
+  .rf-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-top: 6px;
+    color: var(--text);
+  }
+
+  /* ============================================================ */
+  /*  FORM SHELL                                                  */
+  /* ============================================================ */
+  .rf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 8px 26px 24px;
+    box-shadow: var(--shadow-sm);
+    max-width: 920px;
+  }
+  @media (max-width: 640px) {
+    .rf { padding: 8px 16px 18px; border-radius: 14px; }
+  }
+
+  .rf-section { padding: 22px 0; }
+
+  .rf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .rf-field.rf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .rf-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================ */
+  /*  FIELDS                                                      */
+  /* ============================================================ */
+  .rf-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .rf-field .req { color: #ef4444; margin-left: 2px; }
+
+  .rf-field input:not([type="checkbox"]),
+  .rf-field select,
+  .rf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .rf-field textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+
+  .rf-field select {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 32px;
+  }
+
+  .rf-field input:not([type="checkbox"]):hover,
+  .rf-field select:hover,
+  .rf-field textarea:hover {
+    border-color: #cbd5e1;
+  }
+  .rf-field input:not([type="checkbox"]):focus,
+  .rf-field select:focus,
+  .rf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .rf-field input[type="number"]::-webkit-outer-spin-button,
+  .rf-field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .rf-field input[type="number"] { -moz-appearance: textfield; }
+
+  /* ============================================================ */
+  /*  VALIDATION                                                  */
+  /* ============================================================ */
+  .rf-field.has-error input:not([type="checkbox"]),
+  .rf-field.has-error select,
+  .rf-field.has-error textarea {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .rf-field.has-error input:not([type="checkbox"]):focus,
+  .rf-field.has-error select:focus,
+  .rf-field.has-error textarea:focus {
+    border-color: #dc2626;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.14);
+  }
+  .rf-error {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #b91c1c;
+  }
+
+  /* ============================================================ */
+  /*  FORM ALERT                                                  */
+  /* ============================================================ */
+  .rf-alert {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .rf-alert p { margin: 0; }
+  .rf-alert p + p { margin-top: 4px; }
+  .rf-alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  /* ============================================================ */
+  /*  ACTIONS                                                     */
+  /* ============================================================ */
+  .rf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .rf-actions { flex-direction: column-reverse; }
+    .rf-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rf-field input, .rf-field select, .rf-field textarea,
+    .rf-back { transition: none; }
+  }
+</style>
+{% endblock %}

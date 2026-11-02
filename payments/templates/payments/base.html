@@ -1,0 +1,58 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{% block pay_title %}Payment{% endblock %} — StayHub{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pay-wrap {
+    padding: 26px 0 60px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .pay-crumb {
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 18px 0 0;
+  }
+  .pay-crumb a { color: var(--muted); }
+  .pay-crumb a:hover { color: var(--brand-1); }
+
+  .pay-header { padding: 12px 0 20px; text-align: center; }
+  .pay-header h1 {
+    font-size: 24px; font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+  .pay-header p { font-size: 13.5px; color: var(--muted); }
+
+  .pay-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-md);
+    padding: 26px;
+  }
+
+  .pay-actions {
+    display: flex; justify-content: flex-end;
+    gap: 10px; margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  .pay-actions .mkt-btn { padding: 12px 18px; font-size: 13.5px; }
+</style>
+{% block pay_extra_head %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="mkt-container">
+  <div class="pay-wrap">
+    <div class="pay-crumb">
+      <a href="{% url 'guestaccount:home' %}">← My bookings</a>
+    </div>
+    {% block pay_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% block pay_extra_js %}{% endblock %}
+{% endblock %}

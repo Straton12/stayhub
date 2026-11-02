@@ -1,0 +1,296 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit item{% else %}Add menu item{% endif %} — Restaurant{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit item{% else %}Add menu item{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="pf-header">
+  <a href="{% url 'restaurant_menu_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to menu
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ item.name }}"{% else %}Add a menu item{% endif %}</h1>
+  <p>Describe the dish so guests know exactly what to expect.</p>
+</div>
+
+<form method="post" class="pf-form" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  {% if form.errors %}
+    <div class="messages mb">
+      {% for field in form %}
+        {% for err in field.errors %}
+          <li class="error"><strong>{{ field.label }}:</strong> {{ err }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for err in form.non_field_errors %}
+        <li class="error">{{ err }}</li>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="pf-layout">
+    <div class="pf-main">
+
+      <!-- STEP 1: Basics -->
+      <section class="pf-section">
+        <header class="pf-section-head">
+          <span class="pf-step">1</span>
+          <div>
+            <h2>Item basics</h2>
+            <p>Name, category, and pricing.</p>
+          </div>
+        </header>
+
+        <div class="pf-grid">
+          <div class="pf-field pf-full">
+            <label for="{{ form.name.id_for_label }}">Item name <span class="req">*</span></label>
+            {{ form.name }}
+          </div>
+
+          <div class="pf-field">
+            <label for="{{ form.category.id_for_label }}">Category</label>
+            {{ form.category }}
+          </div>
+
+          <div class="pf-field">
+            <label for="{{ form.price.id_for_label }}">Selling Price (KES) <span class="req">*</span></label>
+            <div class="pf-prefix">
+              <span class="pf-prefix-label">KES</span>
+              {{ form.price }}
+            </div>
+          </div>
+
+          <div class="pf-field">
+            <label for="{{ form.cost_price.id_for_label }}">
+              Cost price <span class="pf-hint">optional</span>
+            </label>
+            <div class="pf-prefix">
+              <span class="pf-prefix-label">KES</span>
+              {{ form.cost_price }}
+            </div>
+            <div class="pf-help">If left at 0, cost is auto-calculated from the recipe ingredients.</div>
+          </div>
+
+          <div class="pf-field">
+            <label for="{{ form.preparation_time.id_for_label }}">Preparation time (mins)</label>
+            <div class="pf-suffix">
+              {{ form.preparation_time }}
+              <span class="pf-suffix-label">min</span>
+            </div>
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="{{ form.short_description.id_for_label }}">Short description</label>
+            {{ form.short_description }}
+            <div class="pf-help">One line shown on marketplace cards.</div>
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="{{ form.description.id_for_label }}">Full description</label>
+            {{ form.description }}
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="{{ form.cover_image_url.id_for_label }}">Cover image URL</label>
+            {{ form.cover_image_url }}
+            <div class="pf-help">Paste a link to a photo of this dish to make it look appetizing.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: Details & Flags -->
+      <section class="pf-section">
+        <header class="pf-section-head">
+          <span class="pf-step">2</span>
+          <div>
+            <h2>Details &amp; flags</h2>
+            <p>Helps guests with dietary needs or preferences.</p>
+          </div>
+        </header>
+
+        <div class="pf-grid">
+          <div class="pf-field pf-full">
+            <label for="{{ form.allergens.id_for_label }}">Allergens</label>
+            {{ form.allergens }}
+            <div class="pf-help">Separate with commas (e.g. nuts, dairy, gluten).</div>
+          </div>
+
+          <div class="pf-field">
+            <label class="pf-check">
+              {{ form.is_vegetarian }}
+              <span>Suitable for Vegetarians</span>
+            </label>
+          </div>
+          
+          <div class="pf-field">
+            <label class="pf-check">
+              {{ form.is_spicy }}
+              <span>Spicy</span>
+            </label>
+          </div>
+          
+          <div class="pf-field pf-full" style="margin-top:8px;">
+            <label class="pf-check">
+              {{ form.is_available }}
+              <span>Available now (uncheck to hide from menu)</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="pf-actions">
+        <a href="{% url 'restaurant_menu_list' %}" class="btn secondary">Cancel</a>
+        <button type="submit" class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          {% if mode == 'edit' %}Save changes{% else %}Add to menu{% endif %}
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Aside -->
+    <aside class="pf-aside">
+      <div class="pf-tip">
+        <span class="pf-tip-icon tip-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </span>
+        <div>
+          <strong>What happens next?</strong>
+          <ol class="pf-list">
+            <li>Item is added to your menu.</li>
+            <li>You can take orders for it immediately.</li>
+            <li>If your restaurant profile is published, it will appear on the marketplace.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="pf-tip">
+        <span class="pf-tip-icon tip-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+            <path d="m2 17 10 5 10-5"/>
+            <path d="m2 12 10 5 10-5"/>
+          </svg>
+        </span>
+        <div>
+          <strong>Pro Tips</strong>
+          <ul class="pf-list">
+            <li>Set a realistic prep time so guests know how long delivery will take.</li>
+            <li>Flag allergens clearly to protect your guests.</li>
+            <li>Link a <strong>Recipe</strong> after saving to automatically track ingredient stock.</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     FORM LAYOUT
+     ============================================================ */
+  .pf-header { margin-bottom: 20px; max-width: 800px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    margin-bottom: 10px; padding: 4px 8px 4px 4px; border-radius: 8px;
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--brand-1); background: rgba(245,158,11,0.06); }
+  .back-link svg { width: 14px; height: 14px; }
+  .pf-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; color: var(--text); }
+  .pf-header p  { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  
+  .pf-form { width: 100%; }
+  .pf-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+  @media (max-width: 1000px) { .pf-layout { grid-template-columns: 1fr; } }
+  
+  .pf-main { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 6px 26px 24px; }
+  .pf-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .pf-section:last-of-type { border-bottom: none; }
+  
+  .pf-section-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .pf-step { 
+    flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(245,158,11,0.35); 
+  }
+  .pf-section-head h2 { font-size: 15.5px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; margin-bottom: 3px; }
+  .pf-section-head p { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  
+  .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .pf-field.pf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .pf-grid { grid-template-columns: 1fr; } }
+  
+  .pf-field { display: flex; flex-direction: column; }
+  .pf-field label { font-size: 12.5px; font-weight: 700; color: var(--text-2); letter-spacing: 0.2px; margin-bottom: 6px; }
+  .pf-field .req { color: #ef4444; margin-left: 2px; }
+  .pf-hint { font-weight: 500; font-size: 11px; color: var(--muted-2); }
+  .pf-help { font-size: 11px; color: var(--muted-2); margin-top: 4px; line-height: 1.4; }
+  
+  .pf-field .input { margin-bottom: 0; }
+  .pf-field input[type="text"], 
+  .pf-field input[type="number"], 
+  .pf-field input[type="url"], 
+  .pf-field select, 
+  .pf-field textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-size: 14px; background: #fff; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pf-field input:focus, .pf-field select:focus, .pf-field textarea:focus {
+    outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.15);
+  }
+
+  /* Prefix / Suffix */
+  .pf-prefix, .pf-suffix { position: relative; display: flex; align-items: center; }
+  .pf-prefix-label, .pf-suffix-label {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 12px; font-weight: 700; color: var(--muted); pointer-events: none;
+  }
+  .pf-prefix-label { left: 14px; }
+  .pf-prefix input { padding-left: 46px !important; }
+  .pf-suffix-label { right: 14px; }
+  .pf-suffix input { padding-right: 44px !important; }
+
+  /* Custom Checkboxes */
+  .pf-check { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); font-weight: 600; cursor: pointer; user-select: none; margin-top: 8px; }
+  .pf-check input[type="checkbox"] { 
+    appearance: none; width: 20px; height: 20px; border: 2px solid #cbd5e1; border-radius: 6px;
+    background: #fff; position: relative; cursor: pointer; flex: 0 0 20px; transition: all 0.15s; 
+  }
+  .pf-check input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); border-color: transparent; }
+  .pf-check input[type="checkbox"]:checked::after { 
+    content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); 
+  }
+  .pf-check input[type="checkbox"]:focus-visible { outline: 2px solid var(--brand-1); outline-offset: 2px; }
+
+  /* Actions */
+  .pf-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 22px; margin-top: 6px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+  
+  /* Aside Tips */
+  .pf-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+  @media (max-width: 1000px) { .pf-aside { position: static; } }
+  .pf-tip { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .pf-tip-icon { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .pf-tip-icon svg { width: 16px; height: 16px; }
+  .tip-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .pf-tip strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .pf-list { font-size: 12.5px; color: var(--muted); line-height: 1.6; padding-left: 18px; margin: 0; }
+  .pf-list li { margin-bottom: 4px; }
+</style>
+{% endblock %}

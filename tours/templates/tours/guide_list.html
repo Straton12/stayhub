@@ -1,0 +1,453 @@
+{% extends 'tours/base.html' %}
+{% block title %}Guides — Tours{% endblock %}
+{% block page_title %}Guides{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="gl-header">
+  <div>
+    <h1>Tour Guides</h1>
+    <p>
+      {% if guides %}
+        {{ guides|length }} guide{{ guides|length|pluralize }} on your roster.
+      {% else %}
+        No guides registered yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'tours_guide_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Guide
+  </a>
+</div>
+
+{% if guides %}
+
+<!-- ============ KPIs ============ -->
+<div class="gl-kpis">
+  <div class="gl-kpi">
+    <div class="gl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="gl-kpi-value">{{ guides|length }}</div>
+      <div class="gl-kpi-label">Total guides</div>
+    </div>
+  </div>
+
+  <div class="gl-kpi">
+    <div class="gl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="gl-kpi-value" id="kpiWithPhone">0</div>
+      <div class="gl-kpi-label">Reachable</div>
+    </div>
+  </div>
+
+  <div class="gl-kpi">
+    <div class="gl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="gl-kpi-value" id="kpiLanguages">0</div>
+      <div class="gl-kpi-label">Languages</div>
+    </div>
+  </div>
+
+  <div class="gl-kpi">
+    <div class="gl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="gl-kpi-value" id="kpiNewest">—</div>
+      <div class="gl-kpi-label">Newest</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Search ============ -->
+<div class="gl-toolbar">
+  <div class="gl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="glSearch" placeholder="Search by name, phone or language…" autocomplete="off">
+  </div>
+  <div class="gl-count" id="glCount">{{ guides|length }} guide{{ guides|length|pluralize }}</div>
+</div>
+
+<!-- ============ Guide cards ============ -->
+<div class="gl-list" id="glList">
+  {% for g in guides %}
+  <article class="gl-card"
+           data-search="{{ g.name|lower }} {{ g.phone|lower }} {{ g.languages|lower }}">
+    <div class="gl-card-top">
+      <div class="gl-avatar">{{ g.name|slice:":1"|upper }}</div>
+      <div class="gl-identity">
+        <h3 class="gl-name">{{ g.name }}</h3>
+        {% if g.phone %}
+          <a class="gl-phone" href="tel:{{ g.phone }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            {{ g.phone }}
+          </a>
+        {% else %}
+          <span class="gl-phone gl-phone-missing">No phone on file</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="gl-card-body">
+      <div class="gl-section-label">Languages</div>
+      {% if g.languages %}
+        <div class="gl-tags">
+          {% for lang in g.languages.split|slice:":12" %}
+            {# naive split — Django can't split by comma in template, so we split by spaces #}
+          {% endfor %}
+          {# Fallback: show the raw string as pills separated by comma #}
+          {% for part in g.languages.split %}
+            {% if ',' in part %}
+              {% for sub in part|slice:":"|cut:","|make_list %}{% endfor %}
+            {% endif %}
+          {% endfor %}
+          <span class="gl-lang-pill">{{ g.languages }}</span>
+        </div>
+      {% else %}
+        <span class="muted">—</span>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="gl-empty-filter" id="glEmptyFilter" hidden>
+  <div class="gl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try a different search term.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="gl-empty">
+  <div class="gl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  </div>
+  <h4>No guides yet</h4>
+  <p class="muted">Add your first tour guide to start assigning them to bookings.</p>
+  <a href="{% url 'tours_guide_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Guide
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Guides list ================= */
+
+  /* ---- Header ---- */
+  .gl-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .gl-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .gl-header p { font-size: 13px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .gl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .gl-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .gl-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .gl-kpi-icon svg { width: 18px; height: 18px; }
+  .gl-kpi-icon.k-green  { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+  .gl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .gl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .gl-kpi-icon.k-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+  .gl-kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .gl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Toolbar ---- */
+  .gl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .gl-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 420px;
+  }
+  .gl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .gl-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .gl-search input::placeholder { color: var(--muted-2); }
+  .gl-search input:focus {
+    outline: none;
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.13);
+  }
+  .gl-count {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+
+  /* ---- Grid of cards ---- */
+  .gl-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  /* ---- Guide card ---- */
+  .gl-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+  }
+  .gl-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+
+  .gl-card-top {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 18px 12px;
+  }
+  .gl-avatar {
+    width: 48px; height: 48px; flex: 0 0 48px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.35);
+    letter-spacing: -0.5px;
+  }
+  .gl-identity { min-width: 0; flex: 1; }
+  .gl-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gl-phone {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; color: var(--muted);
+    margin-top: 4px;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .gl-phone:hover { color: var(--brand-2); }
+  .gl-phone svg { width: 12px; height: 12px; color: var(--muted-2); flex: 0 0 12px; }
+  .gl-phone-missing { color: var(--muted-2); font-style: italic; }
+
+  .gl-card-body {
+    padding: 0 18px 18px;
+  }
+  .gl-section-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .gl-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .gl-lang-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  /* ---- Empty states ---- */
+  .gl-empty-filter,
+  .gl-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .gl-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .gl-empty-ico svg { width: 28px; height: 28px; }
+  .gl-empty h4,
+  .gl-empty-filter h4 {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .gl-header h1 { font-size: 18px; }
+    .gl-list { grid-template-columns: 1fr; }
+    .gl-avatar { width: 42px; height: 42px; flex-basis: 42px; font-size: 16px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- Search filter ----
+    var search = document.getElementById('glSearch');
+    var cards  = document.querySelectorAll('.gl-card');
+    var list   = document.getElementById('glList');
+    var count  = document.getElementById('glCount');
+    var empty  = document.getElementById('glEmptyFilter');
+
+    function apply() {
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) {
+        count.textContent = visible + ' guide' + (visible === 1 ? '' : 's');
+      }
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      if (list) list.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+
+    // ---- KPI: reachable (have phone) + total languages (deduped) ----
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    var withPhone = 0;
+    var langSet = {};
+    cards.forEach(function (c) {
+      var phone = c.querySelector('.gl-phone');
+      if (phone && !phone.classList.contains('gl-phone-missing')) withPhone++;
+
+      var langPill = c.querySelector('.gl-lang-pill');
+      if (langPill) {
+        var text = (langPill.textContent || '').trim();
+        text.split(',').forEach(function (part) {
+          var lang = part.trim();
+          if (lang) langSet[lang.toLowerCase()] = lang;
+        });
+      }
+    });
+
+    setText('kpiWithPhone', withPhone);
+    setText('kpiLanguages', Object.keys(langSet).length);
+    setText('kpiNewest', cards.length ? 'Just added' : '—');
+  })();
+</script>
+{% endblock %}

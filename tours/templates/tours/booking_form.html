@@ -1,0 +1,624 @@
+{% extends 'tours/base.html' %}
+{% block title %}New Tour Booking — Tours{% endblock %}
+{% block page_title %}New Tour Booking{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="tb-header">
+  <a href="{% url 'tours_booking_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to bookings
+  </a>
+  <h1>Create a tour booking</h1>
+  <p>Record a customer's trip, choose the package and travel date, and capture the payment status.</p>
+</div>
+
+{% if not packages %}
+<!-- ============ No packages state ============ -->
+<div class="tb-empty">
+  <div class="tb-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M2 12h20"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  </div>
+  <h4>No tour packages available</h4>
+  <p class="muted">You need at least one tour package before you can create a booking.</p>
+  <a href="{% url 'tours_package_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Package
+  </a>
+</div>
+{% else %}
+
+<!-- ============ Form ============ -->
+<form method="post" class="tb-form" novalidate>
+  {% csrf_token %}
+
+  <div class="tb-layout">
+
+    <!-- ============ Main ============ -->
+    <div class="tb-main">
+
+      <!-- Section: Package & date -->
+      <section class="tb-section">
+        <header class="tb-section-head">
+          <span class="tb-step">1</span>
+          <div>
+            <h2>Package &amp; travel date</h2>
+            <p>Which tour, and when the customer is travelling.</p>
+          </div>
+        </header>
+
+        <div class="tb-grid">
+          <div class="tb-field tb-full">
+            <label for="id_package">Tour package <span class="req">*</span></label>
+            <select name="package" id="id_package" required>
+              <option value="" disabled selected>Select a tour package…</option>
+              {% for p in packages %}
+                <option value="{{ p.id }}"
+                        data-price="{{ p.price_per_person }}"
+                        data-days="{{ p.duration_days }}">
+                  {{ p.name }} — {{ p.destination }} ({{ p.duration_days }} day{{ p.duration_days|pluralize }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="tb-field">
+            <label for="id_travel_date">Travel date <span class="req">*</span></label>
+            <input class="input" type="date" id="id_travel_date" name="travel_date" required>
+          </div>
+
+          <div class="tb-field">
+            <label for="id_travellers_count">Travellers</label>
+            <input class="input" type="number" id="id_travellers_count"
+                   name="travellers_count" min="1" step="1" value="1">
+          </div>
+
+          <div class="tb-field tb-full">
+            <div class="tb-hint-line" id="tbPackageHint" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12h20"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              <span id="tbPackageHintText">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Customer -->
+      <section class="tb-section">
+        <header class="tb-section-head">
+          <span class="tb-step">2</span>
+          <div>
+            <h2>Customer information</h2>
+            <p>Who is booking, and how to reach them.</p>
+          </div>
+        </header>
+
+        <div class="tb-grid">
+          <div class="tb-field tb-full">
+            <label for="id_customer_name">Customer name <span class="req">*</span></label>
+            <input class="input" type="text" id="id_customer_name" name="customer_name"
+                   placeholder="e.g. Jane Mwangi" required>
+          </div>
+
+          <div class="tb-field">
+            <label for="id_customer_email">Email</label>
+            <input class="input" type="email" id="id_customer_email" name="customer_email"
+                   placeholder="customer@example.com">
+          </div>
+
+          <div class="tb-field">
+            <label for="id_customer_phone">Phone</label>
+            <input class="input" type="text" id="id_customer_phone" name="customer_phone"
+                   placeholder="+254 7XX XXX XXX">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Payment -->
+      <section class="tb-section">
+        <header class="tb-section-head">
+          <span class="tb-step">3</span>
+          <div>
+            <h2>Payment</h2>
+            <p>How much the trip costs and how much has been paid.</p>
+          </div>
+        </header>
+
+        <div class="tb-grid">
+          <div class="tb-field">
+            <label for="id_total_amount">Total amount</label>
+            <div class="tb-money">
+              <span class="tb-money-prefix">KES</span>
+              <input class="input" type="number" id="id_total_amount" name="total_amount"
+                     step="0.01" min="0" placeholder="0.00">
+            </div>
+            <p class="tb-hint">Auto-suggested from the package price × travellers.</p>
+          </div>
+
+          <div class="tb-field">
+            <label for="id_amount_paid">Amount paid</label>
+            <div class="tb-money">
+              <span class="tb-money-prefix">KES</span>
+              <input class="input" type="number" id="id_amount_paid" name="amount_paid"
+                     step="0.01" min="0" placeholder="0.00">
+            </div>
+            <p class="tb-hint">Leave at 0 for unpaid bookings.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="tb-actions">
+        <a href="{% url 'tours_booking_list' %}" class="btn secondary">Cancel</a>
+        <button type="submit" class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          Create Booking
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ Aside ============ -->
+    <aside class="tb-aside">
+
+      <div class="tb-summary">
+        <h4>Booking summary</h4>
+
+        <div class="tb-sum-row">
+          <span>Package</span>
+          <strong id="sumPackage">—</strong>
+        </div>
+        <div class="tb-sum-row">
+          <span>Destination</span>
+          <strong id="sumDestination">—</strong>
+        </div>
+        <div class="tb-sum-row">
+          <span>Travel date</span>
+          <strong id="sumDate">—</strong>
+        </div>
+        <div class="tb-sum-row">
+          <span>Travellers</span>
+          <strong id="sumTravellers">—</strong>
+        </div>
+        <div class="tb-sum-row">
+          <span>Duration</span>
+          <strong id="sumDuration">—</strong>
+        </div>
+
+        <div class="tb-sum-divider"></div>
+
+        <div class="tb-sum-row">
+          <span>Total</span>
+          <strong id="sumTotal">KES 0.00</strong>
+        </div>
+        <div class="tb-sum-row">
+          <span>Paid</span>
+          <strong id="sumPaid">KES 0.00</strong>
+        </div>
+        <div class="tb-sum-row tb-sum-balance">
+          <span>Balance</span>
+          <strong id="sumBalance">KES 0.00</strong>
+        </div>
+      </div>
+
+      <div class="tb-tip">
+        <div class="tb-tip-icon accent-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+        <div>
+          <h4>Tip</h4>
+          <p class="tb-tip-text">
+            When you pick a package, the total is auto-filled using its price × travellers. You can always override it — for example, for a group discount.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+</form>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Tour Booking form ================= */
+
+  /* ---- Header ---- */
+  .tb-header { margin-bottom: 20px; max-width: 720px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--brand-2); background: rgba(16,185,129,0.08); }
+  .back-link svg { width: 14px; height: 14px; }
+
+  .tb-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .tb-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---- Layout ---- */
+  .tb-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .tb-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form card ---- */
+  .tb-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 24px 22px;
+  }
+
+  .tb-section {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .tb-section:last-of-type { border-bottom: none; }
+
+  .tb-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .tb-step {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(16,185,129,0.35);
+  }
+  .tb-section-head h2 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px; margin-bottom: 2px;
+  }
+  .tb-section-head p {
+    font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  }
+
+  /* ---- Grid ---- */
+  .tb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .tb-field.tb-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .tb-grid { grid-template-columns: 1fr; }
+  }
+
+  .tb-field { display: flex; flex-direction: column; }
+  .tb-field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .tb-field .req { color: var(--danger); margin-left: 2px; }
+  .tb-field .input,
+  .tb-field select,
+  .tb-field textarea { margin-bottom: 0; }
+
+  .tb-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ---- Package hint ---- */
+  .tb-hint-line {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(16,185,129,0.08);
+    border: 1px dashed rgba(16,185,129,0.35);
+    color: var(--brand-2);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .tb-hint-line svg { width: 14px; height: 14px; }
+
+  /* ---- Money input ---- */
+  .tb-money {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .tb-money .tb-money-prefix {
+    position: absolute;
+    left: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+    pointer-events: none;
+  }
+  .tb-money .input { padding-left: 46px; }
+
+  /* ---- Actions ---- */
+  .tb-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ---- Aside ---- */
+  .tb-aside {
+    display: flex; flex-direction: column; gap: 14px;
+    position: sticky; top: 84px;
+  }
+  @media (max-width: 960px) {
+    .tb-aside { position: static; }
+  }
+
+  .tb-summary {
+    background:
+      radial-gradient(300px 120px at 0% 0%, rgba(16,185,129,0.10), transparent 60%),
+      #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tb-summary h4 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .tb-sum-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tb-sum-row strong {
+    color: var(--text); font-weight: 700;
+    font-size: 13.5px;
+    text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .tb-sum-divider {
+    height: 1px;
+    background: var(--line-2);
+    margin: 8px 0;
+  }
+  .tb-sum-balance {
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+  }
+  .tb-sum-balance strong {
+    font-size: 15px;
+    color: var(--brand-2);
+  }
+  .tb-sum-balance.is-due strong { color: var(--warn); }
+  .tb-sum-balance.is-paid strong { color: var(--success); }
+
+  /* ---- Tip card ---- */
+  .tb-tip {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 14px;
+    padding: 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .tb-tip-icon {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .tb-tip-icon svg { width: 14px; height: 14px; }
+  .tb-tip h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #065f46;
+    margin-bottom: 4px;
+  }
+  .tb-tip-text { font-size: 12.5px; color: #065f46; line-height: 1.55; }
+
+  /* ---- Empty state ---- */
+  .tb-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tb-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .tb-empty-ico svg { width: 28px; height: 28px; }
+  .tb-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .tb-form { padding: 4px 16px 16px; }
+    .tb-header h1 { font-size: 18px; }
+    .tb-actions .btn { flex: 1; justify-content: center; }
+    .tb-sum-row strong { max-width: 150px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---------- Element refs ----------
+    var pkgSel    = document.getElementById('id_package');
+    var dateEl    = document.getElementById('id_travel_date');
+    var travEl    = document.getElementById('id_travellers_count');
+    var totalEl   = document.getElementById('id_total_amount');
+    var paidEl    = document.getElementById('id_amount_paid');
+
+    var hintBox   = document.getElementById('tbPackageHint');
+    var hintText  = document.getElementById('tbPackageHintText');
+
+    var sumPackage     = document.getElementById('sumPackage');
+    var sumDestination = document.getElementById('sumDestination');
+    var sumDate        = document.getElementById('sumDate');
+    var sumTravellers  = document.getElementById('sumTravellers');
+    var sumDuration    = document.getElementById('sumDuration');
+    var sumTotal       = document.getElementById('sumTotal');
+    var sumPaid        = document.getElementById('sumPaid');
+    var sumBalance     = document.getElementById('sumBalance');
+    var sumBalanceRow  = sumBalance ? sumBalance.closest('.tb-sum-balance') : null;
+
+    // Track whether the user has manually edited total_amount
+    var totalEdited = false;
+    if (totalEl) {
+      totalEl.addEventListener('input', function () { totalEdited = true; });
+    }
+
+    function fmt(n) {
+      var num = Number(n) || 0;
+      return 'KES ' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtDate(v) {
+      if (!v) return '—';
+      try {
+        var d = new Date(v + 'T00:00:00');
+        return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+      } catch (e) { return v; }
+    }
+
+    function selectedOption() {
+      if (!pkgSel || !pkgSel.value) return null;
+      return pkgSel.options[pkgSel.selectedIndex] || null;
+    }
+
+    function update(opts) {
+      opts = opts || {};
+      var opt = selectedOption();
+
+      // Package + destination + duration
+      if (opt) {
+        // Split "Name — Destination (Duration)" if possible, else just show name
+        var txt = opt.textContent.trim();
+        // Simple parse: "Name — Destination (X days)"
+        var m = txt.match(/^(.*?)\s+—\s+(.*?)\s+\((.*?)\)\s*$/);
+        var name = m ? m[1] : txt;
+        var dest = m ? m[2] : '—';
+        var dur  = m ? m[3] : '—';
+
+        sumPackage.textContent = name;
+        sumDestination.textContent = dest;
+        sumDuration.textContent = dur;
+
+        // Hint
+        if (hintBox && hintText) {
+          var price = parseFloat(opt.dataset.price || '0') || 0;
+          var days  = parseInt(opt.dataset.days || '0', 10) || 0;
+          hintText.textContent = 'KES ' + price.toLocaleString() + ' per person · ' + days + ' day' + (days === 1 ? '' : 's');
+          hintBox.hidden = false;
+        }
+
+        // Auto-fill total if not edited by user
+        var travellers = parseInt(travEl.value || '1', 10) || 1;
+        if (!totalEdited && opt.dataset.price) {
+          var price = parseFloat(opt.dataset.price) || 0;
+          var computed = price * travellers;
+          if (computed > 0) {
+            totalEl.value = computed.toFixed(2);
+          }
+        }
+      } else {
+        sumPackage.textContent = '—';
+        sumDestination.textContent = '—';
+        sumDuration.textContent = '—';
+        if (hintBox) hintBox.hidden = true;
+      }
+
+      // Date, travellers
+      sumDate.textContent = fmtDate(dateEl.value);
+      sumTravellers.textContent = (travEl.value || '1') + ' traveller' + ((travEl.value || '1') === '1' ? '' : 's');
+
+      // Amounts
+      var t = Number(totalEl.value) || 0;
+      var p = Number(paidEl.value) || 0;
+      var bal = t - p;
+
+      sumTotal.textContent = fmt(t);
+      sumPaid.textContent = fmt(p);
+      sumBalance.textContent = fmt(bal);
+
+      if (sumBalanceRow) {
+        sumBalanceRow.classList.remove('is-due', 'is-paid');
+        if (t > 0 && bal <= 0) sumBalanceRow.classList.add('is-paid');
+        else if (bal > 0) sumBalanceRow.classList.add('is-due');
+      }
+    }
+
+    // Events
+    if (pkgSel) {
+      pkgSel.addEventListener('change', function () {
+        totalEdited = false; // reset override when package changes
+        update();
+      });
+    }
+    [dateEl, travEl, paidEl].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
+    });
+    if (totalEl) totalEl.addEventListener('input', function () { update(); });
+
+    update();
+  })();
+</script>
+{% endblock %}

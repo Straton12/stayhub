@@ -1,0 +1,433 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Orders — Restaurant{% endblock %}
+{% block page_title %}Orders{% endblock %}
+{% block breadcrumb %}<span class="crumb">Orders</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="ol-header">
+  <div>
+    <h1>Orders</h1>
+    <p>
+      {% if orders %}
+        {{ orders|length }} order{{ orders|length|pluralize }} found.
+      {% else %}
+        No orders recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'restaurant_order_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Order
+  </a>
+</div>
+
+{% if orders %}
+
+<!-- ============ KPIs (Client-side calculated) ============ -->
+<div class="ol-kpis">
+  <div class="ol-kpi">
+    <div class="ol-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ol-kpi-value">{{ orders|length }}</div>
+      <div class="ol-kpi-label">Total orders</div>
+    </div>
+  </div>
+
+  <div class="ol-kpi">
+    <div class="ol-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ol-kpi-value" id="kpiActive">0</div>
+      <div class="ol-kpi-label">In progress</div>
+    </div>
+  </div>
+
+  <div class="ol-kpi">
+    <div class="ol-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ol-kpi-value" id="kpiRevenue">KES 0</div>
+      <div class="ol-kpi-label">Revenue</div>
+    </div>
+  </div>
+
+  <div class="ol-kpi">
+    <div class="ol-kpi-icon k-rose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ol-kpi-value" id="kpiUnpaid">KES 0</div>
+      <div class="ol-kpi-label">Unpaid balance</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<div class="ol-toolbar">
+  <div class="ol-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="olSearch" placeholder="Search by customer, phone or order #…" autocomplete="off">
+  </div>
+
+  <div class="ol-tabs" role="tablist" aria-label="Filter orders">
+    <button type="button" class="ol-tab active" data-filter="all">All</button>
+    <button type="button" class="ol-tab" data-filter="new">New</button>
+    <button type="button" class="ol-tab" data-filter="preparing">Preparing</button>
+    <button type="button" class="ol-tab" data-filter="ready">Ready</button>
+    <button type="button" class="ol-tab" data-filter="out_for_delivery">Out for delivery</button>
+    <button type="button" class="ol-tab" data-filter="delivered">Delivered</button>
+  </div>
+</div>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table id="olTable">
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Customer</th>
+        <th>Type / Source</th>
+        <th>Status</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr class="ol-row" 
+          data-status="{{ o.status }}"
+          data-search="{{ o.id }} {{ o.customer_name|lower }} {{ o.customer_phone|lower }}"
+          onclick="window.location='{% url 'restaurant_order_detail' o.id %}';"
+          style="cursor: pointer;">
+        
+        <td>
+          <div class="flex" style="gap:6px; flex-direction:column; align-items:flex-start;">
+            <span class="ol-order-id">#{{ o.id }}</span>
+            {% if o.source == 'marketplace' %}
+              <span class="tag blue" style="font-size:9px; padding:1px 5px;">Marketplace</span>
+            {% endif %}
+          </div>
+        </td>
+
+        <td>
+          <div class="ol-customer">
+            <div class="ol-avatar">{{ o.customer_name|slice:":1"|upper }}</div>
+            <div class="ol-customer-meta">
+              <div class="ol-customer-name">{{ o.customer_name }}</div>
+              {% if o.customer_phone %}
+                <div class="ol-customer-sub">{{ o.customer_phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <td>
+          <span class="ol-type ol-type-{{ o.order_type }}">
+            {% if o.order_type == 'dine_in' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/>
+              </svg>
+            {% elif o.order_type == 'takeaway' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+              </svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            {% endif %}
+            {{ o.get_order_type_display }}
+          </span>
+        </td>
+
+        <td>
+          <div class="flex" style="gap:6px; flex-direction:column; align-items:flex-start;">
+            <span class="status-pill status-{{ o.status }}">
+              <span class="dot"></span>
+              {{ o.get_status_display }}
+            </span>
+            {% if o.payment_status == 'paid' %}
+              <span class="tag green" style="font-size:9px; padding:1px 5px;">Paid</span>
+            {% elif o.payment_status == 'partial' %}
+              <span class="tag yellow" style="font-size:9px; padding:1px 5px;">Partial</span>
+            {% endif %}
+          </div>
+        </td>
+
+        <td style="text-align:right;">
+          <div class="ol-money">KES {{ o.total_amount|floatformat:2 }}</div>
+          {% if o.balance > 0 and o.status != 'cancelled' %}
+            <div class="ol-balance">Bal: KES {{ o.balance|floatformat:2 }}</div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Filtered-empty state -->
+  <div class="ol-empty-filter" id="olEmptyFilter" hidden>
+    <div class="ol-empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <h4>No matches</h4>
+    <p class="muted">Try adjusting your search or filters.</p>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="ol-empty">
+  <div class="ol-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  </div>
+  <h4>No orders yet</h4>
+  <p class="muted">Create your first order to start tracking customers and revenue.</p>
+  <a href="{% url 'restaurant_order_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Order
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Orders list ================= */
+
+  /* ---- Header ---- */
+  .ol-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ol-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .ol-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .ol-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .ol-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .ol-kpi-icon {
+    flex: 0 0 40px; width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .ol-kpi-icon svg { width: 18px; height: 18px; }
+  .ol-kpi-icon.k-amber  { background: #fef3c7; color: #b45309; }
+  .ol-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; }
+  .ol-kpi-icon.k-green  { background: #ecfdf5; color: #047857; }
+  .ol-kpi-icon.k-rose   { background: #fef2f2; color: #b91c1c; }
+
+  .ol-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .ol-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Toolbar ---- */
+  .ol-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .ol-search { position: relative; flex: 1 1 280px; max-width: 400px; }
+  .ol-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted-2); pointer-events: none; }
+  .ol-search input {
+    width: 100%; padding: 10px 12px 10px 38px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13.5px; background: #fff; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .ol-search input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .ol-tabs {
+    display: inline-flex; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: var(--shadow-sm); overflow-x: auto; max-width: 100%;
+  }
+  .ol-tab {
+    padding: 6px 12px; font-size: 12.5px; font-weight: 600; border: none; border-radius: 7px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+    white-space: nowrap; font-family: inherit;
+  }
+  .ol-tab:hover { background: #fef3c7; color: #b45309; }
+  .ol-tab.active { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; box-shadow: 0 4px 10px rgba(245,158,11,0.30); }
+
+  /* ---- Table cells ---- */
+  .ol-order-id {
+    display: inline-block; padding: 3px 9px; border-radius: 6px;
+    background: #f1f5f9; border: 1px solid var(--line); color: var(--text-2);
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .ol-customer { display: flex; align-items: center; gap: 10px; }
+  .ol-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%;
+    display: grid; place-items: center; background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 4px 10px rgba(245,158,11,0.35);
+  }
+  .ol-customer-meta { min-width: 0; }
+  .ol-customer-name {
+    font-weight: 700; color: var(--text); font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+  }
+  .ol-customer-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+
+  .ol-type {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px;
+    border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  .ol-type svg { width: 12px; height: 12px; }
+  .ol-type-dine_in  { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .ol-type-takeaway { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .ol-type-delivery { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-new       { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-preparing { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .status-pill.status-ready     { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .status-pill.status-delivered { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  .ol-money { font-size: 13px; color: var(--text); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ol-balance { font-size: 10.5px; color: #ef4444; font-weight: 600; margin-top: 2px; }
+
+  /* ---- Empty states ---- */
+  .ol-empty-filter, .ol-empty {
+    text-align: center; padding: 40px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .ol-empty-ico {
+    width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .ol-empty-ico svg { width: 26px; height: 26px; }
+  .ol-empty h4, .ol-empty-filter h4 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .ol-header h1 { font-size: 20px; }
+    .ol-header { flex-direction: column; align-items: stretch; }
+    .ol-customer-name { max-width: 140px; }
+    th:nth-child(3), td:nth-child(3) { display: none; } /* hide order type */
+    .ol-tabs { width: 100%; }
+    .ol-tab { flex: 0 0 auto; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var search = document.getElementById('olSearch');
+    var tabs   = document.querySelectorAll('.ol-tab');
+    var rows   = document.querySelectorAll('.ol-row');
+    var table  = document.getElementById('olTable');
+    var empty  = document.getElementById('olEmptyFilter');
+
+    var state = { q: '', filter: 'all' };
+
+    // --- KPI counters computed client-side ---
+    var active = 0;      
+    var revenue = 0;
+    var unpaid = 0;
+
+    rows.forEach(function (r) {
+      var st = r.dataset.status;
+      
+      if (st === 'new' || st === 'preparing' || st === 'ready' || st === 'out_for_delivery') active++;
+      
+      var moneyEl = r.querySelector('.ol-money');
+      var balEl = r.querySelector('.ol-balance');
+      
+      if (moneyEl && st !== 'cancelled') {
+        var revText = (moneyEl.textContent || '').replace(/[^0-9.]/g, '');
+        var revVal = parseFloat(revText);
+        if (!isNaN(revVal)) revenue += revVal;
+      }
+      
+      if (balEl) {
+        var balText = (balEl.textContent || '').replace(/[^0-9.]/g, '');
+        var balVal = parseFloat(balText);
+        if (!isNaN(balVal)) unpaid += balVal;
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiActive', active);
+    setText('kpiRevenue', 'KES ' + revenue.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+    setText('kpiUnpaid', 'KES ' + unpaid.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+
+    // --- Filtering ---
+    function apply() {
+      if (!table) return;
+      var visible = 0;
+      rows.forEach(function (r) {
+        var text = r.dataset.search || '';
+        var st   = r.dataset.status || '';
+        var matchQ = !state.q || text.indexOf(state.q) !== -1;
+        var matchF = state.filter === 'all' || st === state.filter;
+        var ok = matchQ && matchF;
+        r.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (empty) empty.hidden = visible !== 0;
+      if (table) table.style.display = visible === 0 ? 'none' : '';
+    }
+
+    if (search) {
+      search.addEventListener('input', function () {
+        state.q = search.value.trim().toLowerCase();
+        apply();
+      });
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        state.filter = t.dataset.filter;
+        apply();
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,890 @@
+{% extends 'bnb/base.html' %}
+{% load humanize %}
+{% block page_title %}Finance{% endblock %}
+
+{% block subtabs %}
+<nav class="subtabs">
+  <div class="subtabs-inner">
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_home' %}active{% endif %}"
+       href="{% url 'bnb_finance_home' %}">Overview</a>
+
+    {# NEW: the ledger is now the primary dashboard #}
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_ledger' %}active{% endif %}"
+       href="{% url 'bnb_finance_ledger' %}">Ledger</a>
+
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_dashboard' %}active{% endif %}"
+       href="{% url 'bnb_finance_dashboard' %}">Dashboard</a>
+
+    <a class="subtab {% if 'expense' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_expense_list' %}">Expenses</a>
+    <a class="subtab {% if 'revenue' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_revenue_list' %}">Revenue</a>
+    <a class="subtab {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_invoice_list' %}">Invoices</a>
+    <a class="subtab {% if 'payment' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_payment_list' %}">Payments</a>
+
+    {# NEW: profit & loss, powered by the ledger #}
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_profit_ledger' %}active{% endif %}"
+       href="{% url 'bnb_finance_profit_ledger' %}">P&amp;L</a>
+
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_profit_margin' %}active{% endif %}"
+       href="{% url 'bnb_finance_profit_margin' %}">Margin</a>
+
+    {# NEW: VAT + financial settings #}
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_finance_settings' %}active{% endif %}"
+       href="{% url 'bnb_finance_settings' %}">VAT &amp; settings</a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+{# ==================== HERO ==================== #}
+<div class="fo-hero">
+  <div class="fo-hero-text">
+    <h1>Finance</h1>
+    <p>
+      {% if cash_in_month or cash_out_month %}
+        {{ cash_in_month|floatformat:0|intcomma }} in,
+        {{ cash_out_month|floatformat:0|intcomma }} out this month.
+      {% else %}
+        Track what you earn, spend, and chase.
+      {% endif %}
+    </p>
+
+    {# VAT status badge — only shows if the org has settings object #}
+    {% if vat_enabled is not None %}
+      <div class="fo-vat-badge {% if vat_enabled %}is-on{% else %}is-off{% endif %}">
+        <span class="fo-vat-dot" aria-hidden="true"></span>
+        {% if vat_enabled %}
+          {{ vat_label|default:"VAT" }} enabled
+        {% else %}
+          {{ vat_label|default:"VAT" }} off
+        {% endif %}
+        <a href="{% url 'bnb_finance_settings' %}" class="fo-vat-link">Manage</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="fo-hero-actions">
+    {# NEW primary CTA — the ledger is the main financial dashboard #}
+    <a href="{% url 'bnb_finance_ledger' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16v16H4z" opacity="0"/>
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="14" y2="18"/>
+      </svg>
+      Open ledger
+    </a>
+
+    <a href="{% url 'bnb_payment_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Record payment
+    </a>
+    <a href="{% url 'bnb_expense_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Log expense
+    </a>
+    <a href="{% url 'bnb_invoice_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      New invoice
+    </a>
+  </div>
+</div>
+
+{# ==================== CASH FLOW BANNER ==================== #}
+<div class="fo-cashflow">
+  <div class="fo-cashflow-head">
+    <div>
+      <div class="fo-cashflow-label">This month · net cash</div>
+      <div class="fo-cashflow-value {% if net_month >= 0 %}is-positive{% else %}is-negative{% endif %}">
+        {% if net_month >= 0 %}+{% endif %}KES {{ net_month|floatformat:0|intcomma }}
+      </div>
+      <div class="fo-cashflow-sub">
+        {% if net_last_month %}
+          vs KES {{ net_last_month|floatformat:0|intcomma }} last month
+        {% else %}
+          First month of activity
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="fo-cashflow-stats">
+      <div class="fo-cashflow-stat">
+        <span class="fo-cashflow-stat-label">In</span>
+        <span class="fo-cashflow-stat-value fo-cashflow-in">KES {{ cash_in_month|floatformat:0|intcomma }}</span>
+        {% if cash_in_delta_pct is not None %}
+          <span class="fo-cashflow-stat-delta {% if cash_in_delta_pct >= 0 %}is-up{% else %}is-down{% endif %}">
+            {% if cash_in_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ cash_in_delta_pct|floatformat:1 }}%
+          </span>
+        {% endif %}
+      </div>
+      <div class="fo-cashflow-stat">
+        <span class="fo-cashflow-stat-label">Out</span>
+        <span class="fo-cashflow-stat-value fo-cashflow-out">KES {{ cash_out_month|floatformat:0|intcomma }}</span>
+        {% if cash_out_delta_pct is not None %}
+          <span class="fo-cashflow-stat-delta {% if cash_out_delta_pct <= 0 %}is-up{% else %}is-down{% endif %}">
+            {% if cash_out_delta_pct <= 0 %}▼{% else %}▲{% endif %} {{ cash_out_delta_pct|floatformat:1 }}%
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if cash_in_month or cash_out_month %}
+    <div class="fo-cashflow-vbars" role="img" aria-label="Cash in vs out">
+      <div class="fo-cf-col">
+        <div class="fo-cf-track">
+          <div class="fo-cf-bar fo-cf-bar-in" style="height: {{ cash_in_pct }}%;"></div>
+        </div>
+        <div class="fo-cf-label">In</div>
+        <div class="fo-cf-amount fo-cf-amount-in">KES {{ cash_in_month|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="fo-cf-col">
+        <div class="fo-cf-track">
+          <div class="fo-cf-bar fo-cf-bar-out" style="height: {{ cash_out_pct }}%;"></div>
+        </div>
+        <div class="fo-cf-label">Out</div>
+        <div class="fo-cf-amount fo-cf-amount-out">KES {{ cash_out_month|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="fo-cf-col">
+        <div class="fo-cf-track">
+          <div class="fo-cf-bar {% if net_month >= 0 %}fo-cf-bar-net{% else %}fo-cf-bar-net-neg{% endif %}"
+               style="height: {% if net_month >= 0 %}{{ cash_in_pct }}{% else %}{{ cash_out_pct }}{% endif %}%;"></div>
+        </div>
+        <div class="fo-cf-label">Net</div>
+        <div class="fo-cf-amount {% if net_month >= 0 %}fo-cf-amount-in{% else %}fo-cf-amount-out{% endif %}">
+          {% if net_month >= 0 %}+{% endif %}KES {{ net_month|floatformat:0|intcomma }}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{# ==================== SUMMARY ROW ==================== #}
+<div class="fo-summary">
+  <div class="fo-summary-item">
+    <div class="fo-summary-label">Bookings this month</div>
+    <div class="fo-summary-value">{{ bookings_month_count }}</div>
+    <div class="fo-summary-sub">
+      {% if bookings_delta is not None %}
+        {% if bookings_delta >= 0 %}+{% endif %}{{ bookings_delta }} vs last month
+      {% else %}
+        First month
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="fo-summary-item">
+    <div class="fo-summary-label">Booking value</div>
+    <div class="fo-summary-value fo-summary-money">KES {{ bookings_month_value|floatformat:0|intcomma }}</div>
+    <div class="fo-summary-sub">Confirmed + checked-in</div>
+  </div>
+
+  <div class="fo-summary-item">
+    <div class="fo-summary-label">Outstanding</div>
+    <div class="fo-summary-value fo-summary-amber">KES {{ outstanding_balance|floatformat:0|intcomma }}</div>
+    <div class="fo-summary-sub">{{ outstanding_count }} booking{{ outstanding_count|pluralize }}</div>
+  </div>
+
+  <div class="fo-summary-item">
+    <div class="fo-summary-label">Invoices</div>
+    <div class="fo-summary-value">{{ invoices_paid }} <span class="fo-summary-sep">/</span> {{ invoices_total }}</div>
+    <div class="fo-summary-sub">
+      {% if invoices_overdue %}
+        {{ invoices_overdue }} overdue
+      {% else %}
+        All clear
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ==================== MAIN GRID ==================== #}
+<div class="fo-grid">
+
+  {# ----- Chase list ----- #}
+  <div class="fo-panel fo-panel-wide">
+    <div class="fo-panel-head">
+      <div>
+        <h3 class="fo-panel-title">Money to chase</h3>
+        <p class="fo-panel-sub">Unpaid booking balances, oldest first</p>
+      </div>
+      <a href="{% url 'bnb_booking_list' %}" class="fo-panel-link">All bookings</a>
+    </div>
+
+    {% if unpaid_bookings_list %}
+      <ul class="fo-chase-list">
+        {% for b in unpaid_bookings_list %}
+          <li class="fo-chase-item">
+            <span class="fo-chase-avatar">{{ b.guest_name|slice:":1"|upper }}</span>
+            <div class="fo-chase-body">
+              <div class="fo-chase-title">{{ b.guest_name }}</div>
+              <div class="fo-chase-meta">
+                {{ b.property.name }} ·
+                {{ b.check_in|date:"d M" }} – {{ b.check_out|date:"d M" }}
+                {% if b.days_overdue %}
+                  <span class="fo-chase-overdue">{{ b.days_overdue }}d overdue</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="fo-chase-right">
+              <span class="fo-chase-amount">KES {{ b.balance|floatformat:0|intcomma }}</span>
+              <a href="{% url 'bnb_booking_detail' b.id %}" class="fo-chase-cta">View</a>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fo-empty">
+        <div class="fo-empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <h4>All caught up</h4>
+        <p class="muted">No booking balances are outstanding.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ----- Revenue by property ----- #}
+  <div class="fo-panel">
+    <div class="fo-panel-head">
+      <h3 class="fo-panel-title">Revenue by property</h3>
+      <a href="{% url 'bnb_property_list' %}" class="fo-panel-link">Manage</a>
+    </div>
+    {% if top_properties %}
+      <div class="fo-vbars">
+        {% for p in top_properties %}
+          <div class="fo-vbar-col">
+            <div class="fo-vbar-track">
+              <div class="fo-vbar fo-vbar-green"
+                   style="height: {{ p.pct }}%;"
+                   title="{{ p.property__name }} — KES {{ p.revenue|floatformat:0|intcomma }}"></div>
+            </div>
+            <div class="fo-vbar-name" title="{{ p.property__name }}">{{ p.property__name|truncatechars:12 }}</div>
+            <div class="fo-vbar-amount">KES {{ p.revenue|floatformat:0|intcomma }}</div>
+            <div class="fo-vbar-sub">{{ p.bookings_count }} booking{{ p.bookings_count|pluralize }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="fo-empty">
+        <div class="fo-empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+          </svg>
+        </div>
+        <h4>No revenue yet</h4>
+        <p class="muted">Confirmed bookings will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ----- Where money goes ----- #}
+  <div class="fo-panel">
+    <div class="fo-panel-head">
+      <h3 class="fo-panel-title">Where money goes</h3>
+      <a href="{% url 'bnb_expense_list' %}" class="fo-panel-link">All</a>
+    </div>
+    {% if by_category %}
+      <div class="fo-vbars">
+        {% for c in by_category %}
+          <div class="fo-vbar-col">
+            <div class="fo-vbar-track">
+              <div class="fo-vbar fo-vbar-amber"
+                   style="height: {{ c.pct }}%;"
+                   title="{{ c.category__name|default:'Uncategorised' }} — KES {{ c.total|floatformat:0|intcomma }}"></div>
+            </div>
+            <div class="fo-vbar-name" title="{{ c.category__name|default:'Uncategorised' }}">
+              {{ c.category__name|default:"Uncat."|truncatechars:10 }}
+            </div>
+            <div class="fo-vbar-amount">KES {{ c.total|floatformat:0|intcomma }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="fo-empty-sm"><p class="muted">No expenses logged.</p></div>
+    {% endif %}
+  </div>
+
+  {# ----- Payments received ----- #}
+  <div class="fo-panel fo-panel-wide">
+    <div class="fo-panel-head">
+      <h3 class="fo-panel-title">Payments received</h3>
+      <a href="{% url 'bnb_payment_list' %}" class="fo-panel-link">All</a>
+    </div>
+    {% if recent_payments %}
+      <ul class="fo-tx-list">
+        {% for p in recent_payments %}
+          <li class="fo-tx-item">
+            <span class="fo-tx-icon fo-tx-in">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </span>
+            <div class="fo-tx-body">
+              <div class="fo-tx-title">
+                {% if p.booking %}{{ p.booking.guest_name }}
+                {% elif p.invoice %}{{ p.invoice.invoice_number }}
+                {% else %}Payment{% endif %}
+              </div>
+              <div class="fo-tx-meta">{{ p.method_label }} · {{ p.payment_date|date:"d M" }}</div>
+            </div>
+            <span class="fo-tx-amount fo-tx-amount-in">+{{ p.amount|floatformat:0|intcomma }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fo-empty-sm"><p class="muted">No payments received yet.</p></div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HERO                                                        */
+  /* ============================================================ */
+  .fo-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    padding: clamp(18px, 2.6vw, 24px) clamp(20px, 2.8vw, 28px);
+    border-radius: 18px;
+    margin-bottom: 18px;
+    color: #e0f2fe;
+    background:
+      radial-gradient(600px 220px at 0% 0%, rgba(56,189,248,0.30), transparent 60%),
+      radial-gradient(560px 220px at 100% 100%, rgba(34,211,238,0.24), transparent 60%),
+      linear-gradient(135deg, #062745 0%, #0b2545 55%, #155e75 100%);
+    box-shadow: 0 20px 50px rgba(6,39,69,0.30);
+  }
+  .fo-hero-text { flex: 1 1 auto; min-width: 240px; }
+  .fo-hero-text h1 {
+    font-size: clamp(18px, 2.4vw, 22px);
+    font-weight: 800; color: #fff; letter-spacing: -0.4px;
+    margin-bottom: 4px;
+  }
+  .fo-hero-text p {
+    font-size: clamp(12.5px, 1.4vw, 13.5px);
+    color: #bae6fd; line-height: 1.55;
+  }
+  .fo-hero-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    position: relative; z-index: 1;
+  }
+  .fo-hero-actions .btn {
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    box-shadow: 0 10px 24px rgba(14,165,233,0.45);
+    color: #062745; font-weight: 800;
+  }
+  .fo-hero-actions .btn:hover { filter: brightness(1.05); color: #062745; }
+  .fo-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.10); color: #fff;
+    border: 1px solid rgba(255,255,255,0.22); box-shadow: none;
+  }
+  @media (max-width: 720px) {
+    .fo-hero { padding: 18px; }
+    .fo-hero-actions { width: 100%; }
+    .fo-hero-actions .btn { flex: 1; justify-content: center; }
+  }
+
+  /* VAT badge — new */
+  .fo-vat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+  }
+  .fo-vat-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148,163,184,0.25);
+  }
+  .fo-vat-badge.is-on  .fo-vat-dot { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,0.28); }
+  .fo-vat-badge.is-off .fo-vat-dot { background: #fbbf24; box-shadow: 0 0 0 3px rgba(251,191,36,0.25); }
+  .fo-vat-link {
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,0.20);
+    color: #bae6fd;
+    text-decoration: none;
+    font-weight: 800;
+  }
+  .fo-vat-link:hover { color: #fff; }
+
+  /* ============================================================ */
+  /*  CASH FLOW BANNER                                            */
+  /* ============================================================ */
+  .fo-cashflow {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .fo-cashflow-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .fo-cashflow-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 800;
+    color: var(--muted-2);
+    margin-bottom: 4px;
+  }
+  .fo-cashflow-value {
+    font-size: clamp(26px, 3.4vw, 36px);
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .fo-cashflow-value.is-positive { color: #047857; }
+  .fo-cashflow-value.is-negative { color: #b91c1c; }
+  .fo-cashflow-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+  }
+
+  .fo-cashflow-stats {
+    display: flex; gap: 26px;
+    flex-wrap: wrap;
+  }
+  .fo-cashflow-stat {
+    display: flex; flex-direction: column;
+    gap: 3px;
+    align-items: flex-end;
+  }
+  .fo-cashflow-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 800;
+    color: var(--muted-2);
+  }
+  .fo-cashflow-stat-value {
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.2px;
+  }
+  .fo-cashflow-in { color: #047857; }
+  .fo-cashflow-out { color: #b45309; }
+  .fo-cashflow-stat-delta {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-top: 3px;
+  }
+  .fo-cashflow-stat-delta.is-up { background: #ecfdf5; color: #047857; }
+  .fo-cashflow-stat-delta.is-down { background: #fef2f2; color: #b91c1c; }
+
+  .fo-cashflow-vbars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: end;
+    padding-top: 4px;
+    min-height: 140px;
+  }
+  .fo-cf-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .fo-cf-track {
+    width: 100%;
+    max-width: 72px;
+    height: 100px;
+    background: #f8fafc;
+    border-radius: 8px 8px 4px 4px;
+    display: flex;
+    align-items: flex-end;
+    padding: 3px;
+    overflow: hidden;
+  }
+  .fo-cf-bar {
+    width: 100%;
+    border-radius: 4px 4px 2px 2px;
+    transition: height .4s ease-out;
+    min-height: 2px;
+  }
+  .fo-cf-bar-in { background: linear-gradient(180deg, #34d399, #10b981); }
+  .fo-cf-bar-out { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+  .fo-cf-bar-net { background: linear-gradient(180deg, #38bdf8, #0ea5e9); }
+  .fo-cf-bar-net-neg { background: linear-gradient(180deg, #f87171, #ef4444); }
+  .fo-cf-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+  }
+  .fo-cf-amount {
+    font-size: 11px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fo-cf-amount-in { color: #047857; }
+  .fo-cf-amount-out { color: #b45309; }
+
+  @media (max-width: 640px) {
+    .fo-cashflow { padding: 16px; }
+    .fo-cashflow-stats { gap: 18px; width: 100%; justify-content: space-between; }
+    .fo-cashflow-stat { align-items: flex-start; }
+    .fo-cashflow-vbars { gap: 10px; min-height: 120px; }
+    .fo-cf-track { height: 80px; max-width: 60px; }
+  }
+
+  /* ============================================================ */
+  /*  SUMMARY ROW                                                 */
+  /* ============================================================ */
+  .fo-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 900px) { .fo-summary { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .fo-summary { grid-template-columns: 1fr; } }
+
+  .fo-summary-item {
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .fo-summary-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 800;
+    color: var(--muted-2);
+    margin-bottom: 6px;
+  }
+  .fo-summary-value {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .fo-summary-money { color: #047857; }
+  .fo-summary-amber { color: #b45309; }
+  .fo-summary-sep {
+    color: var(--muted-2);
+    font-weight: 400;
+    font-size: 16px;
+    margin: 0 2px;
+  }
+  .fo-summary-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 4px;
+  }
+
+  /* ============================================================ */
+  /*  MAIN GRID                                                   */
+  /* ============================================================ */
+  .fo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 900px) { .fo-grid { grid-template-columns: 1fr; } }
+
+  .fo-panel-wide { grid-column: 1 / -1; }
+  @media (max-width: 900px) { .fo-panel-wide { grid-column: auto; } }
+
+  /* ============================================================ */
+  /*  PANEL                                                       */
+  /* ============================================================ */
+  .fo-panel {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .fo-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .fo-panel-title {
+    font-size: 13.5px; font-weight: 800;
+    color: var(--text); margin: 0;
+    letter-spacing: -0.1px;
+  }
+  .fo-panel-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin: 2px 0 0;
+  }
+  .fo-panel-link {
+    font-size: 12px; font-weight: 700;
+    color: var(--brand-1);
+    padding: 5px 9px;
+    border-radius: 7px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .fo-panel-link:hover { background: rgba(14,165,233,0.08); }
+
+  /* ============================================================ */
+  /*  VERTICAL BARS                                               */
+  /* ============================================================ */
+  .fo-vbars {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 10px;
+    align-items: end;
+    padding: 20px 16px 16px;
+    min-height: 200px;
+    overflow-x: auto;
+  }
+  @media (max-width: 480px) {
+    .fo-vbars { gap: 6px; padding: 16px 10px 12px; }
+  }
+
+  .fo-vbar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .fo-vbar-track {
+    width: 100%;
+    height: 110px;
+    background: #f8fafc;
+    border-radius: 8px 8px 4px 4px;
+    display: flex;
+    align-items: flex-end;
+    padding: 3px;
+    overflow: hidden;
+  }
+
+  .fo-vbar {
+    width: 100%;
+    border-radius: 4px 4px 2px 2px;
+    transition: height .4s ease-out;
+    min-height: 3px;
+    cursor: pointer;
+  }
+  .fo-vbar:hover { filter: brightness(1.08); }
+  .fo-vbar-green { background: linear-gradient(180deg, #34d399, #10b981); }
+  .fo-vbar-amber { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+
+  .fo-vbar-name {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted-2);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .fo-vbar-amount {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  .fo-vbar-sub {
+    font-size: 9.5px;
+    color: var(--muted-2);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ============================================================ */
+  /*  CHASE LIST                                                  */
+  /* ============================================================ */
+  .fo-chase-list { list-style: none; margin: 0; padding: 0; }
+  .fo-chase-item {
+    display: flex; align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fo-chase-item:last-child { border-bottom: none; }
+  .fo-chase-item:hover { background: #fafbff; }
+  .fo-chase-avatar {
+    flex: 0 0 34px; width: 34px; height: 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff; font-size: 12.5px; font-weight: 800;
+  }
+  .fo-chase-body { flex: 1; min-width: 0; }
+  .fo-chase-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fo-chase-meta {
+    font-size: 11.5px; color: var(--muted-2);
+    margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fo-chase-overdue {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 10.5px; font-weight: 800;
+    color: #b91c1c;
+    background: #fef2f2;
+    padding: 1px 6px;
+    border-radius: 999px;
+  }
+  .fo-chase-right {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .fo-chase-amount {
+    font-size: 13.5px; font-weight: 800;
+    color: #b45309;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fo-chase-cta {
+    font-size: 11.5px; font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--line-2);
+    background: #fff;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: background .15s, border-color .15s;
+  }
+  .fo-chase-cta:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+  /* ============================================================ */
+  /*  TRANSACTION LIST                                            */
+  /* ============================================================ */
+  .fo-tx-list { list-style: none; margin: 0; padding: 0; }
+  .fo-tx-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fo-tx-item:last-child { border-bottom: none; }
+  .fo-tx-item:hover { background: #fafbff; }
+  .fo-tx-icon {
+    flex: 0 0 30px; width: 30px; height: 30px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+  }
+  .fo-tx-icon svg { width: 15px; height: 15px; }
+  .fo-tx-icon.fo-tx-in { background: #ecfdf5; color: #047857; }
+  .fo-tx-body { flex: 1; min-width: 0; }
+  .fo-tx-title {
+    font-size: 12.5px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fo-tx-meta {
+    font-size: 11px; color: var(--muted-2);
+    margin-top: 2px;
+  }
+  .fo-tx-amount {
+    font-size: 12.5px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fo-tx-amount-in { color: #047857; }
+
+  /* ============================================================ */
+  /*  EMPTY STATES                                                */
+  /* ============================================================ */
+  .fo-empty {
+    padding: 32px 20px;
+    text-align: center;
+  }
+  .fo-empty-ico {
+    width: 48px; height: 48px;
+    margin: 0 auto 10px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .fo-empty-ico svg { width: 22px; height: 22px; }
+  .fo-empty h4 {
+    font-size: 13.5px; font-weight: 800;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .fo-empty p {
+    font-size: 12.5px;
+    max-width: 260px; margin: 0 auto;
+  }
+  .fo-empty-sm { padding: 24px 18px; text-align: center; font-size: 12.5px; }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 640px) {
+    .fo-chase-item { flex-wrap: wrap; }
+    .fo-chase-right { width: 100%; justify-content: space-between; }
+    .fo-summary-item { padding: 12px 14px; }
+    .fo-summary-value { font-size: 17px; }
+    .fo-vbar-track { height: 90px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fo-cf-bar, .fo-vbar, .fo-chase-cta { transition: none; }
+  }
+</style>
+{% endblock %}

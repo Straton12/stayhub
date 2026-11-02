@@ -1,0 +1,426 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Menu — Restaurant{% endblock %}
+{% block page_title %}Menu{% endblock %}
+{% block breadcrumb %}<span class="crumb">Menu</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="ml-header">
+  <div>
+    <h1>Menu Management</h1>
+    <p>
+      {% if items %}
+        {{ items|length }} item{{ items|length|pluralize }} total. 
+        {% if profile.publish_to_marketplace %}
+          Guests can see available items on the marketplace.
+        {% else %}
+          <span style="color:var(--warn);">Your restaurant profile is currently offline.</span>
+        {% endif %}
+      {% else %}
+        No menu items yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:10px;">
+    <a href="{% url 'restaurant_profile' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Profile Setup
+    </a>
+    <a href="{% url 'restaurant_menu_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add Item
+    </a>
+  </div>
+</div>
+
+{% if items %}
+
+<!-- ============ KPIs (Client-side calculated for instant feedback) ============ -->
+<div class="ml-kpis">
+  <div class="ml-kpi">
+    <div class="ml-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ml-kpi-value">{{ items|length }}</div>
+      <div class="ml-kpi-label">Total items</div>
+    </div>
+  </div>
+
+  <div class="ml-kpi">
+    <div class="ml-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ml-kpi-value" id="kpiAvailable">0</div>
+      <div class="ml-kpi-label">Available</div>
+    </div>
+  </div>
+
+  <div class="ml-kpi">
+    <div class="ml-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ml-kpi-value" id="kpiCategories">0</div>
+      <div class="ml-kpi-label">Categories</div>
+    </div>
+  </div>
+
+  <div class="ml-kpi">
+    <div class="ml-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ml-kpi-value" id="kpiAvgPrice">KES 0</div>
+      <div class="ml-kpi-label">Avg. price</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<div class="ml-toolbar">
+  <div class="ml-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="mlSearch" placeholder="Search by name, description or category…" autocomplete="off">
+  </div>
+
+  <div class="ml-filters">
+    <button type="button" class="ml-chip active" data-filter="all">All Items</button>
+    <button type="button" class="ml-chip" data-filter="available">Available</button>
+    <button type="button" class="ml-chip" data-filter="live">Live on Web</button>
+  </div>
+</div>
+
+<!-- ============ Menu items grid ============ -->
+<div class="ml-grid" id="mlGrid">
+  {% for i in items %}
+  <article class="ml-card {% if not i.is_available %}ml-unavailable{% endif %}"
+           data-available="{% if i.is_available %}1{% else %}0{% endif %}"
+           data-live="{% if i.publish_status == 'approved' %}1{% else %}0{% endif %}"
+           data-search="{{ i.name|lower }} {{ i.category|lower }} {{ i.short_description|lower }} {{ i.description|lower }}">
+    
+    <!-- Card Top: Status & Edit -->
+    <div class="ml-card-top">
+      {% if not i.is_available %}
+        <span class="tag red">Hidden (Unavailable)</span>
+      {% elif i.publish_status == 'approved' %}
+        <span class="tag green">
+          <span class="dot" style="background:#10b981; width:6px; height:6px; border-radius:50%;"></span> Live on Web
+        </span>
+      {% elif i.publish_status == 'pending' %}
+        <span class="tag yellow">Pending Review</span>
+      {% else %}
+        <span class="tag gray">Not Published</span>
+      {% endif %}
+      
+      <a href="{% url 'restaurant_menu_edit' i.id %}" class="btn sm secondary" style="padding:4px 10px; font-size:11.5px;">Edit</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-card-body">
+      <div class="ml-card-head">
+        <div style="display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+          <h3 class="ml-title">{{ i.name }}</h3>
+          <span class="tag gray" style="font-size:10px; padding:2px 6px;">{{ i.get_category_display }}</span>
+          {% if i.is_vegetarian %}<span class="tag green" style="font-size:10px; padding:2px 6px;">Veg</span>{% endif %}
+          {% if i.is_spicy %}<span class="tag red" style="font-size:10px; padding:2px 6px;">Spicy</span>{% endif %}
+        </div>
+        {% if i.short_description %}
+          <p class="muted" style="margin-top:6px; font-size:12.5px; line-height:1.4;">{{ i.short_description }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Recipe & Margin Stats -->
+      <div class="ml-meta-row">
+        <div class="ml-meta-item">
+          <span class="ml-meta-label">Cost</span>
+          <span class="ml-meta-val">KES {{ i.effective_cost|floatformat:0 }}</span>
+        </div>
+        <div class="ml-meta-item">
+          <span class="ml-meta-label">Margin</span>
+          <span class="ml-meta-val {% if i.margin_percent < 30 %}text-warn{% else %}text-green{% endif %}">
+            {{ i.margin_percent|floatformat:0 }}%
+          </span>
+        </div>
+        <div class="ml-meta-item" title="Ingredients required for this dish">
+          <span class="ml-meta-label">Recipe</span>
+          <span class="ml-meta-val">{{ i.recipe_lines.count }} item{{ i.recipe_lines.count|pluralize }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Footer: Price -->
+    <div class="ml-card-footer">
+      <span class="ml-price-label">Menu Price</span>
+      <span class="ml-price">KES {{ i.price|floatformat:0 }}</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="ml-empty-filter" id="mlEmptyFilter" hidden>
+  <div class="ml-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No items match your filters</h4>
+  <p class="muted">Try a different search term or clear the filters.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="ml-empty">
+  <div class="ml-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/>
+    </svg>
+  </div>
+  <h4>No menu items yet</h4>
+  <p class="muted">Add your first dish or drink to start building your restaurant storefront.</p>
+  <a href="{% url 'restaurant_menu_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add First Item
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Menu list ================= */
+
+  /* ---- Header ---- */
+  .ml-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ml-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .ml-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .ml-kpis {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 20px;
+  }
+  .ml-kpi {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ml-kpi-icon {
+    flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+  }
+  .ml-kpi-icon svg { width: 20px; height: 20px; }
+  .ml-kpi-icon.k-amber  { background: #fef3c7; color: #b45309; }
+  .ml-kpi-icon.k-green  { background: #ecfdf5; color: #047857; }
+  .ml-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; }
+  .ml-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; }
+
+  .ml-kpi-value { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 2px; }
+  .ml-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+
+  /* ---- Toolbar ---- */
+  .ml-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ml-search { position: relative; flex: 1 1 300px; max-width: 460px; }
+  .ml-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted-2); pointer-events: none; }
+  .ml-search input {
+    width: 100%; padding: 11px 14px 11px 40px; border: 1px solid var(--line); border-radius: 12px;
+    font-size: 13.5px; background: #fff; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .ml-search input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .ml-filters { display: inline-flex; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-sm); }
+  .ml-chip {
+    padding: 7px 14px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .ml-chip:hover { background: #fef3c7; color: #b45309; }
+  .ml-chip.active { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; box-shadow: 0 4px 10px rgba(245,158,11,0.30); }
+
+  /* ---- Grid ---- */
+  .ml-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+  /* ---- Menu card ---- */
+  .ml-card {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 16px;
+    box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s; position: relative;
+  }
+  .ml-card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(15,23,42,0.10); border-color: #dbe2f0; }
+  .ml-card.ml-unavailable { background: #f8fafc; border-style: dashed; }
+  .ml-card.ml-unavailable .ml-card-body { opacity: 0.7; }
+
+  /* Card Top Row (Status + Edit) */
+  .ml-card-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0; }
+  
+  /* Card Body */
+  .ml-card-body { padding: 10px 16px 16px; flex: 1; display: flex; flex-direction: column; }
+  .ml-title { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; margin: 0; }
+
+  /* Meta Row (Cost/Margin/Recipe) */
+  .ml-meta-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: auto; padding-top: 16px;
+  }
+  .ml-meta-item {
+    background: #f8fafc; border-radius: 8px; padding: 8px;
+    display: flex; flex-direction: column; gap: 2px;
+    border: 1px solid var(--line-2);
+  }
+  .ml-meta-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--muted-2); letter-spacing: 0.4px; }
+  .ml-meta-val { font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+  .text-warn { color: #b45309; }
+  .text-green { color: #047857; }
+
+  /* Card Footer (Price) */
+  .ml-card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-top: 1px solid var(--line-2);
+    background: #fafbfe; border-radius: 0 0 16px 16px;
+  }
+  .ml-price-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 700; }
+  .ml-price { font-size: 18px; font-weight: 800; color: var(--brand-2); letter-spacing: -0.4px; font-variant-numeric: tabular-nums; }
+
+  /* ---- Empty states ---- */
+  .ml-empty-filter, .ml-empty {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .ml-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .ml-empty-ico svg { width: 30px; height: 30px; }
+  .ml-empty h4, .ml-empty-filter h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .ml-header h1 { font-size: 20px; }
+    .ml-header { flex-direction: column; align-items: stretch; }
+    .ml-grid { grid-template-columns: 1fr; }
+    .ml-filters { width: 100%; }
+    .ml-chip { flex: 1; text-align: center; }
+    .ml-meta-row { grid-template-columns: 1fr; gap: 4px; }
+    .ml-meta-item { flex-direction: row; justify-content: space-between; align-items: center; padding: 6px 10px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var search = document.getElementById('mlSearch');
+    var chips  = document.querySelectorAll('.ml-chip');
+    var cards  = document.querySelectorAll('.ml-card');
+    var grid   = document.getElementById('mlGrid');
+    var empty  = document.getElementById('mlEmptyFilter');
+
+    var state = { q: '', filter: 'all' };
+
+    // --- KPI counters computed client-side ---
+    var total = cards.length;
+    var available = 0;
+    var live = 0;
+    var catSet = {};
+    var priceSum = 0;
+    var priceCount = 0;
+
+    cards.forEach(function (c) {
+      if (c.dataset.available === '1') available++;
+      if (c.dataset.live === '1') live++;
+
+      // Extract category from tags (skip empty)
+      var tags = c.querySelectorAll('.ml-card-head .tag');
+      if (tags.length > 0) {
+        // Usually the first gray tag is the category
+        var cat = tags[0].textContent.trim();
+        if (cat && cat !== 'Veg' && cat !== 'Spicy') catSet[cat.toLowerCase()] = cat;
+      }
+
+      // Extract price
+      var priceEl = c.querySelector('.ml-price');
+      if (priceEl) {
+        var p = parseFloat((priceEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(p)) { priceSum += p; priceCount++; }
+      }
+    });
+
+    // Update the UI counters
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiAvailable', available);
+    setText('kpiCategories', Object.keys(catSet).length);
+    setText('kpiAvgPrice', 'KES ' + (priceCount ? Math.round(priceSum / priceCount).toLocaleString() : '0'));
+
+    // --- Filtering ---
+    function apply() {
+      if (!grid) return;
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var isAvail = c.dataset.available === '1';
+        var isLive = c.dataset.live === '1';
+        
+        var matchQ = !state.q || text.indexOf(state.q) !== -1;
+        var matchF = true;
+        
+        if (state.filter === 'available') matchF = isAvail;
+        if (state.filter === 'live') matchF = isLive;
+
+        var ok = matchQ && matchF;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      
+      if (empty) empty.hidden = visible !== 0;
+      if (grid) grid.style.display = visible === 0 ? 'none' : '';
+    }
+
+    if (search) {
+      search.addEventListener('input', function () {
+        state.q = search.value.trim().toLowerCase();
+        apply();
+      });
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        chips.forEach(function (x) { x.classList.remove('active'); });
+        chip.classList.add('active');
+        state.filter = chip.dataset.filter;
+        apply();
+      });
+    });
+  })();
+</script>
+{% endblock %}

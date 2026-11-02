@@ -1,0 +1,640 @@
+{% extends 'network/base.html' %}
+{% block title %}New Referral — Network{% endblock %}
+{% block page_title %}New Referral{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="rf-header">
+  <a href="{% url 'network_dashboard' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to network
+  </a>
+  <h1>Send a referral</h1>
+  <p>Recommend a trusted partner business to your guest. You'll be able to track whether the referral converts and settle any commission from the network dashboard.</p>
+</div>
+
+{% if not partners %}
+<!-- ============ No partners state ============ -->
+<div class="rf-empty">
+  <div class="rf-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <circle cx="5" cy="5" r="2"/>
+      <circle cx="19" cy="5" r="2"/>
+      <circle cx="5" cy="19" r="2"/>
+      <circle cx="19" cy="19" r="2"/>
+    </svg>
+  </div>
+  <h4>No partners to refer to yet</h4>
+  <p class="muted">You need other businesses to have joined the network before you can send a referral.</p>
+  <a href="{% url 'network_dashboard' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to Network
+  </a>
+</div>
+
+{% else %}
+
+<form method="post" class="rf-form" novalidate>
+  {% csrf_token %}
+
+  <div class="rf-layout">
+
+    <!-- ============ Main ============ -->
+    <div class="rf-main">
+
+      <!-- Section: recipient -->
+      <section class="rf-section">
+        <header class="rf-section-head">
+          <span class="rf-step">1</span>
+          <div>
+            <h2>Choose a partner</h2>
+            <p>Which network business would you like to refer your guest to?</p>
+          </div>
+        </header>
+
+        <div class="rf-partners" role="radiogroup" aria-label="Partner">
+          {% for p in partners %}
+          <label class="rf-partner">
+            <input type="radio" name="to_org" value="{{ p.id }}" {% if forloop.first %}checked{% endif %} required>
+            <span class="rf-partner-face" data-type="{{ p.org_type }}">
+              <span class="rf-partner-avatar" data-type="{{ p.org_type }}">
+                {{ p.name|slice:":1"|upper }}
+              </span>
+              <span class="rf-partner-meta">
+                <span class="rf-partner-name">{{ p.name }}</span>
+                <span class="rf-partner-sub">
+                  {{ p.get_org_type_display }}{% if p.location %} · {{ p.location }}{% endif %}
+                </span>
+              </span>
+              <span class="rf-partner-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- Section: guest -->
+      <section class="rf-section">
+        <header class="rf-section-head">
+          <span class="rf-step">2</span>
+          <div>
+            <h2>Guest &amp; service</h2>
+            <p>Who is being referred, and what do they need?</p>
+          </div>
+        </header>
+
+        <div class="rf-grid">
+          <div class="rf-field">
+            <label for="id_guest_name">Guest name <span class="req">*</span></label>
+            <input class="input" type="text" id="id_guest_name" name="guest_name"
+                   placeholder="e.g. Jane Mwangi" required>
+          </div>
+
+          <div class="rf-field">
+            <label for="id_guest_phone">Guest phone</label>
+            <input class="input" type="text" id="id_guest_phone" name="guest_phone"
+                   placeholder="+254 7XX XXX XXX">
+          </div>
+
+          <div class="rf-field rf-full">
+            <label for="id_service_needed">Service needed <span class="req">*</span></label>
+            <input class="input" type="text" id="id_service_needed" name="service_needed"
+                   placeholder="e.g. Airport transfer, City tour, Dinner reservation"
+                   required>
+            <p class="rf-hint">A short description of what the guest wants.</p>
+          </div>
+
+          <div class="rf-field rf-full">
+            <label for="id_notes">Notes</label>
+            <textarea class="input" id="id_notes" name="notes" rows="3"
+                      placeholder="Any extra context — preferred time, dietary needs, arrival details…"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: commercial -->
+      <section class="rf-section">
+        <header class="rf-section-head">
+          <span class="rf-step">3</span>
+          <div>
+            <h2>Value &amp; commission</h2>
+            <p>Optional. Leave blank if the referral isn't commission-based.</p>
+          </div>
+        </header>
+
+        <div class="rf-grid">
+          <div class="rf-field">
+            <label for="id_value">Expected value</label>
+            <div class="rf-money">
+              <span class="rf-money-prefix">KES</span>
+              <input class="input" type="number" id="id_value" name="value"
+                     step="0.01" min="0" placeholder="0.00">
+            </div>
+            <p class="rf-hint">What you expect the guest to spend with the partner.</p>
+          </div>
+
+          <div class="rf-field">
+            <label for="id_commission">Commission</label>
+            <div class="rf-money">
+              <span class="rf-money-prefix">KES</span>
+              <input class="input" type="number" id="id_commission" name="commission"
+                     step="0.01" min="0" placeholder="0.00">
+            </div>
+            <p class="rf-hint">Your referral fee if the guest converts.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="rf-actions">
+        <a href="{% url 'network_dashboard' %}" class="btn secondary">Cancel</a>
+        <button type="submit" class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          Send Referral
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ Aside ============ -->
+    <aside class="rf-aside">
+
+      <div class="rf-summary">
+        <h4>Referral summary</h4>
+
+        <div class="rf-sum-row">
+          <span>Partner</span>
+          <strong id="sumPartner">—</strong>
+        </div>
+        <div class="rf-sum-row">
+          <span>Guest</span>
+          <strong id="sumGuest">—</strong>
+        </div>
+        <div class="rf-sum-row">
+          <span>Service</span>
+          <strong id="sumService">—</strong>
+        </div>
+
+        <div class="rf-sum-divider"></div>
+
+        <div class="rf-sum-row">
+          <span>Value</span>
+          <strong id="sumValue">KES 0.00</strong>
+        </div>
+        <div class="rf-sum-row rf-sum-commission">
+          <span>Commission</span>
+          <strong id="sumCommission">KES 0.00</strong>
+        </div>
+      </div>
+
+      <div class="rf-tip">
+        <div class="rf-tip-icon accent-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+        <div>
+          <h4>What happens next</h4>
+          <ol class="rf-list">
+            <li>The partner receives the referral in their dashboard.</li>
+            <li>They accept or decline it.</li>
+            <li>When marked complete, commission becomes due.</li>
+            <li>You can settle it from the network dashboard.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="rf-tip">
+        <div class="rf-tip-icon accent-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div>
+          <h4>About commission</h4>
+          <p class="rf-tip-text">
+            Commission is optional. Leave it blank if the referral is a favour rather than a paid arrangement. You can only mark commission as paid after the referral is marked completed.
+          </p>
+        </div>
+      </div>
+
+      <div class="rf-tip">
+        <div class="rf-tip-icon accent-rose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="16" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+        </div>
+        <div>
+          <h4>Privacy</h4>
+          <p class="rf-tip-text">
+            The partner only sees the guest details you enter here — nothing else from your workspace.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+</form>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= New Referral page ================= */
+
+  /* ---- Header ---- */
+  .rf-header { margin-bottom: 20px; max-width: 760px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--brand-2); background: rgba(139,92,246,0.08); }
+  .back-link svg { width: 14px; height: 14px; }
+
+  .rf-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .rf-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---- Layout ---- */
+  .rf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .rf-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form card ---- */
+  .rf-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 24px 22px;
+  }
+
+  .rf-section {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .rf-section:last-of-type { border-bottom: none; }
+
+  .rf-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .rf-step {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(139,92,246,0.35);
+  }
+  .rf-section-head h2 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px; margin-bottom: 2px;
+  }
+  .rf-section-head p {
+    font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  }
+
+  /* ---- Partner selector ---- */
+  .rf-partners {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  .rf-partner { position: relative; cursor: pointer; display: block; }
+  .rf-partner input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .rf-partner-face {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+  .rf-partner:hover .rf-partner-face {
+    border-color: #ddd6fe;
+    background: #faf5ff;
+  }
+  .rf-partner input:checked + .rf-partner-face {
+    border-color: var(--brand-1);
+    background: linear-gradient(180deg, #f5f3ff, #ede9fe);
+    box-shadow: 0 0 0 4px rgba(139,92,246,0.13);
+  }
+
+  .rf-partner-avatar {
+    width: 40px; height: 40px; flex: 0 0 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: 15px;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    box-shadow: 0 6px 14px rgba(139,92,246,0.28);
+    letter-spacing: -0.5px;
+  }
+  .rf-partner-avatar[data-type="bnb"]        { background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 6px 14px rgba(14,165,233,0.28); }
+  .rf-partner-avatar[data-type="tours"]      { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 6px 14px rgba(16,185,129,0.28); }
+  .rf-partner-avatar[data-type="restaurant"] { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 6px 14px rgba(245,158,11,0.28); }
+  .rf-partner-avatar[data-type="laundry"]    { background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 6px 14px rgba(99,102,241,0.28); }
+  .rf-partner-avatar[data-type="mixed"]      { background: linear-gradient(135deg, #ec4899, #8b5cf6); box-shadow: 0 6px 14px rgba(236,72,153,0.28); }
+
+  .rf-partner-meta { min-width: 0; flex: 1; }
+  .rf-partner-name {
+    display: block;
+    font-size: 13.5px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    letter-spacing: -0.1px;
+  }
+  .rf-partner-sub {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2);
+    margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .rf-partner-check {
+    flex: 0 0 22px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    display: grid; place-items: center;
+    color: transparent;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .rf-partner-check svg { width: 12px; height: 12px; }
+  .rf-partner input:checked + .rf-partner-face .rf-partner-check {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(139,92,246,0.35);
+  }
+
+  /* ---- Grid ---- */
+  .rf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .rf-field.rf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .rf-grid { grid-template-columns: 1fr; }
+  }
+
+  .rf-field { display: flex; flex-direction: column; }
+  .rf-field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .rf-field .req { color: var(--danger); margin-left: 2px; }
+  .rf-field .input,
+  .rf-field select,
+  .rf-field textarea { margin-bottom: 0; }
+
+  .rf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ---- Money input ---- */
+  .rf-money {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .rf-money .rf-money-prefix {
+    position: absolute;
+    left: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+    pointer-events: none;
+  }
+  .rf-money .input { padding-left: 46px; }
+
+  /* ---- Actions ---- */
+  .rf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ---- Aside ---- */
+  .rf-aside {
+    display: flex; flex-direction: column; gap: 14px;
+    position: sticky; top: 84px;
+  }
+  @media (max-width: 960px) {
+    .rf-aside { position: static; }
+  }
+
+  .rf-summary {
+    background:
+      radial-gradient(300px 120px at 0% 0%, rgba(139,92,246,0.10), transparent 60%),
+      #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rf-summary h4 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .rf-sum-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .rf-sum-row strong {
+    color: var(--text); font-weight: 700;
+    font-size: 13.5px;
+    text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .rf-sum-divider {
+    height: 1px;
+    background: var(--line-2);
+    margin: 8px 0;
+  }
+  .rf-sum-commission {
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    margin-top: 6px;
+  }
+  .rf-sum-commission strong {
+    font-size: 15px;
+    color: var(--brand-2);
+  }
+
+  /* ---- Tip cards ---- */
+  .rf-tip {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .rf-tip-icon {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe;
+  }
+  .rf-tip-icon.accent-purple { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+  .rf-tip-icon.accent-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .rf-tip-icon.accent-rose   { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .rf-tip-icon svg { width: 16px; height: 16px; }
+  .rf-tip h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .rf-tip-text, .rf-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .rf-list { margin: 0; padding-left: 18px; }
+  .rf-list li { margin-bottom: 4px; }
+
+  /* ---- Empty state ---- */
+  .rf-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rf-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe;
+  }
+  .rf-empty-ico svg { width: 28px; height: 28px; }
+  .rf-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .rf-form { padding: 4px 16px 16px; }
+    .rf-header h1 { font-size: 18px; }
+    .rf-actions .btn { flex: 1; justify-content: center; }
+    .rf-sum-row strong { max-width: 150px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ----------------------------- Live summary -----------------------------
+    var partnerRadios = document.querySelectorAll('input[name="to_org"]');
+    var guestName     = document.getElementById('id_guest_name');
+    var service       = document.getElementById('id_service_needed');
+    var valueEl       = document.getElementById('id_value');
+    var commissionEl  = document.getElementById('id_commission');
+
+    var sumPartner    = document.getElementById('sumPartner');
+    var sumGuest      = document.getElementById('sumGuest');
+    var sumService    = document.getElementById('sumService');
+    var sumValue      = document.getElementById('sumValue');
+    var sumCommission = document.getElementById('sumCommission');
+
+    function fmt(n) {
+      var num = Number(n) || 0;
+      return 'KES ' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function selectedPartnerName() {
+      for (var i = 0; i < partnerRadios.length; i++) {
+        if (partnerRadios[i].checked) {
+          var face = partnerRadios[i].parentElement.querySelector('.rf-partner-name');
+          return face ? face.textContent.trim() : '—';
+        }
+      }
+      return '—';
+    }
+
+    function update() {
+      sumPartner.textContent  = selectedPartnerName();
+      sumGuest.textContent    = (guestName.value || '').trim() || '—';
+      sumService.textContent  = (service.value || '').trim() || '—';
+      sumValue.textContent    = fmt(valueEl.value);
+      sumCommission.textContent = fmt(commissionEl.value);
+    }
+
+    partnerRadios.forEach(function (r) { r.addEventListener('change', update); });
+    [guestName, service, valueEl, commissionEl].forEach(function (el) {
+      if (el) {
+        el.addEventListener('input', update);
+        el.addEventListener('change', update);
+      }
+    });
+
+    update();
+  })();
+</script>
+{% endblock %}

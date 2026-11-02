@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>StayHub — Sign in</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --indigo: #4f46e5;
+    --indigo-2: #6366f1;
+    --violet: #8b5cf6;
+    --cyan: #22d3ee;
+    --yellow: #febb02;
+
+    --text: #0f172a;
+    --text-2: #334155;
+    --muted: #64748b;
+    --muted-2: #94a3b8;
+    --line: #e2e8f0;
+    --line-2: #eef2f7;
+
+    --danger-bg: #fef2f2;
+    --danger-fg: #991b1b;
+    --danger-bd: #fecaca;
+    --success-bg: #ecfdf5;
+    --success-fg: #065f46;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: #f4f5fb;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.55;
+  }
+
+  /* ============ SHELL ============ */
+  .shell {
+    display: grid;
+    grid-template-columns: 500px 1fr;
+    min-height: 100vh;
+  }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ============ LEFT: PROMO ============ */
+  .promo {
+    position: relative;
+    overflow: hidden;
+    padding: 48px 44px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(700px 500px at 0% 0%, rgba(139,92,246,0.55), transparent 60%),
+      radial-gradient(600px 400px at 100% 100%, rgba(34,211,238,0.35), transparent 55%),
+      linear-gradient(155deg, #1e1b4b 0%, #312e81 45%, #4338ca 100%);
+  }
+  .promo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(400px 260px at 90% -10%, rgba(244,63,94,0.30), transparent 60%),
+      radial-gradient(400px 260px at -10% 110%, rgba(34,211,238,0.28), transparent 60%);
+    pointer-events: none;
+  }
+  @media (max-width: 900px) {
+    .promo { display: none; }
+  }
+
+  .promo > * { position: relative; z-index: 1; }
+
+  .promo-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .promo-mark {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #22d3ee 100%);
+    box-shadow: 0 12px 30px rgba(139,92,246,0.55);
+    position: relative;
+  }
+  .promo-mark::before {
+    content: "";
+    position: absolute; inset: 1.5px; border-radius: 10.5px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  .promo-mark svg { width: 22px; height: 22px; color: #fff; }
+  .promo-brand-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .promo-brand-tag { font-size: 11.5px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+
+  .promo-hero { margin: 34px 0 26px; }
+  .promo-hero h1 {
+    font-size: 32px;
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    margin-bottom: 14px;
+  }
+  .promo-hero h1 span {
+    background: linear-gradient(90deg, #a5b4fc, #67e8f9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .promo-hero p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.65;
+    max-width: 380px;
+  }
+
+  .promo-stats {
+    display: flex;
+    gap: 24px;
+    padding: 18px 0;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    margin-bottom: 24px;
+  }
+  .promo-stat { display: flex; flex-direction: column; }
+  .promo-stat strong {
+    font-size: 20px; font-weight: 800;
+    letter-spacing: -0.4px;
+  }
+  .promo-stat span {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+
+  .promo-features { display: grid; gap: 14px; }
+  .promo-feature {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.88);
+    line-height: 1.5;
+  }
+  .promo-feature .badge {
+    flex: 0 0 26px;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: #c7d2fe;
+  }
+  .promo-feature .badge svg { width: 13px; height: 13px; }
+  .promo-feature strong { color: #fff; font-weight: 700; display: block; }
+  .promo-feature small {
+    display: block;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+  }
+
+  .promo-footer {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 32px;
+  }
+
+  /* ============ RIGHT: FORM ============ */
+  .form-panel {
+    background: #ffffff;
+    display: flex;
+    justify-content: center;
+    padding: 44px 24px;
+    overflow-y: auto;
+  }
+  .form-inner {
+    width: 100%;
+    max-width: 440px;
+    margin: auto 0;
+  }
+
+  /* Segmented tabs */
+  .seg {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    margin-bottom: 28px;
+  }
+  .seg a {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 9px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  .seg a:hover { color: var(--text); }
+  .seg a.active {
+    background: #ffffff;
+    color: var(--indigo-2);
+    box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+  }
+  .seg a svg { width: 14px; height: 14px; }
+
+  /* Heading */
+  .head { margin-bottom: 22px; }
+  .head h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.7px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .head p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  @media (max-width: 480px) {
+    .head h2 { font-size: 24px; letter-spacing: -0.5px; }
+  }
+
+  /* Alerts */
+  .alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    line-height: 1.5;
+  }
+  .alert svg { width: 16px; height: 16px; flex: 0 0 16px; margin-top: 1px; }
+  .alert.error   { background: var(--danger-bg);  color: var(--danger-fg);  border-color: var(--danger-bd); }
+  .alert.success { background: var(--success-bg); color: var(--success-fg); border-color: #a7f3d0; }
+
+  /* Fields */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 7px;
+  }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap .ico {
+    position: absolute;
+    left: 14px;
+    display: grid; place-items: center;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    pointer-events: none;
+    transition: color 0.15s;
+  }
+  .input-wrap .ico svg { width: 16px; height: 16px; }
+
+  .input-wrap input {
+    width: 100%;
+    padding: 13px 14px 13px 42px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--text);
+    background: #f8fafc;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .input-wrap input::placeholder { color: var(--muted-2); }
+  .input-wrap input:hover { background: #fff; }
+  .input-wrap input:focus {
+    border-color: var(--indigo-2);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.14);
+  }
+  .input-wrap:focus-within .ico { color: var(--indigo-2); }
+
+  .input-wrap .peek {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--muted-2);
+    display: grid; place-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .input-wrap .peek:hover { color: var(--indigo-2); background: #f1f5f9; }
+  .input-wrap .peek svg { width: 16px; height: 16px; }
+
+  /* Row: remember + forgot */
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 6px 0 22px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .row-between label {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-2);
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+  }
+  .row-between input[type="checkbox"] {
+    appearance: none;
+    width: 18px; height: 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .row-between input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    border-color: transparent;
+  }
+  .row-between input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 6px; height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .row-between a {
+    color: var(--indigo);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .row-between a:hover { text-decoration: underline; }
+
+  /* Primary button */
+  .btn-primary {
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+    box-shadow: 0 12px 26px rgba(79,70,229,0.30);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: filter 0.15s, box-shadow 0.2s, transform 0.05s;
+  }
+  .btn-primary:hover { filter: brightness(1.05); box-shadow: 0 16px 34px rgba(79,70,229,0.40); }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary svg { width: 16px; height: 16px; }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 26px 0 16px;
+    color: var(--muted-2);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  /* Bottom hint with two clear paths */
+  .bottom-links {
+    display: grid;
+    gap: 10px;
+  }
+  .bottom-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, transform 0.05s;
+  }
+  .bottom-link:hover {
+    background: #fff;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+  .bottom-link-icon {
+    flex: 0 0 32px;
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: var(--indigo-2);
+    border: 1px solid #e0e7ff;
+  }
+  .bottom-link-icon svg { width: 15px; height: 15px; }
+  .bottom-link strong { display: block; font-size: 13px; font-weight: 700; color: var(--text); }
+  .bottom-link span { display: block; font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .bottom-link-arrow {
+    margin-left: auto;
+    color: var(--muted-2);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .bottom-link-arrow svg { width: 14px; height: 14px; }
+  .bottom-link:hover .bottom-link-arrow { color: var(--indigo-2); transform: translateX(3px); }
+
+  /* Trust strip at the bottom */
+  .trust-strip {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 26px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
+  .trust-strip svg { width: 12px; height: 12px; color: #10b981; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .form-panel { padding: 32px 20px; }
+    .seg { margin-bottom: 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ==================== LEFT: PROMO ==================== -->
+  <aside class="promo">
+    <div>
+      <div class="promo-brand">
+        <div class="promo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5"/>
+            <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/>
+            <path d="M10 21v-6h4v6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="promo-brand-name">StayHub</div>
+          <div class="promo-brand-tag">One account. Many businesses.</div>
+        </div>
+      </div>
+
+      <div class="promo-hero">
+        <h1>Run your whole business<br><span>from one workspace.</span></h1>
+        <p>Short-stay rentals, tours, restaurants, laundry and a trusted partner network — unified, secure, and built for East Africa.</p>
+      </div>
+
+      <div class="promo-stats">
+        <div class="promo-stat">
+          <strong>KES</strong>
+          <span>Ready</span>
+        </div>
+        <div class="promo-stat">
+          <strong>M-Pesa</strong>
+          <span>Enabled</span>
+        </div>
+        <div class="promo-stat">
+          <strong>24/7</strong>
+          <span>Support</span>
+        </div>
+      </div>
+
+      <div class="promo-features">
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>Complete booking management</strong>
+            <small>Every booking, guest and property in one place.</small>
+          </div>
+        </div>
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>Finances, invoices &amp; receipts</strong>
+            <small>Real-time reporting, automatic documents.</small>
+          </div>
+        </div>
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>Verified partner network</strong>
+            <small>Collaborate with other trusted businesses.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="promo-footer">
+      © <span id="year"></span> StayHub · Built for East Africa
+    </div>
+  </aside>
+
+  <!-- ==================== RIGHT: FORM ==================== -->
+  <main class="form-panel">
+    <div class="form-inner">
+
+      <!-- Tabs -->
+      <div class="seg" role="tablist">
+        <a href="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="active" role="tab" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Sign in
+        </a>
+        <a href="{% url 'guest_register' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="20" y1="8" x2="20" y2="14"/>
+            <line x1="23" y1="11" x2="17" y2="11"/>
+          </svg>
+          Create account
+        </a>
+      </div>
+
+      <!-- Heading -->
+      <div class="head">
+        <h2>Welcome back</h2>
+        <p>Sign in to your StayHub account — guests and business users use the same login.</p>
+      </div>
+
+      <!-- Errors -->
+      {% if form.errors %}
+        <div class="alert error" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Invalid username or password. Please try again.</span>
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for m in messages %}
+          <div class="alert {{ m.tags|default:'error' }}" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ m }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <form method="post" novalidate autocomplete="on" id="signinForm">
+        {% csrf_token %}
+        {% if request.GET.next %}
+          <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% endif %}
+
+        <div class="field">
+          <label for="id_username">Username or email</label>
+          <div class="input-wrap">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            {{ form.username }}
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="id_password">Password</label>
+          <div class="input-wrap">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="11" width="16" height="10" rx="2"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+              </svg>
+            </span>
+            {{ form.password }}
+            <button type="button" class="peek" id="togglePwd" aria-label="Show password">
+              <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="row-between">
+          <label>
+            <input type="checkbox" name="remember" value="1">
+            <span>Remember me</span>
+          </label>
+          <a href="{% url 'password_reset' %}">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-primary">
+          <span>Sign in</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider">New to StayHub?</div>
+
+      <!-- Bottom links -->
+      <div class="bottom-links">
+        <a href="{% url 'guest_register' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="bottom-link">
+          <span class="bottom-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </span>
+          <span>
+            <strong>Create a free account</strong>
+            <span>Book stays, tours, food and more in minutes</span>
+          </span>
+          <span class="bottom-link-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+        </a>
+
+        <a href="{% url 'marketplace:home' %}" class="bottom-link">
+          <span class="bottom-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <span>
+            <strong>Browse without signing in</strong>
+            <span>Explore listings as a guest</span>
+          </span>
+          <span class="bottom-link-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+        </a>
+      </div>
+
+      <!-- Trust -->
+      <div class="trust-strip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Secure access · Your data stays private
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Password visibility toggle
+  (function () {
+    var btn = document.getElementById('togglePwd');
+    var pwd = document.getElementById('id_password');
+    var icon = document.getElementById('eyeIcon');
+    if (!btn || !pwd) return;
+
+    var openSVG = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>';
+    var closedSVG = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+
+    btn.addEventListener('click', function () {
+      var hidden = pwd.type === 'password';
+      pwd.type = hidden ? 'text' : 'password';
+      icon.innerHTML = hidden ? closedSVG : openSVG;
+      btn.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+    });
+  })();
+
+  // Prevent empty submissions with subtle shake
+  (function () {
+    var form = document.getElementById('signinForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      var u = document.getElementById('id_username');
+      var p = document.getElementById('id_password');
+      if (!u.value.trim() || !p.value.trim()) {
+        e.preventDefault();
+        [u, p].forEach(function (el) {
+          if (!el.value.trim()) {
+            el.style.borderColor = '#ef4444';
+            el.style.boxShadow = '0 0 0 4px rgba(239,68,68,0.15)';
+            setTimeout(function () {
+              el.style.borderColor = '';
+              el.style.boxShadow = '';
+            }, 1600);
+          }
+        });
+      }
+    });
+  })();
+</script>
+</body>
+</html>

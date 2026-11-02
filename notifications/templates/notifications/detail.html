@@ -1,0 +1,85 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}{{ notification.subject|default:"Notification" }} — StayHub{% endblock %}
+{% block page_title %}Notification{% endblock %}
+{% block breadcrumb %}
+  <span class="crumb">
+    <a href="{% url 'notifications:inbox' %}" style="color:inherit;">Notifications</a>
+    · Detail
+  </span>
+{% endblock %}
+
+{% block content %}
+
+<div style="max-width:760px;">
+
+  <a href="{% url 'notifications:inbox' %}" class="btn secondary sm" style="margin-bottom:16px;">
+    ← Back to inbox
+  </a>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+      <span class="tag gray">{{ notification.get_channel_display }}</span>
+      {% if notification.kind %}
+        <span class="tag">{{ notification.kind|title }}</span>
+      {% endif %}
+      {% if notification.priority == 'high' %}
+        <span class="tag red">High priority</span>
+      {% endif %}
+      {% if notification.is_read %}
+        <span class="tag green"><span class="dot"></span>Read</span>
+      {% else %}
+        <span class="tag yellow"><span class="dot"></span>Unread</span>
+      {% endif %}
+    </div>
+
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.3px;margin:0 0 12px;">
+      {{ notification.subject|default:"Notification" }}
+    </h2>
+
+    <div style="
+        color:var(--muted);font-size:12.5px;
+        display:flex;gap:14px;flex-wrap:wrap;
+        padding-bottom:16px;margin-bottom:16px;
+        border-bottom:1px solid var(--line-2);
+    ">
+      <span>{{ notification.created_at|date:"F j, Y · H:i" }}</span>
+      {% if notification.event %}
+        <span style="font-family:ui-monospace,monospace;">{{ notification.event }}</span>
+      {% endif %}
+    </div>
+
+    <div style="color:var(--text-2);font-size:14px;line-height:1.7;white-space:pre-wrap;">
+      {{ notification.body|default:"(no body)" }}
+    </div>
+
+    {% if notification.guest_booking %}
+      <div style="margin-top:20px;padding:14px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);">
+        <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:6px;">
+          Related booking
+        </div>
+        <div style="font-size:13.5px;font-weight:700;color:var(--text);">
+          {{ notification.guest_booking.reference }} · {{ notification.guest_booking.listing.title }}
+        </div>
+        <a href="{% url 'guestaccount:booking_detail' notification.guest_booking.pk %}"
+           class="btn secondary sm" style="margin-top:10px;">
+          View booking
+        </a>
+      </div>
+    {% endif %}
+
+    {% if notification.error %}
+      <div style="margin-top:20px;padding:14px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;">
+        <div style="font-size:11.5px;color:#991b1b;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:6px;">
+          Error
+        </div>
+        <div style="font-size:13px;color:#7f1d1d;font-family:ui-monospace,monospace;white-space:pre-wrap;">
+          {{ notification.error }}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

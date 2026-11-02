@@ -1,0 +1,225 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}{% if category %}Edit category{% else %}New category{% endif %} — BnB{% endblock %}
+
+{% block content %}
+
+<div class="ecf-head">
+  <a href="{% url 'bnb_expense_category_list' %}" class="ecf-back">← Back to categories</a>
+  <h1 class="ecf-title">
+    {% if category %}Edit “{{ category.name }}”{% else %}Add a category{% endif %}
+  </h1>
+</div>
+
+<form method="post" class="ecf" novalidate>
+  {% csrf_token %}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="ecf-alert" role="alert">
+      {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="ecf-grid">
+
+    {# Name #}
+    <div class="ecf-field ecf-full {% if form.name.errors %}has-error{% endif %}">
+      <label for="{{ form.name.id_for_label }}">
+        Name <span class="req">*</span>
+      </label>
+      {{ form.name }}
+      {% for err in form.name.errors %}<small class="ecf-error">{{ err }}</small>{% endfor %}
+      <small class="ecf-help">Shown in the expense form dropdown, e.g. “Cleaning”, “Utilities”.</small>
+    </div>
+
+    {# Description #}
+    <div class="ecf-field ecf-full {% if form.description.errors %}has-error{% endif %}">
+      <label for="{{ form.description.id_for_label }}">Description</label>
+      {{ form.description }}
+      {% for err in form.description.errors %}<small class="ecf-error">{{ err }}</small>{% endfor %}
+      <small class="ecf-help">Optional — helps you remember what this category covers.</small>
+    </div>
+
+    {# Recurring toggle #}
+    <div class="ecf-field ecf-full {% if form.is_recurring.errors %}has-error{% endif %}">
+      <label class="ecf-check">
+        {{ form.is_recurring }}
+        <span>
+          <strong>Recurring</strong>
+          <small>Tick if this is a regular cost (rent, utilities, salaries).</small>
+        </span>
+      </label>
+      {% for err in form.is_recurring.errors %}<small class="ecf-error">{{ err }}</small>{% endfor %}
+    </div>
+
+  </div>
+
+  <div class="ecf-actions">
+    <a href="{% url 'bnb_expense_category_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      {% if category %}Save changes{% else %}Create category{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .ecf-head { margin-bottom: 18px; }
+  .ecf-back {
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 700; text-decoration: none;
+    transition: color .15s;
+  }
+  .ecf-back:hover { color: var(--text); }
+  .ecf-title {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.4px; margin-top: 6px;
+    color: var(--text);
+  }
+
+  .ecf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 24px 26px;
+    box-shadow: var(--shadow-sm);
+    max-width: 640px;
+  }
+  @media (max-width: 640px) {
+    .ecf { padding: 18px 16px; border-radius: 14px; }
+  }
+
+  .ecf-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .ecf-field.ecf-full { grid-column: 1 / -1; }
+
+  .ecf-field label {
+    font-size: 12.5px; font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .ecf-field .req { color: #ef4444; margin-left: 2px; }
+
+  .ecf-field input[type="text"],
+  .ecf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .ecf-field textarea {
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.5;
+  }
+  .ecf-field input[type="text"]:hover,
+  .ecf-field textarea:hover { border-color: #cbd5e1; }
+  .ecf-field input[type="text"]:focus,
+  .ecf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .ecf-help {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 4px;
+  }
+
+  .ecf-check {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    padding: 12px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #f8fafc;
+    user-select: none;
+    transition: border-color .15s, background .15s;
+    width: 100%;
+  }
+  .ecf-check:hover { border-color: #cbd5e1; background: #fff; }
+  .ecf-check input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--brand-1);
+    cursor: pointer; margin: 3px 0 0 0;
+    flex-shrink: 0;
+  }
+  .ecf-check strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .ecf-check small {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .ecf-field.has-error input[type="text"],
+  .ecf-field.has-error textarea {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .ecf-field.has-error .ecf-check {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .ecf-error {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #b91c1c;
+  }
+
+  .ecf-alert {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .ecf-alert p { margin: 0; }
+
+  .ecf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  @media (max-width: 480px) {
+    .ecf-actions { flex-direction: column-reverse; }
+    .ecf-actions .btn { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}

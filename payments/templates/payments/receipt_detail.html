@@ -1,0 +1,314 @@
+{% extends 'payments/base.html' %}
+{% block pay_title %}Receipt {{ receipt.number }}{% endblock %}
+
+{% block pay_content %}
+
+<div class="pay-header">
+  <h1>Receipt</h1>
+  <p>Your official receipt for this booking. Keep it safe for your records.</p>
+</div>
+
+<div class="receipt">
+
+  <header class="receipt-head">
+    <div>
+      <div class="receipt-brand">
+        <span class="receipt-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5"/>
+            <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/>
+          </svg>
+        </span>
+        <div>
+          <strong>{{ receipt.business_name|default:"StayHub" }}</strong>
+          <span>Issued via StayHub</span>
+        </div>
+      </div>
+    </div>
+    <div class="receipt-number">
+      <span>Receipt #</span>
+      <strong>{{ receipt.number }}</strong>
+    </div>
+  </header>
+
+  <section class="receipt-parties">
+    <div class="receipt-party">
+      <span class="receipt-label">From</span>
+      <strong>{{ receipt.business_name|default:"—" }}</strong>
+      {% if organization.location %}<span>{{ organization.location }}</span>{% endif %}
+      {% if organization.email %}<span>{{ organization.email }}</span>{% endif %}
+    </div>
+    <div class="receipt-party">
+      <span class="receipt-label">To</span>
+      <strong>{{ receipt.customer_name|default:"—" }}</strong>
+      {% if receipt.customer_email %}<span>{{ receipt.customer_email }}</span>{% endif %}
+      {% if receipt.customer_phone %}<span>{{ receipt.customer_phone }}</span>{% endif %}
+    </div>
+  </section>
+
+  <section class="receipt-meta">
+    <div><span>Issued</span><strong>{{ receipt.issued_at|date:"d M Y, H:i" }}</strong></div>
+    <div><span>Booking ref</span><strong>{{ booking.reference }}</strong></div>
+    {% if receipt.payment_attempt %}
+      <div><span>Payment ref</span><strong>{{ receipt.payment_attempt.reference }}</strong></div>
+      {% if receipt.payment_attempt.mpesa_receipt %}
+        <div><span>M-Pesa ref</span><strong>{{ receipt.payment_attempt.mpesa_receipt }}</strong></div>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="receipt-items">
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>{{ receipt.description|default:listing.title }}</strong>
+            <span class="receipt-sub">
+              {% if booking.start_date %}Start {{ booking.start_date|date:"d M Y" }}{% endif %}
+              {% if booking.end_date %} · End {{ booking.end_date|date:"d M Y" }}{% endif %}
+              · Qty {{ booking.quantity }}
+            </span>
+          </td>
+          <td style="text-align:right;">KES {{ booking.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Service fee</td>
+          <td style="text-align:right;">KES {{ booking.service_fee|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="receipt-total">
+          <td style="text-align:right;">Total paid</td>
+          <td style="text-align:right;"><strong>KES {{ receipt.amount|floatformat:2 }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  {% if receipt.notes %}
+    <section class="receipt-notes">
+      <span class="receipt-label">Notes</span>
+      <p>{{ receipt.notes }}</p>
+    </section>
+  {% endif %}
+
+  <footer class="receipt-foot">
+    <p>Thank you for booking with {{ receipt.business_name|default:"StayHub" }}.</p>
+    <p class="receipt-small">This receipt was issued electronically and is valid without a signature.</p>
+  </footer>
+
+</div>
+
+<div class="receipt-actions">
+  <button type="button" class="mkt-btn outline" onclick="window.print();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print / Save as PDF
+  </button>
+  <a href="{% url 'guestaccount:booking_detail' booking.pk %}" class="mkt-btn">Back to booking</a>
+</div>
+
+{% endblock %}
+
+
+{% block pay_extra_head %}
+<style>
+  .receipt {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-md);
+    padding: 30px;
+  }
+  @media (max-width: 640px) { .receipt { padding: 22px; } }
+
+  .receipt-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .receipt-brand { display: flex; align-items: center; gap: 12px; }
+  .receipt-mark {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2) 55%, var(--brand-3));
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(99,102,241,0.35);
+  }
+  .receipt-mark svg { width: 20px; height: 20px; }
+  .receipt-brand strong {
+    display: block;
+    font-size: 15.5px; font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+  .receipt-brand span {
+    display: block;
+    font-size: 12px; color: var(--muted-2);
+  }
+  .receipt-number { text-align: right; }
+  .receipt-number span {
+    display: block;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2); font-weight: 700;
+  }
+  .receipt-number strong {
+    display: block;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 15px; font-weight: 800;
+    color: var(--text);
+    margin-top: 3px;
+    letter-spacing: 0.4px;
+  }
+
+  .receipt-parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 520px) { .receipt-parties { grid-template-columns: 1fr; } }
+
+  .receipt-label {
+    display: block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .receipt-party strong {
+    display: block;
+    font-size: 14.5px;
+    color: var(--text);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .receipt-party span {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .receipt-meta {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .receipt-meta div {
+    display: flex; flex-direction: column;
+    gap: 2px;
+  }
+  .receipt-meta span {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2);
+    font-weight: 700;
+  }
+  .receipt-meta strong {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 700;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .receipt-items { padding: 22px 0; }
+
+  .receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .receipt-table th {
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 4px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2);
+    font-weight: 700;
+    text-align: left;
+  }
+  .receipt-table td {
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 13.5px;
+    color: var(--text);
+    vertical-align: top;
+  }
+  .receipt-table td strong { font-weight: 700; display: block; }
+  .receipt-sub {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .receipt-total td {
+    border-bottom: none;
+    border-top: 2px solid var(--line);
+    padding-top: 16px;
+    font-size: 14px;
+  }
+  .receipt-total strong {
+    font-size: 18px;
+    color: var(--brand-1);
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    display: inline !important;
+  }
+
+  .receipt-notes {
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  .receipt-notes p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .receipt-foot {
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .receipt-foot p {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .receipt-foot .receipt-small {
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
+
+  .receipt-actions {
+    display: flex; justify-content: center;
+    gap: 10px; margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .receipt-actions .mkt-btn { padding: 12px 18px; font-size: 13.5px; }
+
+  /* Print styles */
+  @media print {
+    .mkt-topbar, .mkt-catbar, .mkt-footer,
+    .mkt-messages, .receipt-actions, .pay-crumb { display: none !important; }
+    body { background: #fff; }
+    .pay-wrap { max-width: none; padding: 0; }
+    .receipt { box-shadow: none; border: none; padding: 0; }
+  }
+</style>
+{% endblock %}

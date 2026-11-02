@@ -1,0 +1,472 @@
+{% extends 'tours/base.html' %}
+{% block title %}Vehicles — Tours{% endblock %}
+{% block page_title %}Vehicles{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="vl-header">
+  <div>
+    <h1>Vehicle Fleet</h1>
+    <p>
+      {% if vehicles %}
+        {{ vehicles|length }} vehicle{{ vehicles|length|pluralize }} in your fleet.
+      {% else %}
+        No vehicles registered yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'tours_vehicle_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Vehicle
+  </a>
+</div>
+
+{% if vehicles %}
+
+<!-- ============ KPIs ============ -->
+<div class="vl-kpis">
+  <div class="vl-kpi">
+    <div class="vl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 17h14"/>
+        <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+        <circle cx="7.5" cy="17.5" r="1.5"/>
+        <circle cx="16.5" cy="17.5" r="1.5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="vl-kpi-value">{{ vehicles|length }}</div>
+      <div class="vl-kpi-label">Total vehicles</div>
+    </div>
+  </div>
+
+  <div class="vl-kpi">
+    <div class="vl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="vl-kpi-value" id="kpiCapacity">0</div>
+      <div class="vl-kpi-label">Total seats</div>
+    </div>
+  </div>
+
+  <div class="vl-kpi">
+    <div class="vl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/>
+        <line x1="7" y1="10" x2="17" y2="10"/>
+        <line x1="7" y1="14" x2="13" y2="14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="vl-kpi-value" id="kpiWithPlate">0</div>
+      <div class="vl-kpi-label">With plate</div>
+    </div>
+  </div>
+
+  <div class="vl-kpi">
+    <div class="vl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="vl-kpi-value" id="kpiAvgCapacity">0</div>
+      <div class="vl-kpi-label">Avg. seats</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Search ============ -->
+<div class="vl-toolbar">
+  <div class="vl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="vlSearch" placeholder="Search by name or plate number…" autocomplete="off">
+  </div>
+  <div class="vl-count" id="vlCount">{{ vehicles|length }} vehicle{{ vehicles|length|pluralize }}</div>
+</div>
+
+<!-- ============ Vehicle cards ============ -->
+<div class="vl-grid" id="vlGrid">
+  {% for v in vehicles %}
+  <article class="vl-card"
+           data-search="{{ v.name|lower }} {{ v.plate_number|lower }}">
+    <div class="vl-card-head">
+      <div class="vl-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17h14"/>
+          <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+          <circle cx="7.5" cy="17.5" r="1.5"/>
+          <circle cx="16.5" cy="17.5" r="1.5"/>
+        </svg>
+      </div>
+      <div class="vl-card-id">
+        <h3 class="vl-name">{{ v.name }}</h3>
+        {% if v.plate_number %}
+          <span class="vl-plate">{{ v.plate_number }}</span>
+        {% else %}
+          <span class="vl-plate vl-plate-missing">No plate on file</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="vl-card-footer">
+      <div class="vl-stat">
+        <span class="vl-stat-value">{{ v.capacity }}</span>
+        <span class="vl-stat-label">Seat{{ v.capacity|pluralize }}</span>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="vl-empty-filter" id="vlEmptyFilter" hidden>
+  <div class="vl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try a different search term.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="vl-empty">
+  <div class="vl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 17h14"/>
+      <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+      <circle cx="7.5" cy="17.5" r="1.5"/>
+      <circle cx="16.5" cy="17.5" r="1.5"/>
+    </svg>
+  </div>
+  <h4>No vehicles yet</h4>
+  <p class="muted">Add your first vehicle to start assigning them to tours and transfers.</p>
+  <a href="{% url 'tours_vehicle_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Vehicle
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Vehicles list ================= */
+
+  /* ---- Header ---- */
+  .vl-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .vl-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .vl-header p { font-size: 13px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .vl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .vl-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .vl-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .vl-kpi-icon svg { width: 18px; height: 18px; }
+  .vl-kpi-icon.k-green  { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+  .vl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .vl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .vl-kpi-icon.k-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+  .vl-kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .vl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Toolbar ---- */
+  .vl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .vl-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 420px;
+  }
+  .vl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .vl-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .vl-search input::placeholder { color: var(--muted-2); }
+  .vl-search input:focus {
+    outline: none;
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.13);
+  }
+  .vl-count {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+
+  /* ---- Grid ---- */
+  .vl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ---- Vehicle card ---- */
+  .vl-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .vl-card::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10b981, #22d3ee);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .vl-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+  .vl-card:hover::before { opacity: 1; }
+
+  .vl-card-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 20px 16px;
+  }
+  .vl-avatar {
+    width: 52px; height: 52px; flex: 0 0 52px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(16,185,129,0.35);
+  }
+  .vl-avatar svg { width: 26px; height: 26px; }
+  .vl-card-id { min-width: 0; flex: 1; }
+  .vl-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .vl-plate {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .vl-plate-missing {
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--muted-2);
+    background: transparent;
+    border-color: transparent;
+    padding: 0;
+    margin-top: 4px;
+  }
+
+  /* ---- Card footer with capacity ---- */
+  .vl-card-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    border-top: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f6f8fc);
+    margin-top: auto;
+  }
+  .vl-stat {
+    padding: 14px 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .vl-stat-value {
+    font-size: 20px; font-weight: 800; color: var(--brand-2);
+    letter-spacing: -0.4px; line-height: 1.1;
+  }
+  .vl-stat-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* ---- Empty states ---- */
+  .vl-empty-filter,
+  .vl-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .vl-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .vl-empty-ico svg { width: 28px; height: 28px; }
+  .vl-empty h4,
+  .vl-empty-filter h4 {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .vl-header h1 { font-size: 18px; }
+    .vl-grid { grid-template-columns: 1fr; }
+    .vl-avatar { width: 44px; height: 44px; flex-basis: 44px; }
+    .vl-avatar svg { width: 22px; height: 22px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- Search filter ----
+    var search = document.getElementById('vlSearch');
+    var cards  = document.querySelectorAll('.vl-card');
+    var grid   = document.getElementById('vlGrid');
+    var count  = document.getElementById('vlCount');
+    var empty  = document.getElementById('vlEmptyFilter');
+
+    function apply() {
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) count.textContent = visible + ' vehicle' + (visible === 1 ? '' : 's');
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      if (grid) grid.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+
+    // ---- KPIs computed from cards ----
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    var total = cards.length;
+    var totalCapacity = 0;
+    var withPlate = 0;
+
+    cards.forEach(function (c) {
+      var stat = c.querySelector('.vl-stat-value');
+      if (stat) {
+        var n = parseInt((stat.textContent || '').replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(n)) totalCapacity += n;
+      }
+      var plate = c.querySelector('.vl-plate');
+      if (plate && !plate.classList.contains('vl-plate-missing')) {
+        withPlate++;
+      }
+    });
+
+    setText('kpiCapacity', totalCapacity);
+    setText('kpiWithPlate', withPlate);
+    setText('kpiAvgCapacity', total ? Math.round(totalCapacity / total) : 0);
+  })();
+</script>
+{% endblock %}

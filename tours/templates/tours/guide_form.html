@@ -1,0 +1,326 @@
+{% extends 'tours/base.html' %}
+{% block title %}Add Guide — Tours{% endblock %}
+{% block page_title %}Add Guide{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="gf-header">
+  <a href="{% url 'tours_guide_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to guides
+  </a>
+  <h1>Add a tour guide</h1>
+  <p>Register a guide who will lead tours, meet travellers, and represent your business on the ground.</p>
+</div>
+
+<div class="gf-layout">
+
+  <!-- ============ Form ============ -->
+  <form method="post" class="gf-form" novalidate>
+    {% csrf_token %}
+
+    <section class="gf-section">
+      <header class="gf-section-head">
+        <span class="gf-step">1</span>
+        <div>
+          <h2>Guide details</h2>
+          <p>Basic information about the person leading your tours.</p>
+        </div>
+      </header>
+
+      <div class="gf-grid">
+        <div class="gf-field gf-full">
+          <label for="id_name">Full name <span class="req">*</span></label>
+          <div class="gf-input-icon">
+            <span class="gf-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input class="input" type="text" id="id_name" name="name"
+                   placeholder="e.g. Peter Mwangi" required>
+          </div>
+          <p class="gf-hint">This is the name shown on tours and to travellers.</p>
+        </div>
+
+        <div class="gf-field">
+          <label for="id_phone">Phone</label>
+          <div class="gf-input-icon">
+            <span class="gf-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <input class="input" type="text" id="id_phone" name="phone"
+                   placeholder="+254 7XX XXX XXX">
+          </div>
+          <p class="gf-hint">Contact number for coordination.</p>
+        </div>
+
+        <div class="gf-field">
+          <label for="id_languages">Languages</label>
+          <input class="input" type="text" id="id_languages" name="languages"
+                 placeholder="English, Swahili, French">
+          <p class="gf-hint">Comma-separated list of languages they can guide in.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <div class="gf-actions">
+      <a href="{% url 'tours_guide_list' %}" class="btn secondary">Cancel</a>
+      <button type="submit" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        Save Guide
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ Aside ============ -->
+  <aside class="gf-aside">
+
+    <div class="gf-tip">
+      <div class="gf-tip-icon accent-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <div>
+        <h4>What happens next</h4>
+        <ol class="gf-list">
+          <li>The guide is added to your roster.</li>
+          <li>You can assign them to tour bookings.</li>
+          <li>You can edit their details any time.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="gf-tip">
+      <div class="gf-tip-icon accent-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+          <path d="m2 17 10 5 10-5"/>
+          <path d="m2 12 10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Language tips</h4>
+        <ul class="gf-list">
+          <li>List every language the guide can genuinely lead in — not just small talk.</li>
+          <li>Order them by fluency: most comfortable first.</li>
+          <li>Common examples: English, Swahili, French, German, Italian, Spanish, Chinese.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="gf-tip">
+      <div class="gf-tip-icon accent-rose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Privacy</h4>
+        <p class="gf-tip-text">Guide contact details stay in your workspace. They're never shared with other organizations unless you choose to.</p>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Add Guide page ================= */
+
+  /* ---- Header ---- */
+  .gf-header { margin-bottom: 20px; max-width: 720px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--brand-2); background: rgba(16,185,129,0.08); }
+  .back-link svg { width: 14px; height: 14px; }
+
+  .gf-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .gf-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---- Layout ---- */
+  .gf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .gf-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form card ---- */
+  .gf-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 24px 22px;
+  }
+
+  .gf-section { padding: 22px 0 12px; }
+
+  .gf-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .gf-step {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(16,185,129,0.35);
+  }
+  .gf-section-head h2 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px; margin-bottom: 2px;
+  }
+  .gf-section-head p {
+    font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  }
+
+  /* ---- Grid ---- */
+  .gf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .gf-field.gf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .gf-grid { grid-template-columns: 1fr; }
+  }
+
+  .gf-field { display: flex; flex-direction: column; }
+  .gf-field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .gf-field .req { color: var(--danger); margin-left: 2px; }
+  .gf-field .input,
+  .gf-field select,
+  .gf-field textarea { margin-bottom: 0; }
+
+  .gf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ---- Input with icon ---- */
+  .gf-input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .gf-input-icon .gf-icon {
+    position: absolute;
+    left: 12px;
+    display: grid; place-items: center;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .gf-input-icon .gf-icon svg { width: 15px; height: 15px; }
+  .gf-input-icon .input { padding-left: 38px; }
+
+  /* ---- Actions ---- */
+  .gf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 4px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ---- Aside ---- */
+  .gf-aside {
+    display: flex; flex-direction: column; gap: 14px;
+    position: sticky; top: 84px;
+  }
+  @media (max-width: 960px) {
+    .gf-aside { position: static; }
+  }
+
+  .gf-tip {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .gf-tip-icon {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .gf-tip-icon.accent-amber {
+    background: #fffbeb; color: #b45309; border-color: #fde68a;
+  }
+  .gf-tip-icon.accent-rose {
+    background: #fef2f2; color: #b91c1c; border-color: #fecaca;
+  }
+  .gf-tip-icon svg { width: 16px; height: 16px; }
+  .gf-tip h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .gf-tip-text, .gf-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .gf-list { margin: 0; padding-left: 18px; }
+  .gf-list li { margin-bottom: 4px; }
+  .gf-list strong { color: var(--text-2); }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .gf-form { padding: 4px 16px 16px; }
+    .gf-header h1 { font-size: 18px; }
+    .gf-actions .btn { flex: 1; justify-content: center; }
+  }
+</style>
+{% endblock %}

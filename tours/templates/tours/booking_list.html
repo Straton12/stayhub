@@ -1,0 +1,547 @@
+{% extends 'tours/base.html' %}
+{% block title %}Tour Bookings — Tours{% endblock %}
+{% block page_title %}Tour Bookings{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="tbl-header">
+  <div>
+    <h1>Tour Bookings</h1>
+    <p>
+      {% if bookings %}
+        {{ bookings|length }} booking{{ bookings|length|pluralize }} in your workspace.
+      {% else %}
+        No tour bookings recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'tours_booking_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Booking
+  </a>
+</div>
+
+{% if bookings %}
+
+<!-- ============ KPIs ============ -->
+<div class="tbl-kpis">
+  <div class="tbl-kpi">
+    <div class="tbl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tbl-kpi-value" id="kpiTotal">0</div>
+      <div class="tbl-kpi-label">Total bookings</div>
+    </div>
+  </div>
+
+  <div class="tbl-kpi">
+    <div class="tbl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tbl-kpi-value" id="kpiPending">0</div>
+      <div class="tbl-kpi-label">Pending</div>
+    </div>
+  </div>
+
+  <div class="tbl-kpi">
+    <div class="tbl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tbl-kpi-value" id="kpiConfirmed">0</div>
+      <div class="tbl-kpi-label">Confirmed</div>
+    </div>
+  </div>
+
+  <div class="tbl-kpi">
+    <div class="tbl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tbl-kpi-value" id="kpiTravellers">0</div>
+      <div class="tbl-kpi-label">Travellers</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<div class="tbl-toolbar">
+  <div class="tbl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="tblSearch" placeholder="Search by customer, package or destination…" autocomplete="off">
+  </div>
+
+  <div class="tbl-tabs" role="tablist" aria-label="Filter tour bookings">
+    <button type="button" class="tbl-tab active" data-filter="all">All</button>
+    <button type="button" class="tbl-tab" data-filter="pending">Pending</button>
+    <button type="button" class="tbl-tab" data-filter="confirmed">Confirmed</button>
+    <button type="button" class="tbl-tab" data-filter="completed">Completed</button>
+    <button type="button" class="tbl-tab" data-filter="cancelled">Cancelled</button>
+  </div>
+</div>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table id="tblTable">
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Package</th>
+        <th>Destination</th>
+        <th>Travel date</th>
+        <th>Travellers</th>
+        <th style="text-align:right;">Total</th>
+        <th style="text-align:right;">Paid</th>
+        <th style="text-align:right;">Balance</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr class="tbl-row"
+          data-status="{{ b.status }}"
+          data-search="{{ b.customer_name|lower }} {{ b.customer_phone|lower }} {{ b.customer_email|lower }} {{ b.package.name|lower }} {{ b.package.destination|lower }}">
+        <td>
+          <div class="tbl-customer">
+            <div class="tbl-avatar">{{ b.customer_name|slice:":1"|upper }}</div>
+            <div class="tbl-customer-meta">
+              <div class="tbl-customer-name">{{ b.customer_name }}</div>
+              {% if b.customer_phone %}
+                <div class="tbl-customer-sub">{{ b.customer_phone }}</div>
+              {% elif b.customer_email %}
+                <div class="tbl-customer-sub">{{ b.customer_email }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+        <td class="tbl-package">{{ b.package.name }}</td>
+        <td>
+          <span class="tbl-dest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {{ b.package.destination }}
+          </span>
+        </td>
+        <td class="tbl-date">{{ b.travel_date|date:"d M Y" }}</td>
+        <td class="tbl-trav">
+          <span class="tbl-trav-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            {{ b.travellers_count }}
+          </span>
+        </td>
+        <td class="tbl-money">KES {{ b.total_amount|floatformat:2 }}</td>
+        <td class="tbl-money">KES {{ b.amount_paid|floatformat:2 }}</td>
+        <td class="tbl-money">
+          {% with bal=b.total_amount|add:"-0" %}{% endwith %}
+          {% if b.total_amount > b.amount_paid %}
+            <span class="tbl-balance due">KES {{ b.total_amount|floatformat:2|slice:":-1000" }}{{ b.amount_paid|floatformat:2 }}</span>
+          {% else %}
+            <span class="tbl-balance ok">Settled</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="status-pill status-{{ b.status }}">
+            <span class="dot"></span>
+            {{ b.get_status_display }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Filtered-empty state -->
+  <div class="tbl-empty-filter" id="tblEmptyFilter" hidden>
+    <div class="tbl-empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <h4>No matches</h4>
+    <p class="muted">Try adjusting your search or filters.</p>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="tbl-empty">
+  <div class="tbl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  </div>
+  <h4>No tour bookings yet</h4>
+  <p class="muted">Create your first booking to start tracking customers and payments.</p>
+  <a href="{% url 'tours_booking_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Booking
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Tour bookings list ================= */
+
+  /* ---- Header ---- */
+  .tbl-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .tbl-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .tbl-header p { font-size: 13px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .tbl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .tbl-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tbl-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .tbl-kpi-icon svg { width: 18px; height: 18px; }
+  .tbl-kpi-icon.k-green  { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+  .tbl-kpi-icon.k-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .tbl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .tbl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .tbl-kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .tbl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Toolbar ---- */
+  .tbl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .tbl-search {
+    position: relative;
+    flex: 1 1 260px;
+    max-width: 380px;
+  }
+  .tbl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .tbl-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .tbl-search input::placeholder { color: var(--muted-2); }
+  .tbl-search input:focus {
+    outline: none;
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.13);
+  }
+
+  .tbl-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .tbl-tab {
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .tbl-tab:hover { background: #ecfdf5; color: #047857; }
+  .tbl-tab.active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(16,185,129,0.30);
+  }
+
+  /* ---- Customer cell ---- */
+  .tbl-customer { display: flex; align-items: center; gap: 10px; }
+  .tbl-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff; font-weight: 700; font-size: 13px;
+    box-shadow: 0 4px 10px rgba(16,185,129,0.30);
+  }
+  .tbl-customer-meta { min-width: 0; }
+  .tbl-customer-name {
+    font-weight: 700; color: var(--text); font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .tbl-customer-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  /* ---- Package cell ---- */
+  .tbl-package {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 220px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ---- Destination cell ---- */
+  .tbl-dest {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tbl-dest svg { width: 12px; height: 12px; color: var(--muted-2); flex: 0 0 12px; }
+
+  .tbl-date { color: var(--text-2); font-size: 12.5px; white-space: nowrap; }
+
+  /* ---- Travellers badge ---- */
+  .tbl-trav-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .tbl-trav-badge svg { width: 11px; height: 11px; }
+
+  /* ---- Money ---- */
+  .tbl-money {
+    text-align: right;
+    font-size: 12.5px;
+    color: var(--text);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tbl-balance { font-weight: 700; }
+  .tbl-balance.due { color: #b45309; }
+  .tbl-balance.ok  { color: #047857; }
+
+  /* ---- Status pills ---- */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-pending   { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-confirmed { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .status-pill.status-completed { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---- Empty states ---- */
+  .tbl-empty-filter,
+  .tbl-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tbl-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .tbl-empty-ico svg { width: 26px; height: 26px; }
+  .tbl-empty h4,
+  .tbl-empty-filter h4 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1000px) {
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(7), td:nth-child(7),
+    th:nth-child(8), td:nth-child(8) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .tbl-header h1 { font-size: 18px; }
+    .tbl-customer-name, .tbl-customer-sub { max-width: 140px; }
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+    .tbl-tabs { width: 100%; }
+    .tbl-tab { flex: 0 0 auto; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var search = document.getElementById('tblSearch');
+    var tabs   = document.querySelectorAll('.tbl-tab');
+    var rows   = document.querySelectorAll('.tbl-row');
+    var table  = document.getElementById('tblTable');
+    var empty  = document.getElementById('tblEmptyFilter');
+
+    var state = { q: '', filter: 'all' };
+
+    // --- KPI counters computed client-side ---
+    var total = rows.length;
+    var pending = 0, confirmed = 0, travellers = 0;
+    rows.forEach(function (r) {
+      var st = r.dataset.status;
+      if (st === 'pending')   pending++;
+      if (st === 'confirmed') confirmed++;
+
+      var badge = r.querySelector('.tbl-trav-badge');
+      if (badge) {
+        var txt = (badge.textContent || '').replace(/[^0-9]/g, '');
+        var n = parseInt(txt, 10);
+        if (!isNaN(n)) travellers += n;
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiTotal', total);
+    setText('kpiPending', pending);
+    setText('kpiConfirmed', confirmed);
+    setText('kpiTravellers', travellers);
+
+    // --- Filtering ---
+    function apply() {
+      if (!table) return;
+      var visible = 0;
+      rows.forEach(function (r) {
+        var text = r.dataset.search || '';
+        var st   = r.dataset.status || '';
+        var matchQ = !state.q || text.indexOf(state.q) !== -1;
+        var matchF = state.filter === 'all' || st === state.filter;
+        var ok = matchQ && matchF;
+        r.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (empty) empty.hidden = visible !== 0;
+      if (table) table.style.display = visible === 0 ? 'none' : '';
+    }
+
+    if (search) {
+      search.addEventListener('input', function () {
+        state.q = search.value.trim().toLowerCase();
+        apply();
+      });
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        state.filter = t.dataset.filter;
+        apply();
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,415 @@
+{% extends 'laundry/base.html' %}
+{% block title %}Laundry Overview — StayHub{% endblock %}
+{% block page_title %}Laundry Overview{% endblock %}
+
+{% block content %}
+
+<!-- ============ Hero ============ -->
+<div class="ld-hero">
+  <div class="ld-hero-text">
+    <h1>Welcome, {{ user.username|capfirst }}.</h1>
+    <p>
+      {% if user.organization %}
+        Managing <strong>{{ user.organization.name }}</strong>'s laundry services, orders and supplies.
+      {% else %}
+        Your laundry workspace.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ld-hero-actions">
+    <a href="{% url 'laundry_order_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New Order
+    </a>
+    <a href="{% url 'laundry_service_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Add Service
+    </a>
+  </div>
+</div>
+
+<!-- ============ KPIs ============ -->
+<div class="grid mb">
+  <a class="card kpi" href="{% url 'laundry_service_list' %}">
+    <h3>Services</h3>
+    <div class="value">{{ services_count }}</div>
+    <div class="sub">Offered to customers</div>
+  </a>
+  <a class="card kpi kpi-blue" href="{% url 'laundry_order_list' %}">
+    <h3>Total Orders</h3>
+    <div class="value">{{ orders_count }}</div>
+    <div class="sub">All-time orders</div>
+  </a>
+  <a class="card kpi kpi-amber" href="{% url 'laundry_order_list' %}">
+    <h3>Active</h3>
+    <div class="value">{{ active_orders }}</div>
+    <div class="sub">In progress right now</div>
+  </a>
+  <a class="card kpi kpi-green" href="{% url 'laundry_supply_list' %}">
+    <h3>Supplies</h3>
+    <div class="value">{{ supplies_count }}</div>
+    <div class="sub">Items tracked</div>
+  </a>
+</div>
+
+<!-- ============ Quick links ============ -->
+<div class="ld-quick">
+  <a class="ld-quick-item" href="{% url 'laundry_service_list' %}">
+    <span class="ld-quick-ico q-indigo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Services</strong>
+      <small>Manage your catalogue</small>
+    </span>
+    <svg class="ld-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="ld-quick-item" href="{% url 'laundry_order_add' %}">
+    <span class="ld-quick-ico q-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </span>
+    <span>
+      <strong>New order</strong>
+      <small>Take in a customer's laundry</small>
+    </span>
+    <svg class="ld-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="ld-quick-item" href="{% url 'laundry_supply_list' %}">
+    <span class="ld-quick-ico q-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h18v4H3z"/>
+        <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Supplies</strong>
+      <small>Detergents, bags, hangers</small>
+    </span>
+    <svg class="ld-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="ld-quick-item" href="{% url 'network_dashboard' %}">
+    <span class="ld-quick-ico q-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Network</strong>
+      <small>Referrals and partners</small>
+    </span>
+    <svg class="ld-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+</div>
+
+<!-- ============ Recent orders ============ -->
+<div class="section-head">
+  <div>
+    <h3 class="section-title">Recent orders</h3>
+    <p class="muted" style="margin-top:4px;">
+      {% if orders %}
+        Latest {{ orders|length }} order{{ orders|length|pluralize }}.
+      {% else %}
+        Nothing yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px;">
+    <a href="{% url 'laundry_order_list' %}" class="btn secondary sm">View all</a>
+    <a href="{% url 'laundry_order_add' %}" class="btn sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New
+    </a>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Customer</th>
+        <th>Status</th>
+        <th style="text-align:right;">Total</th>
+        <th style="text-align:right;">Paid</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td><span class="ld-order-id">#{{ o.id }}</span></td>
+        <td>
+          <div class="ld-customer">
+            <div class="ld-avatar">{{ o.customer_name|slice:":1"|upper }}</div>
+            <div>
+              <div class="ld-customer-name">{{ o.customer_name }}</div>
+              {% if o.customer_phone %}<div class="ld-customer-sub">{{ o.customer_phone }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="status-pill status-{{ o.status }}">
+            <span class="dot"></span>
+            {{ o.get_status_display }}
+          </span>
+        </td>
+        <td class="ld-money">KES {{ o.total_amount|floatformat:2 }}</td>
+        <td class="ld-money">KES {{ o.amount_paid|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">
+          <div class="ld-empty">
+            <div class="ld-empty-ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <h4>No orders yet</h4>
+            <p class="muted">Create your first order to see it here.</p>
+            <a href="{% url 'laundry_order_add' %}" class="btn" style="margin-top:14px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New Order
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Laundry dashboard ================= */
+
+  /* Hero */
+  .ld-hero {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    padding: 22px 24px;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    background:
+      radial-gradient(600px 200px at 0% 0%, rgba(99,102,241,0.30), transparent 60%),
+      radial-gradient(500px 200px at 100% 100%, rgba(129,140,248,0.22), transparent 60%),
+      linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4338ca 100%);
+    color: #e0e7ff;
+    position: relative; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(30,27,75,0.28);
+  }
+  .ld-hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(700px 260px at 80% -20%, rgba(129,140,248,0.28), transparent 60%);
+    pointer-events: none;
+  }
+  .ld-hero-text { position: relative; z-index: 1; min-width: 240px; }
+  .ld-hero-text h1 {
+    font-size: 22px; font-weight: 800; color: #fff;
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .ld-hero-text p {
+    font-size: 13.5px; color: #c7d2fe; line-height: 1.55; max-width: 560px;
+  }
+  .ld-hero-text strong { color: #fff; font-weight: 700; }
+  .ld-hero-actions {
+    position: relative; z-index: 1;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .ld-hero-actions .btn {
+    background: linear-gradient(135deg, #818cf8, #22d3ee);
+    box-shadow: 0 10px 24px rgba(99,102,241,0.45);
+  }
+  .ld-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: none;
+  }
+  .ld-hero-actions .btn.secondary:hover {
+    background: rgba(255,255,255,0.14);
+    filter: none;
+  }
+
+  /* Quick links */
+  .ld-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .ld-quick-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    color: inherit;
+  }
+  .ld-quick-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .ld-quick-ico {
+    flex: 0 0 36px;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .ld-quick-ico svg { width: 16px; height: 16px; }
+  .q-indigo { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+  .q-amber  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .q-green  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .q-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+  .ld-quick-item > span:nth-child(2) { flex: 1; min-width: 0; }
+  .ld-quick-item strong {
+    display: block;
+    font-size: 13.5px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.1px;
+  }
+  .ld-quick-item small {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2); margin-top: 2px;
+  }
+  .ld-quick-arrow {
+    width: 16px; height: 16px;
+    color: var(--muted-2);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .ld-quick-item:hover .ld-quick-arrow {
+    color: var(--brand-2);
+    transform: translateX(3px);
+  }
+
+  /* Section header */
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  /* Order ID */
+  .ld-order-id {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.4px;
+  }
+
+  /* Customer cell */
+  .ld-customer { display: flex; align-items: center; gap: 10px; }
+  .ld-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #818cf8, #22d3ee);
+    color: #fff; font-weight: 700; font-size: 13px;
+    box-shadow: 0 4px 10px rgba(99,102,241,0.35);
+  }
+  .ld-customer-name {
+    font-weight: 700; color: var(--text); font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .ld-customer-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 1px;
+  }
+
+  /* Money */
+  .ld-money {
+    text-align: right;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Status pills */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-received          { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .status-pill.status-washing           { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+  .status-pill.status-ready             { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-out_for_delivery  { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .status-pill.status-delivered         { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
+  /* Empty state inside table */
+  .ld-empty { padding: 40px 20px; text-align: center; }
+  .ld-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: var(--brand-2);
+    border: 1px solid #e0e7ff;
+  }
+  .ld-empty-ico svg { width: 26px; height: 26px; }
+  .ld-empty h4 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .ld-hero { padding: 18px; }
+    .ld-hero-text h1 { font-size: 18px; }
+    .card .value { font-size: 24px; }
+    .ld-customer-name { max-width: 140px; }
+    th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+</style>
+{% endblock %}

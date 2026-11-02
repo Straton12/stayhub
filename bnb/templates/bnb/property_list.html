@@ -1,0 +1,708 @@
+{% extends 'bnb/propertiessub_base.html' %}
+{% load humanize %}
+{% block title %}Properties — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEADER ==================== #}
+<div class="pl-head">
+  <div>
+    <h1>
+      All properties
+      <span class="pl-scope-pill">Stays</span>
+    </h1>
+    <p class="muted">
+      {% if paginator.count %}
+        Showing {{ properties|length }} of {{ paginator.count }} propert{{ paginator.count|pluralize:"y,ies" }}.
+      {% else %}
+        No properties yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_property_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add property
+  </a>
+</div>
+
+{# ==================== FILTERS ==================== #}
+<form method="get" class="pl-filters" id="plFilters">
+
+  {# Row 1: search + sort + submit #}
+  <div class="pl-filters-row">
+    <div class="pl-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" name="q" value="{{ q|default:'' }}"
+             placeholder="Search by name, location, or address…"
+             autocomplete="off">
+    </div>
+
+    <select name="sort" class="pl-select" aria-label="Sort by">
+      <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+      <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+      <option value="name"   {% if sort == 'name'   %}selected{% endif %}>Name (A–Z)</option>
+    </select>
+
+    <button type="submit" class="btn secondary sm">Apply</button>
+
+    {% if q or category_slug or state or sort != 'newest' %}
+      <a href="{% url 'bnb_property_list' %}" class="btn ghost sm">Reset</a>
+    {% endif %}
+  </div>
+
+  {# Row 2: publication-state chips #}
+  <div class="pl-chips" role="group" aria-label="Filter by publication">
+    <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}sort={{ sort }}"
+       class="pl-chip {% if not state %}is-active{% endif %}">All</a>
+
+    <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}sort={{ sort }}&state=live"
+       class="pl-chip {% if state == 'live' %}is-active{% endif %}">
+      <span class="pl-chip-dot chip-dot-live"></span>
+      Live
+    </a>
+
+    <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}sort={{ sort }}&state=pending"
+       class="pl-chip {% if state == 'pending' %}is-active{% endif %}">
+      <span class="pl-chip-dot chip-dot-pending"></span>
+      Pending
+    </a>
+
+    <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}sort={{ sort }}&state=hidden"
+       class="pl-chip {% if state == 'hidden' %}is-active{% endif %}">
+      <span class="pl-chip-dot chip-dot-hidden"></span>
+      Hidden
+    </a>
+
+    <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}sort={{ sort }}&state=draft"
+       class="pl-chip {% if state == 'draft' %}is-active{% endif %}">
+      <span class="pl-chip-dot chip-dot-draft"></span>
+      Not published
+    </a>
+  </div>
+
+  {# Row 3: category chips (only shown if more than one BnB category exists) #}
+  {% if categories|length > 1 %}
+    <div class="pl-chips" role="group" aria-label="Filter by category">
+      <a href="?{% if q %}q={{ q }}&{% endif %}{% if state %}state={{ state }}&{% endif %}sort={{ sort }}"
+         class="pl-chip {% if not category_slug %}is-active{% endif %}">All categories</a>
+
+      {% for cat in categories %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}{% if state %}state={{ state }}&{% endif %}sort={{ sort }}&category={{ cat.slug }}"
+           class="pl-chip {% if category_slug == cat.slug %}is-active{% endif %}">
+          {{ cat.name }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+</form>
+
+{# ==================== GRID OR EMPTY ==================== #}
+{% if properties %}
+  <div class="prop-grid">
+    {% for p in properties %}
+      <article class="prop-card">
+
+        <a href="{% url 'bnb_property_detail' p.id %}" class="prop-cover">
+          {% if p.cover_image %}
+            <img src="{{ p.cover_image.url }}" alt="{{ p.name }}" loading="lazy">
+          {% else %}
+            <div class="prop-cover-fallback">
+              {# BnB-only icons: bed for stays, house as the generic fallback #}
+              {% if p.category.icon == 'bed' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <span class="prop-cat">{{ p.category.name }}</span>
+
+          {# Live-status pill #}
+          {% if p.listing_id %}
+            {% if p.listing.status == 'approved' and p.listing.is_active %}
+              <span class="status-pill status-live">
+                <span class="status-dot"></span> Live
+              </span>
+            {% elif p.listing.status == 'pending' %}
+              <span class="status-pill status-pending">
+                <span class="status-dot"></span> Pending
+              </span>
+            {% elif p.listing.status == 'rejected' %}
+              <span class="status-pill status-rejected">
+                <span class="status-dot"></span> Rejected
+              </span>
+            {% else %}
+              <span class="status-pill status-hidden">
+                <span class="status-dot"></span> Hidden
+              </span>
+            {% endif %}
+          {% else %}
+            <span class="status-pill status-draft">
+              <span class="status-dot"></span> Unpublished
+            </span>
+          {% endif %}
+
+          {% if not p.is_active %}
+            <span class="prop-inactive">Inactive</span>
+          {% endif %}
+        </a>
+
+        <div class="prop-body">
+          <h3 class="prop-title">{{ p.name }}</h3>
+
+          {% if p.location_label %}
+            <div class="prop-loc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ p.location_label }}
+            </div>
+          {% endif %}
+
+          <div class="prop-price">
+            <strong>KES {{ p.price|floatformat:0|intcomma }}</strong>
+            <span>{{ p.price_unit }}</span>
+          </div>
+
+          <div class="prop-stats">
+            <span>{{ p.max_guests }} guest{{ p.max_guests|pluralize }}</span>
+            <span>{{ p.bedrooms }} bed{{ p.bedrooms|pluralize }}</span>
+            <span>{{ p.baths }} bath{{ p.baths|pluralize }}</span>
+          </div>
+
+          <div class="prop-actions">
+            <a href="{% url 'bnb_property_edit' p.id %}"
+               class="btn sm secondary" title="Edit property">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>
+              </svg>
+              Edit
+            </a>
+
+            {% if p.listing_id and p.listing.status == 'approved' and p.listing.is_active %}
+              <a href="{% url 'bnb_property_publish_toggle' p.id %}"
+                 class="btn sm warn-outline" title="Hide from the marketplace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                Unpublish
+              </a>
+              <a href="{% url 'marketplace:listing_detail' p.listing.slug %}"
+                 target="_blank" rel="noopener"
+                 class="btn sm ghost" title="View on the marketplace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                View
+              </a>
+            {% else %}
+              <a href="{% url 'bnb_property_publish_toggle' p.id %}"
+                 class="btn sm success" title="Publish to the marketplace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Publish
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  {# ==================== PAGINATION ==================== #}
+  {% if page_obj.has_other_pages %}
+    <nav class="pl-pager" aria-label="Property list pagination">
+      {% if page_obj.has_previous %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}{% if state %}state={{ state }}&{% endif %}sort={{ sort }}&page={{ page_obj.previous_page_number }}"
+           class="pl-pager-btn" aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Prev</span>
+        </a>
+      {% else %}
+        <span class="pl-pager-btn is-disabled" aria-disabled="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Prev</span>
+        </span>
+      {% endif %}
+
+      <div class="pl-pager-nums">
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="pl-pager-num is-current" aria-current="page">{{ num }}</span>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}{% if state %}state={{ state }}&{% endif %}sort={{ sort }}&page={{ num }}"
+               class="pl-pager-num">{{ num }}</a>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <span class="pl-pager-ellipsis">…</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {% if page_obj.has_next %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}{% if category_slug %}category={{ category_slug }}&{% endif %}{% if state %}state={{ state }}&{% endif %}sort={{ sort }}&page={{ page_obj.next_page_number }}"
+           class="pl-pager-btn" aria-label="Next page">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+      {% else %}
+        <span class="pl-pager-btn is-disabled" aria-disabled="true">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+{% else %}
+
+  {# ---------- Empty state ---------- #}
+  {% if q or category_slug or state %}
+    {# Filtered → no matches #}
+    <div class="empty-card">
+      <div class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No matches</h4>
+      <p class="muted">No properties match your current filters.</p>
+      <a href="{% url 'bnb_property_list' %}" class="btn secondary" style="margin-top:14px;">Clear filters</a>
+    </div>
+  {% else %}
+    {# Truly empty #}
+    <div class="empty-card">
+      <div class="empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+        </svg>
+      </div>
+      <h4>No properties yet</h4>
+      <p class="muted">Add your first stay to start taking bookings and publishing on the marketplace.</p>
+      <a href="{% url 'bnb_property_add' %}" class="btn" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add a property
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     PROPERTY LIST — header + filters
+     ============================================================ */
+
+  .pl-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .pl-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pl-head p { font-size: 13px; }
+
+  /* Small "Stays" scope pill next to the heading */
+  .pl-scope-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1.4;
+  }
+
+  /* ---------- Filters ---------- */
+  .pl-filters {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .pl-filters-row {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+
+  .pl-search {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 220px;
+  }
+  .pl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2, #94a3b8);
+    pointer-events: none;
+  }
+  .pl-search input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border: 1px solid var(--line-2, #e2e8f0);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text, #0b1220);
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pl-search input::placeholder { color: var(--muted-2, #94a3b8); }
+  .pl-search input:hover { border-color: #cbd5e1; }
+  .pl-search input:focus {
+    border-color: var(--brand-1, #0ea5e9);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .pl-select {
+    padding: 10px 14px;
+    border: 1px solid var(--line-2, #e2e8f0);
+    border-radius: 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text, #0b1220);
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 140px;
+    outline: none;
+  }
+  .pl-select:hover { border-color: #cbd5e1; }
+  .pl-select:focus {
+    border-color: var(--brand-1, #0ea5e9);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .pl-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pl-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line-2, #e2e8f0);
+    color: var(--muted, #475569);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .pl-chip:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text, #0b1220);
+  }
+  .pl-chip.is-active {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    border-color: transparent;
+    color: #062745;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+
+  .pl-chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chip-dot-live    { background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.25); }
+  .chip-dot-pending { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.25); }
+  .chip-dot-hidden  { background: #94a3b8; box-shadow: 0 0 0 2px rgba(148,163,184,0.25); }
+  .chip-dot-draft   { background: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.25); }
+
+  /* ============================================================
+     GRID + CARD
+     ============================================================ */
+  .prop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .prop-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  .prop-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+
+  .prop-cover {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    display: block;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+  }
+  .prop-cover img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .prop-cover-fallback {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    color: rgba(14,165,233,0.55);
+  }
+  .prop-cover-fallback svg { width: 48px; height: 48px; }
+
+  .prop-cat {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.78);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  .prop-inactive {
+    position: absolute;
+    top: 10px; right: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(239,68,68,0.92);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    position: absolute;
+    top: 10px; left: 10px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.96);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.16);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 2;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px currentColor;
+    opacity: 0.9;
+  }
+
+  .status-live      { color: #047857; }
+  .status-live .status-dot      { box-shadow: 0 0 0 3px rgba(16,185,129,0.25); }
+  .status-pending   { color: #b45309; }
+  .status-pending .status-dot   { box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+  .status-rejected  { color: #b91c1c; }
+  .status-rejected .status-dot  { box-shadow: 0 0 0 3px rgba(239,68,68,0.25); }
+  .status-hidden    { color: #475569; }
+  .status-hidden .status-dot    { box-shadow: 0 0 0 3px rgba(100,116,139,0.25); }
+  .status-draft     { color: #475569; }
+  .status-draft .status-dot     { box-shadow: 0 0 0 3px rgba(100,116,139,0.25); }
+
+  .prop-body { padding: 16px; }
+
+  .prop-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .prop-loc {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .prop-loc svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  .prop-price {
+    display: flex; align-items: baseline; gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line-2);
+    margin-bottom: 12px;
+  }
+  .prop-price strong {
+    font-size: 16px; font-weight: 800;
+    color: var(--brand-1);
+  }
+  .prop-price span { font-size: 11.5px; color: var(--muted-2); }
+
+  .prop-stats {
+    display: flex; gap: 12px;
+    font-size: 11.5px; color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .prop-stats span { font-weight: 600; }
+
+  .prop-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .prop-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .btn.warn-outline {
+    background: #fff;
+    color: #b45309;
+    border-color: #fde68a;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.warn-outline:hover {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #92400e;
+  }
+
+  /* ============================================================
+     PAGINATION
+     ============================================================ */
+  .pl-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  .pl-pager-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .pl-pager-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .pl-pager-btn svg { width: 13px; height: 13px; }
+  .pl-pager-btn.is-disabled {
+    opacity: 0.4; cursor: not-allowed; pointer-events: none;
+  }
+
+  .pl-pager-nums { display: inline-flex; align-items: center; gap: 4px; }
+  .pl-pager-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .pl-pager-num:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .pl-pager-num.is-current {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    border-color: transparent;
+    color: #062745;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+    cursor: default;
+  }
+  .pl-pager-ellipsis {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 34px;
+    color: var(--muted-2);
+    font-size: 13px; font-weight: 700;
+    user-select: none;
+  }
+
+  /* ============================================================
+     EMPTY STATE
+     ============================================================ */
+  .empty-card {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+  }
+  .empty-ico {
+    width: 72px; height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: #e0f2fe; color: var(--brand-2);
+    border: 1px solid #bae6fd;
+  }
+  .empty-ico svg { width: 32px; height: 32px; }
+  .empty-card h4 { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+  .empty-card p { font-size: 13.5px; max-width: 400px; margin: 0 auto; }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 640px) {
+    .pl-head h1 { font-size: 19px; }
+    .pl-search { flex: 1 1 100%; }
+    .pl-select { flex: 1 1 100%; }
+    .pl-pager-btn span { display: none; }
+    .pl-pager-num { min-width: 30px; height: 30px; font-size: 12px; }
+  }
+</style>
+{% endblock %}

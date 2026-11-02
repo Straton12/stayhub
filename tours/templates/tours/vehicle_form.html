@@ -1,0 +1,460 @@
+{% extends 'tours/base.html' %}
+{% block title %}Add Vehicle — Tours{% endblock %}
+{% block page_title %}Add Vehicle{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="vf-header">
+  <a href="{% url 'tours_vehicle_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to vehicles
+  </a>
+  <h1>Add a vehicle</h1>
+  <p>Register a vehicle your team uses for tours, airport transfers, safaris, or excursions.</p>
+</div>
+
+<div class="vf-layout">
+
+  <!-- ============ Form ============ -->
+  <form method="post" class="vf-form" novalidate>
+    {% csrf_token %}
+
+    <section class="vf-section">
+      <header class="vf-section-head">
+        <span class="vf-step">1</span>
+        <div>
+          <h2>Vehicle details</h2>
+          <p>Name, plate number, and how many travellers it can carry.</p>
+        </div>
+      </header>
+
+      <div class="vf-grid">
+        <div class="vf-field vf-full">
+          <label for="id_name">Vehicle name <span class="req">*</span></label>
+          <div class="vf-input-icon">
+            <span class="vf-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 17h14"/>
+                <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+                <circle cx="7.5" cy="17.5" r="1.5"/>
+                <circle cx="16.5" cy="17.5" r="1.5"/>
+              </svg>
+            </span>
+            <input class="input" type="text" id="id_name" name="name"
+                   placeholder="e.g. Toyota Land Cruiser, Nissan Urvan" required>
+          </div>
+          <p class="vf-hint">A clear internal name so your team can identify this vehicle quickly.</p>
+        </div>
+
+        <div class="vf-field">
+          <label for="id_plate_number">Plate number</label>
+          <input class="input" type="text" id="id_plate_number" name="plate_number"
+                 placeholder="e.g. KDA 123X" style="text-transform:uppercase;">
+          <p class="vf-hint">Optional. Useful for logistics and driver assignment.</p>
+        </div>
+
+        <div class="vf-field">
+          <label for="id_capacity">Passenger capacity</label>
+          <input class="input" type="number" id="id_capacity" name="capacity"
+                 min="1" step="1" value="4">
+          <p class="vf-hint">Excluding the driver. Used to validate bookings against travellers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <div class="vf-actions">
+      <a href="{% url 'tours_vehicle_list' %}" class="btn secondary">Cancel</a>
+      <button type="submit" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        Save Vehicle
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ Aside ============ -->
+  <aside class="vf-aside">
+
+    <!-- Live preview card -->
+    <div class="vf-preview">
+      <div class="vf-preview-label">Preview</div>
+      <div class="vf-preview-card">
+        <div class="vf-preview-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 17h14"/>
+            <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+            <circle cx="7.5" cy="17.5" r="1.5"/>
+            <circle cx="16.5" cy="17.5" r="1.5"/>
+          </svg>
+        </div>
+        <div class="vf-preview-meta">
+          <div class="vf-preview-name" id="prevName">Vehicle name</div>
+          <div class="vf-preview-plate">
+            <span class="vf-plate-chip" id="prevPlate">No plate</span>
+          </div>
+        </div>
+      </div>
+      <div class="vf-preview-stats">
+        <div class="vf-preview-stat">
+          <span class="vf-preview-stat-value" id="prevCapacity">4</span>
+          <span class="vf-preview-stat-label">Passengers</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="vf-tip">
+      <div class="vf-tip-icon accent-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <div>
+        <h4>What happens next</h4>
+        <ol class="vf-list">
+          <li>The vehicle appears in your Vehicles list.</li>
+          <li>You can assign it to tour bookings.</li>
+          <li>Edit details any time.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="vf-tip">
+      <div class="vf-tip-icon accent-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+          <path d="m2 17 10 5 10-5"/>
+          <path d="m2 12 10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Naming tips</h4>
+        <ul class="vf-list">
+          <li>Include the make and model — e.g. "Toyota Land Cruiser Prado".</li>
+          <li>If you have several similar vehicles, add a suffix — e.g. "Prado #1", "Prado #2".</li>
+          <li>Keep names short; they'll show up in booking assignment dropdowns.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="vf-tip">
+      <div class="vf-tip-icon accent-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Capacity matters</h4>
+        <p class="vf-tip-text">Set the true passenger capacity — not including the driver — so bookings never exceed the vehicle.</p>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Add Vehicle page ================= */
+
+  /* ---- Header ---- */
+  .vf-header { margin-bottom: 20px; max-width: 720px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--brand-2); background: rgba(16,185,129,0.08); }
+  .back-link svg { width: 14px; height: 14px; }
+
+  .vf-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .vf-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---- Layout ---- */
+  .vf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .vf-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form card ---- */
+  .vf-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 24px 22px;
+  }
+
+  .vf-section { padding: 22px 0 12px; }
+
+  .vf-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .vf-step {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(16,185,129,0.35);
+  }
+  .vf-section-head h2 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px; margin-bottom: 2px;
+  }
+  .vf-section-head p {
+    font-size: 12.5px; color: var(--muted); line-height: 1.5;
+  }
+
+  /* ---- Grid ---- */
+  .vf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .vf-field.vf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .vf-grid { grid-template-columns: 1fr; }
+  }
+
+  .vf-field { display: flex; flex-direction: column; }
+  .vf-field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .vf-field .req { color: var(--danger); margin-left: 2px; }
+  .vf-field .input,
+  .vf-field select,
+  .vf-field textarea { margin-bottom: 0; }
+
+  .vf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ---- Input with icon ---- */
+  .vf-input-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .vf-input-icon .vf-icon {
+    position: absolute;
+    left: 12px;
+    display: grid; place-items: center;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .vf-input-icon .vf-icon svg { width: 15px; height: 15px; }
+  .vf-input-icon .input { padding-left: 38px; }
+
+  /* ---- Actions ---- */
+  .vf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 4px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ---- Aside ---- */
+  .vf-aside {
+    display: flex; flex-direction: column; gap: 14px;
+    position: sticky; top: 84px;
+  }
+  @media (max-width: 960px) {
+    .vf-aside { position: static; }
+  }
+
+  /* ---- Live preview ---- */
+  .vf-preview {
+    background:
+      radial-gradient(300px 120px at 0% 0%, rgba(16,185,129,0.10), transparent 60%),
+      #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .vf-preview-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .vf-preview-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 1px solid #bbf7d0;
+  }
+  .vf-preview-avatar {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(16,185,129,0.35);
+  }
+  .vf-preview-avatar svg { width: 22px; height: 22px; }
+  .vf-preview-meta { min-width: 0; flex: 1; }
+  .vf-preview-name {
+    font-size: 13.5px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .vf-preview-plate { margin-top: 5px; }
+  .vf-plate-chip {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .vf-preview-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .vf-preview-stat {
+    display: flex; flex-direction: column;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+  }
+  .vf-preview-stat-value {
+    font-size: 15px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .vf-preview-stat-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* ---- Tip cards ---- */
+  .vf-tip {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .vf-tip-icon {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .vf-tip-icon.accent-green { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+  .vf-tip-icon.accent-amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .vf-tip-icon.accent-blue  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .vf-tip-icon svg { width: 16px; height: 16px; }
+  .vf-tip h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .vf-tip-text, .vf-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .vf-list { margin: 0; padding-left: 18px; }
+  .vf-list li { margin-bottom: 4px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .vf-form { padding: 4px 16px 16px; }
+    .vf-header h1 { font-size: 18px; }
+    .vf-actions .btn { flex: 1; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var nameEl = document.getElementById('id_name');
+    var plateEl = document.getElementById('id_plate_number');
+    var capEl = document.getElementById('id_capacity');
+
+    var prevName = document.getElementById('prevName');
+    var prevPlate = document.getElementById('prevPlate');
+    var prevCapacity = document.getElementById('prevCapacity');
+
+    function update() {
+      var name = (nameEl.value || '').trim();
+      prevName.textContent = name || 'Vehicle name';
+
+      var plate = (plateEl.value || '').trim().toUpperCase();
+      prevPlate.textContent = plate || 'No plate';
+
+      var cap = parseInt(capEl.value || '0', 10);
+      prevCapacity.textContent = (isNaN(cap) || cap < 1) ? '—' : cap;
+    }
+
+    [nameEl, plateEl, capEl].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
+    });
+
+    update();
+  })();
+</script>
+{% endblock %}

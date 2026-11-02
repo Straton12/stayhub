@@ -1,0 +1,453 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Restaurant Profile — StayHub{% endblock %}
+{% block page_title %}Restaurant Profile{% endblock %}
+
+{% block content %}
+
+{# ==================== HEADER ==================== #}
+<div class="profile-header">
+  <div class="profile-title">
+    <h1>{{ profile.name|default:"Your Restaurant" }}</h1>
+    <div class="profile-badges">
+      <span class="badge badge-amber">Restaurant</span>
+      <span class="badge badge-gray">ID: #{{ profile.id }}</span>
+      {% if profile.publish_to_marketplace %}
+        <span class="badge badge-green">Live on Marketplace</span>
+      {% else %}
+        <span class="badge badge-gray">Unpublished</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="profile-actions">
+    <a href="{% url 'restaurant_publish_toggle' %}" class="btn {% if profile.publish_to_marketplace %}secondary{% else %}success{% endif %}">
+      {% if profile.publish_to_marketplace %}Pause Bookings{% else %}Publish Live{% endif %}
+    </a>
+  </div>
+</div>
+
+{# ==================== ERROR SUMMARY ==================== #}
+{% if form.errors or form.non_field_errors %}
+  <div class="err-summary" role="alert">
+    <strong>There's a problem with your submission.</strong>
+    <ul>
+      {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+      {% for field in form %}
+        {% for e in field.errors %}<li><b>{{ field.label }}:</b> {{ e }}</li>{% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<!-- THE MAIN EDIT FORM -->
+<form method="post" enctype="multipart/form-data" class="profile-layout">
+  {% csrf_token %}
+
+  <!-- LEFT COLUMN (Main Content) -->
+  <div class="profile-main">
+
+    <!-- Auto-Upload Image Section -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h2>Photos &amp; Media</h2>
+        <p class="card-sub">Changes to images are saved instantly.</p>
+      </div>
+      
+      <!-- Cover Image Dropzone -->
+      <div class="media-dropzone" id="cover-dropzone">
+        {% if profile.cover_image %}
+          <img src="{{ profile.cover_image.url }}" id="cover-preview" alt="Cover" />
+        {% else %}
+          <div class="dropzone-empty" id="cover-preview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Click to upload cover image</span>
+          </div>
+        {% endif %}
+        <input type="file" id="cover-input" accept="image/*" class="ajax-upload" data-type="cover">
+        <div class="upload-overlay" id="cover-overlay">Uploading...</div>
+      </div>
+
+      <!-- Logo Dropzone (Small) -->
+      <div class="media-row">
+        <div class="media-dropzone logo-dropzone" id="logo-dropzone">
+          {% if profile.logo %}
+            <img src="{{ profile.logo.url }}" id="logo-preview" alt="Logo" />
+          {% else %}
+            <div class="dropzone-empty" id="logo-preview">
+              <span>Logo</span>
+            </div>
+          {% endif %}
+          <input type="file" id="logo-input" accept="image/*" class="ajax-upload" data-type="logo">
+          <div class="upload-overlay" id="logo-overlay">...</div>
+        </div>
+        <div class="media-info">
+          <h4>Restaurant Logo</h4>
+          <p>Used as the icon on the map and reviews.</p>
+        </div>
+      </div>
+
+      <!-- Gallery URLs (Text input) -->
+      <div class="field" style="margin-top: 16px;">
+        <label for="{{ form.gallery_images_text.id_for_label }}">Gallery Image URLs (one per line)</label>
+        {{ form.gallery_images_text }}
+      </div>
+    </div>
+
+    <!-- Basics -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h2>About</h2>
+      </div>
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="{{ form.name.id_for_label }}">Restaurant Name *</label>
+          {{ form.name }}
+        </div>
+        <div class="field span-2">
+          <label for="{{ form.tagline.id_for_label }}">Short Tagline</label>
+          {{ form.tagline }}
+        </div>
+        <div class="field span-2">
+          <label for="{{ form.short_description.id_for_label }}">Short Description (Max 280 chars)</label>
+          {{ form.short_description }}
+        </div>
+        <div class="field span-2">
+          <label for="{{ form.description.id_for_label }}">Full Description</label>
+          {{ form.description }}
+        </div>
+        <div class="field">
+          <label for="{{ form.cuisine.id_for_label }}">Cuisines (Comma separated)</label>
+          {{ form.cuisine }}
+        </div>
+        <div class="field">
+          <label for="{{ form.price_range.id_for_label }}">Price Range</label>
+          {{ form.price_range }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h2>Location</h2>
+      </div>
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="{{ form.address.id_for_label }}">Address</label>
+          {{ form.address }}
+        </div>
+        <div class="field">
+          <label for="{{ form.city.id_for_label }}">City</label>
+          {{ form.city }}
+        </div>
+        <div class="field">
+          <label for="{{ form.location_label.id_for_label }}">Location Label</label>
+          {{ form.location_label }}
+        </div>
+        <div class="field span-2">
+          <label>Map Coordinates (Latitude / Longitude)</label>
+          <div class="map-inputs">
+            <div>{{ form.latitude }}</div>
+            <div>{{ form.longitude }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commercial & Delivery -->
+    <div class="profile-card">
+      <div class="card-header">
+        <h2>Commercial &amp; Delivery</h2>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="{{ form.min_order_amount.id_for_label }}">Minimum Order (KES) *</label>
+          {{ form.min_order_amount }}
+        </div>
+        <div class="field">
+          <label for="{{ form.delivery_fee.id_for_label }}">Delivery Fee (KES) *</label>
+          {{ form.delivery_fee }}
+        </div>
+        <div class="field">
+          <label for="{{ form.delivery_radius_km.id_for_label }}">Delivery Radius (km) *</label>
+          {{ form.delivery_radius_km }}
+        </div>
+        <div class="field">
+          <label for="{{ form.average_prep_time.id_for_label }}">Average Prep Time (min) *</label>
+          {{ form.average_prep_time }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="form-actions">
+      <button type="submit" class="btn success lg">Save All Details &amp; Publish</button>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN (Sidebar) -->
+  <div class="profile-sidebar">
+    
+    <!-- Publish Status -->
+    <div class="profile-card">
+      <h3 class="sidebar-title">Publishing</h3>
+      <label class="switch-label">
+        {{ form.publish_to_marketplace }}
+        <span>Show on Marketplace</span>
+      </label>
+      <label class="switch-label">
+        {{ form.is_open_now }}
+        <span>Accepting Orders Now</span>
+      </label>
+      <hr class="sidebar-divider">
+      <p class="sidebar-hint">Toggle these to change your live status. Save below to apply.</p>
+      <button type="submit" class="btn secondary full-width">Update Status</button>
+    </div>
+
+    <!-- Contact Details -->
+    <div class="profile-card">
+      <h3 class="sidebar-title">Contact &amp; Socials</h3>
+      <div class="sidebar-fields">
+        <div class="field"><label for="{{ form.phone.id_for_label }}">Phone</label>{{ form.phone }}</div>
+        <div class="field"><label for="{{ form.email.id_for_label }}">Email</label>{{ form.email }}</div>
+        <div class="field"><label for="{{ form.whatsapp.id_for_label }}">WhatsApp</label>{{ form.whatsapp }}</div>
+        <div class="field"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
+        <div class="field"><label for="{{ form.instagram.id_for_label }}">Instagram</label>{{ form.instagram }}</div>
+        <div class="field"><label for="{{ form.facebook.id_for_label }}">Facebook</label>{{ form.facebook }}</div>
+        <div class="field"><label for="{{ form.twitter.id_for_label }}">Twitter</label>{{ form.twitter }}</div>
+        <div class="field"><label for="{{ form.tiktok.id_for_label }}">TikTok</label>{{ form.tiktok }}</div>
+      </div>
+    </div>
+
+    <!-- Policies -->
+    <div class="profile-card">
+      <h3 class="sidebar-title">Policies &amp; Fees</h3>
+      <div class="sidebar-fields">
+        <div class="field"><label for="{{ form.payment_policy.id_for_label }}">Payment Policy *</label>{{ form.payment_policy }}</div>
+        <div class="field"><label for="{{ form.cancellation_policy.id_for_label }}">Cancellation Policy *</label>{{ form.cancellation_policy }}</div>
+        <div class="field"><label for="{{ form.deposit_percent.id_for_label }}">Deposit % *</label>{{ form.deposit_percent }}</div>
+        <div class="field"><label for="{{ form.service_fee_percent.id_for_label }}">Service Fee % *</label>{{ form.service_fee_percent }}</div>
+      </div>
+    </div>
+
+    <!-- Opening Hours -->
+    <div class="profile-card">
+      <h3 class="sidebar-title">Opening Hours</h3>
+      <div class="field">
+        {{ form.opening_hours_text }}
+        <p class="sidebar-hint" style="margin-top: 8px;">Format: <code>mon: 08:00-22:00</code></p>
+      </div>
+      <hr class="sidebar-divider">
+      <div class="field">
+        <label for="{{ form.house_rules.id_for_label }}">House Rules</label>
+        {{ form.house_rules }}
+      </div>
+    </div>
+
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  LAYOUT CORE                                                 */
+  /* ============================================================ */
+  .profile-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line-2);
+  }
+  .profile-title h1 { font-size: 28px; font-weight: 800; margin: 0 0 8px; color: var(--text); letter-spacing: -0.5px; }
+  .profile-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  
+  .badge { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .badge-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+
+  /* 2-Column Layout */
+  .profile-layout {
+    display: grid; grid-template-columns: 1fr 340px;
+    gap: 24px; align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .profile-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================ */
+  /*  CARDS                                                       */
+  /* ============================================================ */
+  .profile-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.02);
+  }
+  .card-header { margin-bottom: 20px; }
+  .card-header h2 { font-size: 18px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+  .card-sub { font-size: 13px; color: var(--muted); margin: 0; }
+  .sidebar-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0 0 16px; }
+
+  /* ============================================================ */
+  /*  FORMS & INPUTS                                              */
+  /* ============================================================ */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .span-2 { grid-column: span 2; }
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .span-2 { grid-column: span 1; }
+  }
+  
+  .field label { font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #fafbfc; color: var(--text);
+    transition: all .15s; font-family: inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--brand-1); background: #fff;
+    box-shadow: 0 0 0 4px rgba(245,158,11,0.1); outline: none;
+  }
+  .field textarea { min-height: 100px; resize: vertical; }
+  .map-inputs { display: flex; gap: 10px; }
+  .map-inputs > div { flex: 1; }
+
+  /* ============================================================ */
+  /*  SIDEBAR SPECIFICS                                           */
+  /* ============================================================ */
+  .sidebar-fields { display: flex; flex-direction: column; gap: 12px; }
+  .sidebar-divider { border: 0; border-top: 1px solid var(--line-2); margin: 16px 0; }
+  .sidebar-hint { font-size: 12px; color: var(--muted-2); margin-bottom: 16px; line-height: 1.5; }
+  .sidebar-hint code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+  .full-width { width: 100%; justify-content: center; }
+
+  /* Checkbox Switch */
+  .switch-label {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px; font-weight: 600; font-size: 14px; color: var(--text);
+    cursor: pointer;
+  }
+  .switch-label input[type="checkbox"] {
+    width: 20px; height: 20px; accent-color: var(--brand-1); cursor: pointer;
+  }
+
+  /* ============================================================ */
+  /*  AJAX MEDIA DROPZONES                                        */
+  /* ============================================================ */
+  .media-dropzone {
+    position: relative; border: 2px dashed var(--line);
+    border-radius: 12px; background: #f8fafc; overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .media-dropzone:hover { border-color: var(--brand-1); background: #fffaf0; }
+  .media-dropzone img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  
+  #cover-dropzone { aspect-ratio: 21 / 9; margin-bottom: 16px; }
+  .logo-dropzone { width: 100px; height: 100px; border-radius: 50%; flex-shrink: 0; }
+  .logo-dropzone img { border-radius: 50%; }
+
+  .dropzone-empty {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--muted-2); font-size: 13px; font-weight: 600; text-align: center; padding: 20px;
+  }
+  .dropzone-empty svg { width: 32px; height: 32px; opacity: 0.6; }
+
+  .media-dropzone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  
+  .media-row { display: flex; align-items: center; gap: 16px; }
+  .media-info h4 { margin: 0 0 4px; font-size: 14px; font-weight: 800; }
+  .media-info p { margin: 0; font-size: 12px; color: var(--muted); }
+
+  /* Upload Overlay */
+  .upload-overlay {
+    position: absolute; inset: 0; background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(2px); display: none; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--brand-1); font-size: 13px;
+    z-index: 10;
+  }
+  .media-dropzone.loading .upload-overlay { display: flex; }
+
+  /* ============================================================ */
+  /*  BUTTONS & ACTIONS                                           */
+  /* ============================================================ */
+  .form-actions {
+    display: flex; justify-content: flex-end; margin-top: 10px;
+  }
+  .btn.lg { padding: 14px 28px; font-size: 15px; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle AJAX Image Uploads
+    const uploaders = document.querySelectorAll('.ajax-upload');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    uploaders.forEach(input => {
+      input.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const type = this.dataset.type; // 'cover' or 'logo'
+        const dropzone = this.closest('.media-dropzone');
+        const overlay = dropzone.querySelector('.upload-overlay');
+        
+        // Show loading state
+        dropzone.classList.add('loading');
+        if (overlay) overlay.innerText = 'Uploading...';
+
+        // Prepare data
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+
+        // Send to server
+        fetch("{% url 'restaurant_upload_image' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrfToken
+          },
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.url) {
+            // Success! Update the preview image
+            const imgId = type === 'cover' ? 'cover-preview' : 'logo-preview';
+            let img = document.getElementById(imgId);
+            
+            if (img.tagName !== 'IMG') {
+              // Replace the empty div with an image tag
+              const newImg = document.createElement('img');
+              newImg.id = imgId;
+              newImg.src = data.url;
+              img.replaceWith(newImg);
+            } else {
+              // Update existing image src
+              img.src = data.url + '?t=' + new Date().getTime(); // cache bust
+            }
+          } else {
+            alert(data.error || 'Upload failed. Please try again.');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('An error occurred during upload.');
+        })
+        .finally(() => {
+          dropzone.classList.remove('loading');
+          if (overlay) overlay.innerText = 'Uploading...';
+          input.value = ''; // reset input
+        });
+      });
+    });
+  });
+</script>
+{% endblock %}

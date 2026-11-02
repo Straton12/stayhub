@@ -1,0 +1,451 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Profit &amp; Loss — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD + FILTER ==================== #}
+<div class="pl-header">
+  <div>
+    <h1>Profit &amp; Loss Statement</h1>
+    <p class="muted">
+      Showing performance for <strong>{{ range_label }}</strong>.
+    </p>
+  </div>
+
+  <form method="get" class="pl-filter" id="plFilterForm">
+    <label for="range" class="pl-filter-label">Period</label>
+    <div class="pl-filter-wrap">
+      <select name="range" id="range" onchange="this.form.submit()">
+        {% for key, label in range_presets.items %}
+          <option value="{{ key }}" {% if key == range_key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  </form>
+</div>
+
+{% if ledger %}
+
+  {# ==================== MONTHLY ACCORDION ==================== #}
+  <div class="pl-accordion">
+    {% for month in ledger %}
+      <div class="pl-acc-item" {% if forloop.last %}open{% endif %}>
+        
+        <!-- Header (Click to expand) -->
+        <details {% if forloop.last %}open{% endif %}>
+          <summary class="pl-acc-head">
+            <div class="pl-acc-month">{{ month.month }}</div>
+            
+            <div class="pl-acc-stats">
+              <div class="pl-stat">
+                <span class="pl-stat-label">Revenue</span>
+                <span class="pl-stat-value text-green">KES {{ month.total_rev|floatformat:0|intcomma }}</span>
+              </div>
+              <div class="pl-stat">
+                <span class="pl-stat-label">Expenses</span>
+                <span class="pl-stat-value text-red">KES {{ month.total_exp|floatformat:0|intcomma }}</span>
+              </div>
+              <div class="pl-stat">
+                <span class="pl-stat-label">Net Profit</span>
+                <span class="pl-stat-value {% if month.is_profitable %}text-green{% else %}text-red{% endif %}">
+                  {% if month.is_profitable %}+{% else %}-{% endif %}KES {{ month.net_profit|floatformat:0|intcomma }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="pl-acc-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </summary>
+
+          <!-- Body (Expands) -->
+          <div class="pl-acc-body">
+            
+            <div class="pl-t-grid">
+              
+              <!-- LEFT: Debits (Expenses) -->
+              <div class="pl-t-col">
+                <div class="pl-t-head">Operating Expenses (Debits)</div>
+                
+                {% if month.expenses_list %}
+                  {% for exp in month.expenses_list %}
+                    <div class="pl-t-row">
+                      <span class="pl-t-item">{{ exp.name }}</span>
+                      <span class="pl-t-dots"></span>
+                      <span class="pl-t-amount">KES {{ exp.amount|floatformat:0|intcomma }}</span>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="pl-t-empty">No expenses recorded</div>
+                {% endif %}
+
+                <div class="pl-t-total">
+                  <span class="pl-t-item">Total Expenses</span>
+                  <span class="pl-t-dots"></span>
+                  <span class="pl-t-amount text-red">KES {{ month.total_exp|floatformat:0|intcomma }}</span>
+                </div>
+              </div>
+
+              <!-- RIGHT: Credits (Revenue) -->
+              <div class="pl-t-col">
+                <div class="pl-t-head">Revenue &amp; Credits</div>
+                
+                {% if month.revenues_list %}
+                  {% for rev in month.revenues_list %}
+                    <div class="pl-t-row">
+                      <span class="pl-t-item">{{ rev.name }}</span>
+                      <span class="pl-t-dots"></span>
+                      <span class="pl-t-amount">KES {{ rev.amount|floatformat:0|intcomma }}</span>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="pl-t-empty">No revenue recorded</div>
+                {% endif %}
+
+                {% if month.refunds > 0 %}
+                  <div class="pl-t-row">
+                    <span class="pl-t-item">Less: Refunds</span>
+                    <span class="pl-t-dots"></span>
+                    <span class="pl-t-amount text-red">(KES {{ month.refunds|floatformat:0|intcomma }})</span>
+                  </div>
+                {% endif %}
+
+                <div class="pl-t-total">
+                  <span class="pl-t-item">Total Revenue</span>
+                  <span class="pl-t-dots"></span>
+                  <span class="pl-t-amount text-green">KES {{ month.total_rev|floatformat:0|intcomma }}</span>
+                </div>
+              </div>
+
+            </div> <!-- End Grid -->
+
+            <!-- Bottom Summary -->
+            <div class="pl-summary-bar {% if not month.is_profitable %}is-loss{% endif %}">
+              <div class="pl-sum-title">
+                {% if month.is_profitable %}Net Income{% else %}Net Loss{% endif %}
+                <span class="pl-badge">{{ month.margin }}% margin</span>
+              </div>
+              <div class="pl-sum-amount">
+                {% if month.is_profitable %}+{% else %}({% endif %}KES {{ month.net_profit|floatformat:0|intcomma }}{% if not month.is_profitable %}){% endif %}
+              </div>
+            </div>
+
+            <div class="pl-running">
+              Cumulative Retained Earnings: <strong>KES {{ month.running_balance|floatformat:0|intcomma }}</strong>
+            </div>
+
+          </div>
+        </details>
+
+      </div>
+    {% endfor %}
+  </div>
+
+  {# ==================== OVERALL TOTALS ==================== #}
+  <div class="pl-overall">
+    <div class="pl-overall-head">
+      <h3>Period Total</h3>
+      <p>Summary for {{ range_label }}</p>
+    </div>
+    
+    <div class="pl-overall-grid">
+      <div class="pl-overall-item">
+        <div class="pl-oi-label">Total Revenue</div>
+        <div class="pl-oi-value text-green">KES {{ total_rev|floatformat:0|intcomma }}</div>
+      </div>
+      <div class="pl-overall-item">
+        <div class="pl-oi-label">Total Expenses</div>
+        <div class="pl-oi-value text-red">(KES {{ total_exp|floatformat:0|intcomma }})</div>
+      </div>
+      <div class="pl-overall-item {% if total_profit < 0 %}is-loss{% endif %}">
+        <div class="pl-oi-label">Net Profit / (Loss)</div>
+        <div class="pl-oi-value {% if total_profit >= 0 %}text-green{% else %}text-red{% endif %}">
+          {% if total_profit >= 0 %}+{% else %}({% endif %}KES {{ total_profit|floatformat:0|intcomma }}{% if total_profit < 0 %}){% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <div class="pl-empty-state">
+    <div class="pl-empty-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    </div>
+    <h3>No financial data recorded</h3>
+    <p class="muted">There are no transactions for the selected period.</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEADER                                                      */
+  /* ============================================================ */
+  .pl-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .pl-header h1 {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .pl-header p { font-size: 13.5px; color: var(--muted); }
+  
+  .pl-filter { display: flex; align-items: center; gap: 8px; }
+  .pl-filter-label {
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.7px; color: var(--muted-2);
+  }
+  .pl-filter-wrap { position: relative; display: inline-block; }
+  .pl-filter-wrap select {
+    appearance: none;
+    padding: 9px 34px 9px 14px;
+    border-radius: 10px; border: 1.5px solid var(--line-2);
+    background: #fff; color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .pl-filter-wrap select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .pl-filter-wrap svg {
+    position: absolute; right: 11px; top: 50%;
+    transform: translateY(-50%); width: 13px; height: 13px;
+    color: var(--muted-2); pointer-events: none;
+  }
+
+  /* ============================================================ */
+  /*  ACCORDION LAYOUT                                            */
+  /* ============================================================ */
+  .pl-accordion {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-bottom: 32px;
+  }
+  .pl-acc-item {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    overflow: hidden; transition: border-color .2s;
+  }
+  .pl-acc-item:hover { border-color: #cbd5e1; }
+  
+  .pl-acc-item details > summary {
+    list-style: none; /* Hide default arrow */
+  }
+  .pl-acc-item details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Summary (Clickable Header) */
+  .pl-acc-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; cursor: pointer;
+    background: #fbfdff; user-select: none;
+    transition: background .15s;
+  }
+  .pl-acc-head:hover { background: #f1f5f9; }
+  .pl-acc-item details[open] .pl-acc-head {
+    border-bottom: 1px solid var(--line-2);
+    background: #fff;
+  }
+
+  .pl-acc-month {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    min-width: 120px;
+  }
+  
+  .pl-acc-stats {
+    display: flex; gap: 32px; align-items: center;
+  }
+  @media (max-width: 800px) {
+    .pl-acc-stats { display: none; } /* Hide stats on mobile summary */
+  }
+
+  .pl-stat { display: flex; flex-direction: column; gap: 2px; }
+  .pl-stat-label {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted-2);
+  }
+  .pl-stat-value {
+    font-size: 14px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pl-acc-icon {
+    width: 24px; height: 24px; display: grid; place-items: center;
+    color: var(--muted-2); transition: transform .2s;
+  }
+  .pl-acc-item details[open] .pl-acc-icon { transform: rotate(180deg); }
+  .pl-acc-icon svg { width: 18px; height: 18px; }
+
+  /* Body */
+  .pl-acc-body {
+    padding: 24px 20px;
+    background: #fff;
+    animation: slideDown 0.25s ease-out;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================================ */
+  /*  T-ACCOUNT GRID                                              */
+  /* ============================================================ */
+  .pl-t-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+  }
+  @media (max-width: 768px) {
+    .pl-t-grid { grid-template-columns: 1fr; gap: 24px; }
+  }
+
+  .pl-t-col { display: flex; flex-direction: column; }
+  .pl-t-head {
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted-2);
+    border-bottom: 1px solid var(--line-2);
+    padding-bottom: 8px; margin-bottom: 12px;
+  }
+
+  .pl-t-row {
+    display: flex; align-items: baseline; margin-bottom: 8px;
+    font-size: 13.5px;
+  }
+  .pl-t-item {
+    color: var(--text-2); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding-right: 8px; max-width: 70%;
+  }
+  .pl-t-dots {
+    flex-grow: 1; border-bottom: 1px dotted #cbd5e1;
+    position: relative; bottom: 4px;
+  }
+  .pl-t-amount {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-weight: 700; color: var(--text);
+    font-size: 13px; white-space: nowrap; padding-left: 8px;
+  }
+  
+  .pl-t-empty {
+    font-size: 12.5px; color: var(--muted-2); font-style: italic;
+    padding: 8px 0;
+  }
+
+  .pl-t-total {
+    display: flex; align-items: baseline;
+    border-top: 2px solid var(--line-2);
+    padding-top: 10px; margin-top: 12px;
+    font-weight: 800; font-size: 14.5px;
+  }
+  
+  /* ============================================================ */
+  /*  SUMMARY BAR & RUNNING BALANCE                               */
+  /* ============================================================ */
+  .pl-summary-bar {
+    margin-top: 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    border-radius: 10px; padding: 16px 20px;
+  }
+  .pl-summary-bar.is-loss {
+    background: #fef2f2; border-color: #fecaca;
+  }
+  
+  .pl-sum-title {
+    font-size: 14px; font-weight: 800; color: #065f46;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .is-loss .pl-sum-title { color: #991b1b; }
+  
+  .pl-badge {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    background: rgba(255,255,255,0.7); padding: 2px 8px;
+    border-radius: 4px; color: inherit;
+  }
+
+  .pl-sum-amount {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 18px; font-weight: 800; color: #047857;
+  }
+  .is-loss .pl-sum-amount { color: #b91c1c; }
+
+  .pl-running {
+    text-align: right; font-size: 12px; color: var(--muted-2);
+    margin-top: 12px; font-weight: 500;
+  }
+  .pl-running strong { color: var(--text-2); font-weight: 800; }
+
+  /* ============================================================ */
+  /*  OVERALL FOOTER                                              */
+  /* ============================================================ */
+  .pl-overall {
+    background: #0f172a; color: #fff;
+    border-radius: 16px; padding: 24px 32px;
+    box-shadow: 0 10px 30px rgba(15,23,42,0.15);
+  }
+  .pl-overall-head { margin-bottom: 20px; }
+  .pl-overall-head h3 { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+  .pl-overall-head p { font-size: 12.5px; color: #94a3b8; margin: 0; }
+
+  .pl-overall-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .pl-overall-grid { grid-template-columns: 1fr; gap: 16px; }
+  }
+  
+  .pl-overall-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 16px; border-radius: 12px;
+  }
+  .pl-oi-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px;
+  }
+  .pl-oi-value {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 20px; font-weight: 800;
+  }
+  
+  .pl-overall .text-green { color: #34d399 !important; }
+  .pl-overall .text-red { color: #f87171 !important; }
+  
+  .pl-overall-item.is-loss {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.2);
+  }
+
+  /* ============================================================ */
+  /*  EMPTY STATE                                                 */
+  /* ============================================================ */
+  .pl-empty-state {
+    text-align: center; padding: 80px 24px;
+    background: #fff; border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .pl-empty-icon {
+    width: 64px; height: 64px; margin: 0 auto 16px;
+    border-radius: 16px; display: grid; place-items: center;
+    background: #f1f5f9; color: var(--muted-2);
+    border: 1px solid var(--line-2);
+  }
+  .pl-empty-icon svg { width: 28px; height: 28px; }
+  .pl-empty-state h3 { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .pl-empty-state p { font-size: 13px; }
+</style>
+{% endblock %}

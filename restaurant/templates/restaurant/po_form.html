@@ -1,0 +1,344 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}{% if po %}Edit {{ po.reference }}{% else %}New Purchase Order{% endif %} — Restaurant{% endblock %}
+{% block page_title %}{% if po %}Edit {{ po.reference }}{% else %}New Purchase Order{% endif %}{% endblock %}
+{% block breadcrumb %}<span class="crumb">Procurement › {% if po %}Edit PO{% else %}New PO{% endif %}</span>{% endblock %}
+
+{% block content %}
+
+<div class="po-header">
+  <a href="{% url 'restaurant_po_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to Purchase Orders
+  </a>
+  <h1>{% if po %}Edit "{{ po.reference }}"{% else %}Create a Purchase Order{% endif %}</h1>
+  <p>Order supplies from a supplier. Add line items to specify what's needed.</p>
+</div>
+
+<form method="post" class="po-form" id="poForm" novalidate>
+  {% csrf_token %}
+
+  <div class="po-layout">
+
+    <!-- LEFT: Main Form -->
+    <div class="po-main">
+
+      <!-- Section 1: Details -->
+      <section class="po-section">
+        <header class="po-section-head">
+          <span class="po-step">1</span>
+          <div>
+            <h2>PO Details</h2>
+            <p>Supplier and dates.</p>
+          </div>
+        </header>
+
+        <div class="po-grid">
+          <div class="po-field po-full">
+            <label for="id_supplier">Supplier <span class="req">*</span></label>
+            <select id="id_supplier" name="supplier" required>
+              <option value="">— Select a supplier —</option>
+              {% for s in suppliers %}
+                <option value="{{ s.id }}" {% if po.supplier_id == s.id %}selected{% endif %}>
+                  {{ s.name }}{% if s.supplies %} — {{ s.supplies }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="po-field">
+            <label for="id_expected_date">Expected delivery</label>
+            <input class="input" type="date" id="id_expected_date" name="expected_date"
+                   value="{{ po.expected_date|date:'Y-m-d'|default:'' }}">
+          </div>
+
+          <div class="po-field">
+            <label for="id_notes">Notes</label>
+            <input class="input" type="text" id="id_notes" name="notes"
+                   value="{{ po.notes|default:'' }}" placeholder="Optional notes for this PO">
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Line Items -->
+      <section class="po-section">
+        <header class="po-section-head">
+          <span class="po-step">2</span>
+          <div>
+            <h2>Line Items</h2>
+            <p>What you're ordering from this supplier.</p>
+          </div>
+        </header>
+
+        {% if stock_items %}
+        <div class="po-lines-table-wrap">
+          <table class="po-lines-table">
+            <thead>
+              <tr>
+                <th>Stock Item</th>
+                <th style="width:130px;">Quantity</th>
+                <th style="width:150px;">Unit Cost (KES)</th>
+                <th style="width:130px; text-align:right;">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for si in stock_items %}
+              <tr class="po-line-row" data-cost="{{ si.unit_cost }}" data-si-id="{{ si.id }}">
+                <td>
+                  <div class="po-line-item">
+                    <strong>{{ si.name }}</strong>
+                    <div class="po-line-meta">{{ si.get_category_display }} · {{ si.unit }}</div>
+                  </div>
+                </td>
+                <td>
+                  <input class="input po-line-qty" type="number" min="0" step="0.01"
+                         id="item_{{ si.id }}_qty" name="item_{{ si.id }}_qty"
+                         placeholder="0"
+                         {% if lines_by_item %}{% for sid, line in lines_by_item.items %}{% if sid == si.id %}value="{{ line.quantity }}"{% endif %}{% endfor %}{% endif %}
+                         oninput="recalc()">
+                </td>
+                <td>
+                  <input class="input po-line-cost" type="number" min="0" step="0.01"
+                         id="item_{{ si.id }}_cost" name="item_{{ si.id }}_cost"
+                         value="{{ si.unit_cost }}"
+                         {% if lines_by_item %}{% for sid, line in lines_by_item.items %}{% if sid == si.id %}value="{{ line.unit_cost }}"{% endif %}{% endfor %}{% endif %}
+                         oninput="recalc()">
+                </td>
+                <td class="right">
+                  <span class="po-line-total" data-line-total-for="{{ si.id }}">KES 0.00</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="text-align:right; padding:14px 16px;">
+                  <strong>Order Subtotal</strong>
+                </td>
+                <td style="text-align:right; padding:14px 16px;">
+                  <strong id="poSubtotal" style="color:var(--brand-2); font-size:16px;">KES 0.00</strong>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="po-info-box" style="margin-top:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          Enter a quantity of 0 to skip an item. Only items with quantity > 0 will be added to this PO.
+        </div>
+
+        {% else %}
+        <div class="po-empty-inline">
+          <strong>No stock items yet</strong>
+          <p class="muted">Add items to your inventory before creating a purchase order.</p>
+          <a href="{% url 'restaurant_stock_add' %}" class="btn sm">Add Stock Items</a>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Actions -->
+      <div class="po-actions">
+        <div>
+          {% if not po %}
+            <label class="po-check">
+              <input type="checkbox" name="send_now" value="on" {% if request.POST.send_now == 'on' %}checked{% endif %}>
+              <span>Send to supplier immediately</span>
+            </label>
+          {% endif %}
+        </div>
+        <div class="flex" style="gap:10px;">
+          <a href="{% url 'restaurant_po_list' %}" class="btn secondary">Cancel</a>
+          <button type="submit" class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            {% if po %}Save Changes{% else %}Create PO{% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <aside class="po-aside">
+      <div class="po-tip">
+        <div class="po-tip-icon tip-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+        <div>
+          <strong>How it works</strong>
+          <ol class="po-list">
+            <li>Fill in the supplier and expected delivery.</li>
+            <li>Enter quantities for the items you want.</li>
+            <li>Save the PO — it starts as "Draft".</li>
+            <li>Send it to the supplier. Stock movements happen when goods arrive.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="po-tip">
+        <div class="po-tip-icon tip-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+            <path d="m2 17 10 5 10-5"/>
+            <path d="m2 12 10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <strong>Tips</strong>
+          <ul class="po-list">
+            <li>Leave an item at quantity 0 to skip it.</li>
+            <li>Unit cost defaults to the last known cost — override if the supplier quoted a different price.</li>
+            <li>Only items you receive via a Goods Received Note will be added to inventory.</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= PO Form ================= */
+
+  .po-header { margin-bottom: 20px; max-width: 720px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    margin-bottom: 10px; padding: 4px 8px 4px 4px; border-radius: 8px;
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--brand-1); background: rgba(245,158,11,0.06); }
+  .back-link svg { width: 14px; height: 14px; }
+  .po-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 6px; }
+  .po-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  .po-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  @media (max-width: 1000px) { .po-layout { grid-template-columns: 1fr; } }
+
+  .po-main { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 6px 26px 24px; }
+  .po-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .po-section:last-of-type { border-bottom: none; }
+
+  .po-section-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .po-step {
+    flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  }
+  .po-section-head h2 { font-size: 15.5px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .po-section-head p { font-size: 12.5px; color: var(--muted); }
+
+  .po-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .po-field.po-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .po-grid { grid-template-columns: 1fr; } }
+
+  .po-field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+  .po-field .req { color: #ef4444; }
+  .po-field .input, .po-field select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
+  .po-field .input:focus, .po-field select:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+
+  /* Line items table */
+  .po-lines-table-wrap { border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+  .po-lines-table { width: 100%; border-collapse: collapse; }
+  .po-lines-table th {
+    background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted-2); font-weight: 700; text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .po-lines-table td { padding: 10px 14px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+  .po-lines-table tr:last-child td { border-bottom: none; }
+  .po-lines-table tfoot td { background: #f8fafc; border-top: 2px solid var(--line-2); }
+
+  .po-line-item { min-width: 0; }
+  .po-line-item strong { font-size: 13.5px; color: var(--text); display: block; }
+  .po-line-meta { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
+
+  .po-line-qty, .po-line-cost { font-size: 13px; padding: 8px 10px; }
+  .po-line-total { font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .po-info-box {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+    padding: 10px 14px; border-radius: 10px; font-size: 12.5px; line-height: 1.5;
+  }
+  .po-info-box svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .po-empty-inline {
+    text-align: center; padding: 32px 20px; background: #f8fafc; border-radius: 12px; border: 1px dashed var(--line);
+  }
+  .po-empty-inline strong { font-size: 14px; color: var(--text); display: block; margin-bottom: 6px; }
+
+  /* Actions */
+  .po-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--line-2); flex-wrap: wrap; gap: 10px;
+  }
+  .po-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; user-select: none; }
+  .po-check input[type="checkbox"] { appearance: none; width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 5px; background: #fff; position: relative; cursor: pointer; flex: 0 0 18px; }
+  .po-check input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); border-color: transparent; }
+  .po-check input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 4px; top: 0; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+  /* Aside tips */
+  .po-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+  @media (max-width: 1000px) { .po-aside { position: static; } }
+  .po-tip { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .po-tip-icon { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .po-tip-icon svg { width: 16px; height: 16px; }
+  .tip-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .tip-blue  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .po-tip strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .po-list { font-size: 12.5px; color: var(--muted); line-height: 1.6; padding-left: 18px; margin: 0; }
+  .po-list li { margin-bottom: 4px; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .po-main { padding: 4px 16px 16px; }
+    .po-header h1 { font-size: 18px; }
+    .po-lines-table th:nth-child(3), .po-lines-table td:nth-child(3) { display: none; } /* hide unit cost on small */
+    .po-actions { flex-direction: column-reverse; align-items: stretch; }
+    .po-actions .flex { flex-direction: column; }
+    .po-actions .btn { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  function recalc() {
+    var rows = document.querySelectorAll('.po-line-row');
+    var subtotal = 0;
+
+    rows.forEach(function (r) {
+      var qty = parseFloat(r.querySelector('.po-line-qty').value) || 0;
+      var cost = parseFloat(r.querySelector('.po-line-cost').value) || 0;
+      var lineTotal = qty * cost;
+      subtotal += lineTotal;
+
+      var siId = r.dataset.siId;
+      var display = document.querySelector('[data-line-total-for="' + siId + '"]');
+      if (display) display.textContent = 'KES ' + lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    });
+
+    var totalEl = document.getElementById('poSubtotal');
+    if (totalEl) totalEl.textContent = 'KES ' + subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Initial calculation
+  recalc();
+</script>
+{% endblock %}

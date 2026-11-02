@@ -1,0 +1,536 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Suppliers — Restaurant{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="sl-header">
+  <div>
+    <h1>Suppliers</h1>
+    <p>
+      {% if items %}
+        {{ items|length }} supplier{{ items|length|pluralize }} on your books.
+      {% else %}
+        No suppliers registered yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'restaurant_dashboard' %}" class="btn secondary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12l9-9 9 9"/>
+      <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
+    </svg>
+    Back to Overview
+  </a>
+</div>
+
+{% if items %}
+
+<!-- ============ KPIs ============ -->
+<div class="sl-kpis">
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h18v4H3z"/>
+        <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+        <path d="M10 11h4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value">{{ items|length }}</div>
+      <div class="sl-kpi-label">Total suppliers</div>
+    </div>
+  </div>
+
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiWithPhone">0</div>
+      <div class="sl-kpi-label">Reachable</div>
+    </div>
+  </div>
+
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+        <path d="m2 17 10 5 10-5"/>
+        <path d="m2 12 10 5 10-5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiCategories">0</div>
+      <div class="sl-kpi-label">Supplies</div>
+    </div>
+  </div>
+
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiComplete">0</div>
+      <div class="sl-kpi-label">Fully detailed</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Search ============ -->
+<div class="sl-toolbar">
+  <div class="sl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="slSearch" placeholder="Search by name, phone or supplies…" autocomplete="off">
+  </div>
+  <div class="sl-count" id="slCount">{{ items|length }} supplier{{ items|length|pluralize }}</div>
+</div>
+
+<!-- ============ Supplier cards ============ -->
+<div class="sl-grid" id="slGrid">
+  {% for s in items %}
+  <article class="sl-card"
+           data-search="{{ s.name|lower }} {{ s.phone|lower }} {{ s.supplies|lower }}">
+    <div class="sl-card-head">
+      <div class="sl-avatar">{{ s.name|slice:":1"|upper }}</div>
+      <div class="sl-card-id">
+        <h3 class="sl-name">{{ s.name }}</h3>
+        {% if s.supplies %}
+          <span class="sl-supplies-chip">{{ s.supplies }}</span>
+        {% else %}
+          <span class="sl-supplies-chip sl-supplies-missing">No supplies listed</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="sl-card-body">
+      {% if s.phone %}
+        <a class="sl-contact" href="tel:{{ s.phone }}">
+          <span class="sl-contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </span>
+          <span class="sl-contact-text">{{ s.phone }}</span>
+        </a>
+      {% else %}
+        <div class="sl-contact sl-contact-missing">
+          <span class="sl-contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </span>
+          <span class="sl-contact-text">No phone on file</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="sl-card-footer">
+      <span class="sl-supplies-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v4H3z"/>
+          <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+          <path d="M10 11h4"/>
+        </svg>
+        Supplies
+      </span>
+      <span class="sl-supplies-value">{{ s.supplies|default:"—" }}</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="sl-empty-filter" id="slEmptyFilter" hidden>
+  <div class="sl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try a different search term.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="sl-empty">
+  <div class="sl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3h18v4H3z"/>
+      <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+      <path d="M10 11h4"/>
+    </svg>
+  </div>
+  <h4>No suppliers yet</h4>
+  <p class="muted">Registered suppliers will appear here once you add them.</p>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Suppliers list ================= */
+
+  /* ---- Header ---- */
+  .sl-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .sl-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .sl-header p { font-size: 13px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .sl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .sl-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .sl-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #fef3c7; color: #b45309;
+    border: 1px solid #fde68a;
+  }
+  .sl-kpi-icon svg { width: 18px; height: 18px; }
+  .sl-kpi-icon.k-amber  { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+  .sl-kpi-icon.k-green  { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .sl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .sl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .sl-kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .sl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Toolbar ---- */
+  .sl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .sl-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 420px;
+  }
+  .sl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .sl-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .sl-search input::placeholder { color: var(--muted-2); }
+  .sl-search input:focus {
+    outline: none;
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(245,158,11,0.13);
+  }
+  .sl-count {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+
+  /* ---- Grid ---- */
+  .sl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ---- Supplier card ---- */
+  .sl-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .sl-card::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #fbbf24, #f97316);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .sl-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+  .sl-card:hover::before { opacity: 1; }
+
+  .sl-card-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 18px 12px;
+  }
+  .sl-avatar {
+    width: 48px; height: 48px; flex: 0 0 48px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 20px rgba(245,158,11,0.35);
+    letter-spacing: -0.5px;
+  }
+  .sl-card-id { min-width: 0; flex: 1; }
+  .sl-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sl-supplies-chip {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sl-supplies-missing {
+    background: #f1f5f9;
+    color: var(--muted-2);
+    border-color: #e2e8f0;
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  /* ---- Card body ---- */
+  .sl-card-body {
+    padding: 4px 18px 14px;
+    flex: 1;
+  }
+
+  .sl-contact {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    max-width: 100%;
+  }
+  .sl-contact:hover {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: var(--brand-2);
+  }
+  .sl-contact-icon {
+    flex: 0 0 16px;
+    width: 16px; height: 16px;
+    display: grid; place-items: center;
+    color: var(--muted-2);
+  }
+  .sl-contact:hover .sl-contact-icon { color: var(--brand-2); }
+  .sl-contact-icon svg { width: 14px; height: 14px; }
+  .sl-contact-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sl-contact-missing {
+    background: transparent;
+    border-style: dashed;
+    color: var(--muted-2);
+    font-style: italic;
+    font-weight: 500;
+    cursor: default;
+  }
+  .sl-contact-missing:hover {
+    background: transparent;
+    border-color: var(--line-2);
+    color: var(--muted-2);
+  }
+
+  /* ---- Card footer ---- */
+  .sl-card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f6f8fc);
+  }
+  .sl-supplies-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2);
+    font-weight: 700;
+  }
+  .sl-supplies-badge svg { width: 12px; height: 12px; }
+  .sl-supplies-value {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 60%;
+    text-align: right;
+  }
+
+  /* ---- Empty states ---- */
+  .sl-empty-filter,
+  .sl-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .sl-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #fef3c7; color: var(--brand-2);
+    border: 1px solid #fde68a;
+  }
+  .sl-empty-ico svg { width: 28px; height: 28px; }
+  .sl-empty h4,
+  .sl-empty-filter h4 {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .sl-header h1 { font-size: 18px; }
+    .sl-grid { grid-template-columns: 1fr; }
+    .sl-avatar { width: 42px; height: 42px; flex-basis: 42px; font-size: 16px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- Search filter ----
+    var search = document.getElementById('slSearch');
+    var cards  = document.querySelectorAll('.sl-card');
+    var grid   = document.getElementById('slGrid');
+    var count  = document.getElementById('slCount');
+    var empty  = document.getElementById('slEmptyFilter');
+
+    function apply() {
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) count.textContent = visible + ' supplier' + (visible === 1 ? '' : 's');
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      if (grid) grid.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+
+    // ---- KPI counters ----
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    var withPhone = 0;
+    var suppliesSet = {};
+    var complete = 0;
+
+    cards.forEach(function (c) {
+      // Reachable: has phone (not missing)
+      var contact = c.querySelector('.sl-contact');
+      if (contact && !contact.classList.contains('sl-contact-missing')) {
+        withPhone++;
+      }
+
+      // Supplies category
+      var chip = c.querySelector('.sl-supplies-chip');
+      if (chip && !chip.classList.contains('sl-supplies-missing')) {
+        var text = (chip.textContent || '').trim();
+        text.split(',').forEach(function (part) {
+          var v = part.trim();
+          if (v) suppliesSet[v.toLowerCase()] = v;
+        });
+      }
+
+      // Fully detailed: has both phone and supplies
+      var hasPhone = contact && !contact.classList.contains('sl-contact-missing');
+      var hasSupplies = chip && !chip.classList.contains('sl-supplies-missing');
+      if (hasPhone && hasSupplies) complete++;
+    });
+
+    setText('kpiWithPhone', withPhone);
+    setText('kpiCategories', Object.keys(suppliesSet).length);
+    setText('kpiComplete', complete);
+  })();
+</script>
+{% endblock %}

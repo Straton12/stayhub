@@ -1,0 +1,1305 @@
+{% extends 'marketplace/manage/base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit listing{% else %}New listing{% endif %} — Marketplace{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit listing{% else %}Add a new listing{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="mf-header">
+  <a href="{% url 'marketplace:manage_home' %}" class="mf-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to my listings
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ listing.title }}"{% else %}Add a new listing{% endif %}</h1>
+  <p>
+    Fill in the details below. Your listing goes live on the StayHub marketplace
+    {% if mode == 'create' %}after a quick review{% else %}immediately after saving{% endif %}.
+  </p>
+</div>
+
+<!-- ============ ERROR SUMMARY ============ -->
+{% if form.errors or formset.errors or formset.non_form_errors %}
+  <div class="mf-error-summary" role="alert">
+    <div class="mf-error-summary-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div style="flex:1; min-width:0;">
+      <strong>There's a problem with your submission.</strong>
+      <p>Fix the highlighted fields below and try again.</p>
+
+      <ul class="mf-error-list">
+        {# ---- Main form: non-field errors ---- #}
+        {% for e in form.non_field_errors %}
+          <li>
+            <span class="mf-error-where">Form</span>
+            <span class="mf-error-what">{{ e }}</span>
+          </li>
+        {% endfor %}
+
+        {# ---- Main form: each field's errors ---- #}
+        {% for field in form %}
+          {% if field.errors %}
+            {% for e in field.errors %}
+              <li>
+                <span class="mf-error-where">{{ field.label }}</span>
+                <span class="mf-error-what">{{ e }}</span>
+              </li>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+
+        {# ---- Formset: non-form errors ---- #}
+        {% for e in formset.non_form_errors %}
+          <li>
+            <span class="mf-error-where">Images</span>
+            <span class="mf-error-what">{{ e }}</span>
+          </li>
+        {% endfor %}
+
+        {# ---- Formset: each row, each field's errors ---- #}
+        {% for f in formset %}
+          {% if f.errors %}
+            {% for e in f.non_field_errors %}
+              <li>
+                <span class="mf-error-where">Image {{ forloop.parentloop.counter }}</span>
+                <span class="mf-error-what">{{ e }}</span>
+              </li>
+            {% endfor %}
+            {% for fld in f %}
+              {% if fld.errors %}
+                {% for e in fld.errors %}
+                  <li>
+                    <span class="mf-error-where">Image {{ forloop.parentloop.counter }} — {{ fld.label }}</span>
+                    <span class="mf-error-what">{{ e }}</span>
+                  </li>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="mf-form" novalidate>
+  {% csrf_token %}
+
+  <div class="mf-layout">
+    <div class="mf-main">
+
+      <!-- ============ SECTION 1: Basics ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">1</span>
+          <div>
+            <h2>Basics</h2>
+            <p>What it's called, which category, and a short pitch.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field mf-full {% if form.title.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.title.id_for_label }}">Title <span class="req">*</span></label>
+            {{ form.title }}
+            {% for e in form.title.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.category.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.category.id_for_label }}">Category <span class="req">*</span></label>
+            {{ form.category }}
+            {% for e in form.category.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+            <p class="mf-hint">
+              Don't see what you need?
+              <a href="{% url 'marketplace:manage_category_create' %}?next={{ request.path }}">+ Add a new category</a>
+            </p>
+          </div>
+
+          <div class="mf-field {% if form.price.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.price.id_for_label }}">Price (KES) <span class="req">*</span></label>
+            {{ form.price }}
+            {% for e in form.price.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.short_description.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.short_description.id_for_label }}">Short description</label>
+            {{ form.short_description }}
+            <p class="mf-hint">One line shown on marketplace cards. Max 280 characters.</p>
+            {% for e in form.short_description.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.description.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.description.id_for_label }}">Full description</label>
+            {{ form.description }}
+            <p class="mf-hint">The main description shown on the listing page.</p>
+            {% for e in form.description.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 2: Location ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">2</span>
+          <div>
+            <h2>Location</h2>
+            <p>Where this listing is. Drop the pin so guests can find it easily.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field mf-full {% if form.location.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.location.id_for_label }}">City / area <span class="req">*</span></label>
+            {{ form.location }}
+            <p class="mf-hint">e.g. Westlands, Nairobi</p>
+            {% for e in form.location.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.address.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.address.id_for_label }}">Street / building</label>
+            {{ form.address }}
+            {% for e in form.address.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.latitude.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.latitude.id_for_label }}">Latitude</label>
+            {{ form.latitude }}
+            {% for e in form.latitude.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.longitude.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.longitude.id_for_label }}">Longitude</label>
+            {{ form.longitude }}
+            {% for e in form.longitude.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full">
+            <div class="mf-map-toolbar">
+              <button type="button" id="useMyLocation" class="mf-map-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="12" y1="2" x2="12" y2="4"/>
+                  <line x1="12" y1="20" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="4" y2="12"/>
+                  <line x1="20" y1="12" x2="22" y2="12"/>
+                </svg>
+                Use my current location
+              </button>
+
+              <button type="button" id="clearPin" class="mf-map-btn mf-map-btn-secondary">
+                Clear pin
+              </button>
+
+              <span class="mf-map-status" id="mfMapStatus">Click the map to place a pin.</span>
+            </div>
+
+            <div id="listing-map" class="mf-map" aria-label="Location picker"></div>
+            <p class="mf-hint">
+              Click anywhere on the map to move the pin. Drag the pin for fine-tuning, or type
+              coordinates above directly.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 3: Contact ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">3</span>
+          <div>
+            <h2>Contact</h2>
+            <p>How guests can reach you. All optional, but at least one is recommended.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field {% if form.contact_phone.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.contact_phone.id_for_label }}">Phone</label>
+            {{ form.contact_phone }}
+            {% for e in form.contact_phone.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.contact_email.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.contact_email.id_for_label }}">Email</label>
+            {{ form.contact_email }}
+            {% for e in form.contact_email.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.whatsapp.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.whatsapp.id_for_label }}">WhatsApp</label>
+            {{ form.whatsapp }}
+            <p class="mf-hint">Include the country code, e.g. +254712345678. Opens a chat link on the listing page.</p>
+            {% for e in form.whatsapp.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 4: Social media (all optional) ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">4</span>
+          <div>
+            <h2>Social media</h2>
+            <p>All optional. Only the links you fill in will show on the listing page.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field {% if form.website.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.website.id_for_label }}">Website</label>
+            {{ form.website }}
+            {% for e in form.website.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.facebook.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.facebook.id_for_label }}">Facebook</label>
+            {{ form.facebook }}
+            {% for e in form.facebook.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.instagram.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.instagram.id_for_label }}">Instagram</label>
+            {{ form.instagram }}
+            {% for e in form.instagram.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.twitter.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.twitter.id_for_label }}">X / Twitter</label>
+            {{ form.twitter }}
+            {% for e in form.twitter.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.tiktok.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.tiktok.id_for_label }}">TikTok</label>
+            {{ form.tiktok }}
+            {% for e in form.tiktok.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.youtube.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.youtube.id_for_label }}">YouTube</label>
+            {{ form.youtube }}
+            {% for e in form.youtube.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 5: Capacity & pricing ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">5</span>
+          <div>
+            <h2>Capacity &amp; pricing</h2>
+            <p>How many guests, bedrooms, and how much per night.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field {% if form.price_unit.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.price_unit.id_for_label }}">Price unit</label>
+            {{ form.price_unit }}
+            {% for e in form.price_unit.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.min_nights.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.min_nights.id_for_label }}">Minimum nights</label>
+            {{ form.min_nights }}
+            {% for e in form.min_nights.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.max_guests.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.max_guests.id_for_label }}">Max guests</label>
+            {{ form.max_guests }}
+            {% for e in form.max_guests.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.bedrooms.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.bedrooms.id_for_label }}">Bedrooms</label>
+            {{ form.bedrooms }}
+            {% for e in form.bedrooms.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.beds.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.beds.id_for_label }}">Beds</label>
+            {{ form.beds }}
+            {% for e in form.beds.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.baths.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.baths.id_for_label }}">Bathrooms</label>
+            {{ form.baths }}
+            {% for e in form.baths.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 6: Amenities & rules ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">6</span>
+          <div>
+            <h2>Amenities &amp; rules</h2>
+            <p>One per line — they'll show as chips on the listing page.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field mf-full {% if form.amenities.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.amenities.id_for_label }}">Amenities</label>
+            {{ form.amenities }}
+            {% for e in form.amenities.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+          <div class="mf-field mf-full {% if form.house_rules.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.house_rules.id_for_label }}">House rules</label>
+            {{ form.house_rules }}
+            {% for e in form.house_rules.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 7: Check-in & policies ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">7</span>
+          <div>
+            <h2>Check-in &amp; policies</h2>
+            <p>Standard times and cancellation rules.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field {% if form.check_in_time.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.check_in_time.id_for_label }}">Check-in time</label>
+            {{ form.check_in_time }}
+            {% for e in form.check_in_time.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field {% if form.check_out_time.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.check_out_time.id_for_label }}">Check-out time</label>
+            {{ form.check_out_time }}
+            {% for e in form.check_out_time.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.cancellation_policy.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.cancellation_policy.id_for_label }}">Cancellation policy</label>
+            {{ form.cancellation_policy }}
+            {% for e in form.cancellation_policy.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 8: Images (max 4) ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">8</span>
+          <div>
+            <h2>Images</h2>
+            <p>
+              A <strong>cover image is required</strong>, and you can add up to
+              <strong>{{ max_images|default:3 }}</strong> more gallery images.
+              PNG or JPG, up to ~5&nbsp;MB each.
+            </p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field mf-full {% if form.cover_image.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.cover_image.id_for_label }}">Cover image <span class="req">*</span></label>
+            {{ form.cover_image }}
+            <p class="mf-hint">Shown first on cards and on the listing page.</p>
+            {% for e in form.cover_image.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.cover_image_url.errors %}mf-field-error{% endif %}">
+            <label for="{{ form.cover_image_url.id_for_label }}">Or paste a cover image URL</label>
+            {{ form.cover_image_url }}
+            {% for e in form.cover_image_url.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div class="mf-gallery">
+          <h3 class="mf-gallery-title">
+            Gallery images
+            <span class="mf-gallery-count">(up to {{ max_images|default:3 }})</span>
+          </h3>
+          {{ formset.management_form }}
+
+          {% if formset.non_form_errors %}
+            <div class="mf-formset-errors">
+              {% for e in formset.non_form_errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="mf-gallery-grid">
+            {% for f in formset %}
+              <div class="mf-gallery-item {% if f.errors %}mf-field-error{% endif %}">
+                {{ f.id }}
+
+                {% if f.instance.pk and f.instance.image %}
+                  <img src="{{ f.instance.image.url }}" class="mf-gallery-preview" alt="Gallery image">
+                {% elif f.instance.pk and f.instance.image_url %}
+                  <img src="{{ f.instance.image_url }}" class="mf-gallery-preview" alt="Gallery image">
+                {% else %}
+                  <div class="mf-gallery-empty" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span>No image</span>
+                  </div>
+                {% endif %}
+
+                <div class="mf-gallery-inputs">
+                  <label for="{{ f.image.id_for_label }}">Image file</label>
+                  {{ f.image }}
+                  {% for e in f.image.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+
+                  <label for="{{ f.image_url.id_for_label }}">Or URL</label>
+                  {{ f.image_url }}
+                  {% for e in f.image_url.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+
+                  <label for="{{ f.caption.id_for_label }}">Caption</label>
+                  {{ f.caption }}
+                  {% for e in f.caption.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+
+                  {% if f.instance.pk %}
+                    <label class="mf-gallery-delete">{{ f.DELETE }} Remove this image</label>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SECTION 9: Booking settings ============ -->
+      <section class="mf-section">
+        <header class="mf-section-head">
+          <span class="mf-step">9</span>
+          <div>
+            <h2>Booking settings</h2>
+            <p>How guests can book this listing.</p>
+          </div>
+        </header>
+
+        <div class="mf-grid">
+          <div class="mf-field mf-full {% if form.accepts_bookings.errors %}mf-field-error{% endif %}">
+            <label class="mf-check">
+              {{ form.accepts_bookings }}
+              <span>Accept bookings on the marketplace</span>
+            </label>
+            {% for e in form.accepts_bookings.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+
+          <div class="mf-field mf-full {% if form.pay_first.errors %}mf-field-error{% endif %}">
+            <label class="mf-check">
+              {{ form.pay_first }}
+              <span>Require payment before confirmation (uncheck for "request &amp; confirm")</span>
+            </label>
+            {% for e in form.pay_first.errors %}<p class="mf-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ACTIONS ============ -->
+      <div class="mf-actions">
+        <a href="{% url 'marketplace:manage_home' %}" class="btn secondary">Cancel</a>
+
+        {% if mode == 'edit' %}
+          <a href="{% url 'marketplace:manage_delete' listing.pk %}" class="btn danger-outline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+            Delete
+          </a>
+        {% endif %}
+
+        <button type="submit" class="btn success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          {% if mode == 'edit' %}Save changes{% else %}Submit for review{% endif %}
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ SIDEBAR TIPS ============ -->
+    <aside class="mf-aside">
+
+      <div class="mf-tip">
+        <span class="mf-tip-icon tip-indigo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </span>
+        <div>
+          <strong>What happens next?</strong>
+          <ol class="mf-list">
+            <li>You submit the listing.</li>
+            <li>Our team reviews it (usually within 24 hours).</li>
+            <li>Once approved, guests can book directly.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="mf-tip">
+        <span class="mf-tip-icon tip-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+            <path d="m2 17 10 5 10-5"/>
+            <path d="m2 12 10 5 10-5"/>
+          </svg>
+        </span>
+        <div>
+          <strong>Tips for a great listing</strong>
+          <ul class="mf-list">
+            <li>Use a real photo for the cover.</li>
+            <li>Write the short description as the first 10 seconds of a conversation.</li>
+            <li>List at least 4 amenities.</li>
+            <li>Be specific about the location.</li>
+            <li>Add WhatsApp if you want guests to reach you instantly.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mf-tip">
+        <span class="mf-tip-icon tip-emerald">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </span>
+        <div>
+          <strong>Availability</strong>
+          <p class="mf-list">
+            Bookings lock the listing automatically for the dates chosen. When a booking
+            ends, the listing reopens on its own — you don't need to do anything.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     Error summary
+     ============================================================ */
+  .mf-error-summary {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 12px;
+    color: #991b1b;
+  }
+  .mf-error-summary-icon {
+    flex: 0 0 34px; width: 34px; height: 34px;
+    border-radius: 10px;
+    background: #fee2e2; color: #b91c1c;
+    display: grid; place-items: center;
+  }
+  .mf-error-summary-icon svg { width: 18px; height: 18px; }
+  .mf-error-summary strong {
+    display: block;
+    font-size: 14px; font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .mf-error-summary p { font-size: 12.5px; opacity: 0.9; }
+  .mf-error-summary ul {
+    margin-top: 8px;
+    padding-left: 20px;
+    font-size: 12.5px;
+  }
+  .mf-error-summary ul li { margin-bottom: 3px; }
+
+  /* Field-level error state */
+  .mf-field.mf-field-error > label { color: #b91c1c; }
+  .mf-field.mf-field-error input[type="text"],
+  .mf-field.mf-field-error input[type="number"],
+  .mf-field.mf-field-error input[type="url"],
+  .mf-field.mf-field-error input[type="email"],
+  .mf-field.mf-field-error input[type="tel"],
+  .mf-field.mf-field-error input[type="time"],
+  .mf-field.mf-field-error input[type="file"],
+  .mf-field.mf-field-error select,
+  .mf-field.mf-field-error textarea {
+    border-color: #ef4444;
+    background: #fff5f5;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.12);
+  }
+  .mf-field.mf-field-error input:focus,
+  .mf-field.mf-field-error select:focus,
+  .mf-field.mf-field-error textarea:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.20);
+  }
+
+  /* Inline field error text */
+  .mf-error {
+    display: flex; align-items: flex-start; gap: 6px;
+    font-size: 12px;
+    color: #b91c1c;
+    margin-top: 6px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .mf-error::before {
+    content: "!";
+    flex: 0 0 14px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: #fee2e2; color: #b91c1c;
+    font-size: 10px; font-weight: 800;
+    margin-top: 1px;
+  }
+
+  /* Error summary list */
+  .mf-error-list {
+    list-style: none;
+    margin: 10px 0 2px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mf-error-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .mf-error-where {
+    flex: 0 0 auto;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .mf-error-what {
+    flex: 1; min-width: 0;
+    color: #7f1d1d;
+    font-weight: 500;
+  }
+
+  /* Gallery formset error */
+  .mf-gallery-item.mf-field-error {
+    border-color: #ef4444;
+    background: #fff5f5;
+  }
+  .mf-formset-errors {
+    padding: 12px 14px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+
+  /* ============================================================
+     Layout
+     ============================================================ */
+  .mf-header { margin-bottom: 20px; max-width: 800px; }
+  .mf-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+  }
+  .mf-back:hover { color: var(--brand-1); background: rgba(99,102,241,0.06); }
+  .mf-back svg { width: 14px; height: 14px; }
+  .mf-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+  .mf-header p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .mf-form { width: 100%; }
+  .mf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) { .mf-layout { grid-template-columns: 1fr; } }
+
+  .mf-main {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 26px 24px;
+  }
+
+  .mf-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .mf-section:last-of-type { border-bottom: none; }
+  .mf-section-head {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .mf-step {
+    flex: 0 0 30px; width: 30px; height: 30px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(99,102,241,0.35);
+  }
+  .mf-section-head h2 {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .mf-section-head p {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .mf-section-head p strong { color: var(--text-2); font-weight: 700; }
+
+  .mf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .mf-field.mf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .mf-grid { grid-template-columns: 1fr; } }
+
+  .mf-field { display: flex; flex-direction: column; }
+  .mf-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .mf-field .req { color: #ef4444; margin-left: 2px; }
+
+  .mf-field input[type="text"],
+  .mf-field input[type="number"],
+  .mf-field input[type="url"],
+  .mf-field input[type="email"],
+  .mf-field input[type="tel"],
+  .mf-field input[type="time"],
+  .mf-field select,
+  .mf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .mf-field textarea { min-height: 100px; resize: vertical; }
+  .mf-field input:hover, .mf-field select:hover, .mf-field textarea:hover { background: #fff; }
+  .mf-field input:focus, .mf-field select:focus, .mf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .mf-field input[type="file"] {
+    padding: 8px 10px;
+    border: 1.5px dashed var(--line);
+    background: #f8fafc;
+    cursor: pointer;
+  }
+  .mf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .mf-hint a { color: var(--brand-1); font-weight: 700; }
+
+  /* Checkbox */
+  .mf-check {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px;
+    color: var(--text-2);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mf-check input[type="checkbox"] {
+    appearance: none;
+    width: 18px; height: 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    flex: 0 0 18px;
+    transition: all 0.15s;
+  }
+  .mf-check input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    border-color: transparent;
+  }
+  .mf-check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 6px; height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* Gallery */
+  .mf-gallery {
+    margin-top: 12px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line-2);
+  }
+  .mf-gallery-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 12px;
+  }
+  .mf-gallery-count {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-weight: 600;
+  }
+  .mf-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .mf-gallery-item {
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .mf-gallery-preview {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+  .mf-gallery-empty {
+    width: 100%;
+    aspect-ratio: 16/10;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    border: 1px dashed var(--line);
+    display: grid;
+    place-items: center;
+    color: rgba(99,102,241,0.6);
+    gap: 6px;
+  }
+  .mf-gallery-empty svg { width: 26px; height: 26px; }
+  .mf-gallery-empty span {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mf-gallery-inputs { display: flex; flex-direction: column; gap: 6px; }
+  .mf-gallery-inputs label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted-2);
+  }
+  .mf-gallery-inputs input[type="text"],
+  .mf-gallery-inputs input[type="url"],
+  .mf-gallery-inputs input[type="file"],
+  .mf-gallery-inputs input[type="number"] {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+  }
+  .mf-gallery-delete {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: #991b1b;
+    font-weight: 600;
+  }
+
+  /* Actions */
+  .mf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* Sidebar */
+  .mf-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 84px;
+  }
+  @media (max-width: 1000px) { .mf-aside { position: static; } }
+
+  .mf-tip {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mf-tip-icon {
+    flex: 0 0 34px; width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .mf-tip-icon svg { width: 16px; height: 16px; }
+  .tip-indigo  { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+  .tip-amber   { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .tip-emerald { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .mf-tip strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .mf-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding-left: 18px;
+    list-style: decimal;
+  }
+  .mf-list li { margin-bottom: 4px; }
+  .mf-tip p.mf-list { padding-left: 0; }
+
+  /* Map */
+  .mf-map-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .mf-map-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(99,102,241,0.28);
+    transition: filter 0.15s, box-shadow 0.15s;
+  }
+  .mf-map-btn:hover { filter: brightness(1.05); box-shadow: 0 8px 18px rgba(99,102,241,0.35); }
+  .mf-map-btn svg { width: 14px; height: 14px; }
+  .mf-map-btn-secondary {
+    background: #fff;
+    color: var(--text-2);
+    border-color: var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+  .mf-map-btn-secondary:hover { background: #f8fafc; box-shadow: var(--shadow-md); filter: none; }
+  .mf-map-status {
+    font-size: 12px;
+    color: var(--muted-2);
+    margin-left: auto;
+  }
+
+  .mf-map {
+    width: 100%;
+    height: 360px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #eef2ff;
+    overflow: hidden;
+    position: relative;
+  }
+  @media (max-width: 640px) { .mf-map { height: 280px; } }
+
+  /* Delete outline button */
+  .btn.danger-outline {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fecaca;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.danger-outline:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .mf-main { padding: 4px 18px 20px; }
+    .mf-section { padding: 20px 0; }
+    .mf-actions { flex-direction: column-reverse; }
+    .mf-actions .btn { width: 100%; justify-content: center; }
+    .mf-map-status { margin-left: 0; width: 100%; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+{# ---------- Google Maps picker ---------- #}
+{# Load the Maps JS API using the key from Django settings (if provided). #}
+{% if google_maps_api_key %}
+<script>
+  window.__MF_MAPS_KEY__ = "{{ google_maps_api_key|escapejs }}";
+</script>
+<script
+  src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&loading=async"
+  async defer></script>
+{% endif %}
+
+<script>
+  // ---- Map picker ---------------------------------------------------------
+  // Works with the Google Maps JS API if a key is configured. If not, we
+  // render a lightweight OpenStreetMap fallback so the field still works.
+  (function () {
+    var latEl = document.getElementById('{{ form.latitude.id_for_label }}');
+    var lngEl = document.getElementById('{{ form.longitude.id_for_label }}');
+    var mapEl = document.getElementById('listing-map');
+    var statusEl = document.getElementById('mfMapStatus');
+    var useBtn = document.getElementById('useMyLocation');
+    var clearBtn = document.getElementById('clearPin');
+    if (!latEl || !lngEl || !mapEl) return;
+
+    function parseFloatOrNull(v) {
+      var n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    }
+
+    function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+
+    function updateFields(lat, lng) {
+      latEl.value = lat.toFixed(6);
+      lngEl.value = lng.toFixed(6);
+    }
+
+    // Default center: Nairobi if nothing set
+    var initLat = parseFloatOrNull(latEl.value);
+    var initLng = parseFloatOrNull(lngEl.value);
+    var hasPin = initLat !== null && initLng !== null;
+    var center = hasPin
+      ? { lat: initLat, lng: initLng }
+      : { lat: -1.286389, lng: 36.817223 };
+
+    // ---- Google Maps path ----
+    function initGoogleMap() {
+      var map = new google.maps.Map(mapEl, {
+        center: center,
+        zoom: hasPin ? 15 : 6,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+      });
+
+      var marker = hasPin
+        ? new google.maps.Marker({ position: center, map: map, draggable: true })
+        : null;
+
+      function place(lat, lng) {
+        var pos = { lat: lat, lng: lng };
+        if (!marker) {
+          marker = new google.maps.Marker({ position: pos, map: map, draggable: true });
+          marker.addListener('dragend', function (e) {
+            updateFields(e.latLng.lat(), e.latLng.lng());
+            setStatus('Pin moved.');
+          });
+        } else {
+          marker.setPosition(pos);
+        }
+        updateFields(lat, lng);
+      }
+
+      map.addListener('click', function (e) {
+        place(e.latLng.lat(), e.latLng.lng());
+        setStatus('Pin placed. Drag to fine-tune.');
+      });
+
+      if (useBtn) {
+        useBtn.addEventListener('click', function () {
+          if (!navigator.geolocation) {
+            setStatus('Geolocation not supported by your browser.');
+            return;
+          }
+          setStatus('Getting your location…');
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            map.setCenter({ lat: lat, lng: lng });
+            map.setZoom(15);
+            place(lat, lng);
+            setStatus('Using your current location.');
+          }, function () {
+            setStatus('Could not get your location.');
+          });
+        });
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+          if (marker) { marker.setMap(null); marker = null; }
+          latEl.value = '';
+          lngEl.value = '';
+          setStatus('Pin cleared.');
+        });
+      }
+
+      // Keep map in sync if user types coords manually
+      [latEl, lngEl].forEach(function (el) {
+        el.addEventListener('change', function () {
+          var lat = parseFloatOrNull(latEl.value);
+          var lng = parseFloatOrNull(lngEl.value);
+          if (lat !== null && lng !== null) {
+            map.setCenter({ lat: lat, lng: lng });
+            place(lat, lng);
+          }
+        });
+      });
+    }
+
+    // ---- Fallback: simple OpenStreetMap via Leaflet CDN ----
+    function initLeafletFallback() {
+      // Load CSS + JS on demand
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.onload = function () {
+        var map = L.map(mapEl).setView([center.lat, center.lng], hasPin ? 15 : 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap',
+          maxZoom: 19,
+        }).addTo(map);
+
+        var marker = hasPin ? L.marker([center.lat, center.lng], { draggable: true }).addTo(map) : null;
+
+        function place(lat, lng) {
+          if (!marker) {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker.on('dragend', function () {
+              var ll = marker.getLatLng();
+              updateFields(ll.lat, ll.lng);
+            });
+          } else {
+            marker.setLatLng([lat, lng]);
+          }
+          updateFields(lat, lng);
+        }
+
+        map.on('click', function (e) {
+          place(e.latlng.lat, e.latlng.lng);
+          setStatus('Pin placed. Drag to fine-tune.');
+        });
+
+        if (useBtn) {
+          useBtn.addEventListener('click', function () {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+              var lat = pos.coords.latitude;
+              var lng = pos.coords.longitude;
+              map.setView([lat, lng], 15);
+              place(lat, lng);
+              setStatus('Using your current location.');
+            }, function () {
+              setStatus('Could not get your location.');
+            });
+          });
+        }
+
+        if (clearBtn) {
+          clearBtn.addEventListener('click', function () {
+            if (marker) { map.removeLayer(marker); marker = null; }
+            latEl.value = '';
+            lngEl.value = '';
+            setStatus('Pin cleared.');
+          });
+        }
+      };
+      document.body.appendChild(s);
+    }
+
+    // ---- Init once Google Maps library is available (or fallback) ----
+    var tries = 0;
+    function boot() {
+      if (window.google && window.google.maps) {
+        initGoogleMap();
+        return;
+      }
+      tries++;
+      if (tries > 40) {           // ~4s
+        initLeafletFallback();
+        return;
+      }
+      setTimeout(boot, 100);
+    }
+    boot();
+  })();
+</script>
+{% endblock %}

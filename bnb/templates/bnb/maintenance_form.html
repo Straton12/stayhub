@@ -1,0 +1,313 @@
+{% extends 'bnb/operationssub_base.html' %}
+{% block title %}{% if item %}Edit request{% else %}New request{% endif %} — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_maintenance' %}" class="mf-back">← Back to maintenance</a>
+  <h1 class="mf-title">
+    {% if item %}Edit request{% else %}New maintenance request{% endif %}
+  </h1>
+</div>
+
+<form method="post" class="mf" novalidate>
+  {% csrf_token %}
+
+  {# ---- Non-field errors ---- #}
+  {% if form.non_field_errors %}
+    <div class="mf-alert mf-alert-error" role="alert">
+      {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <section class="mf-section">
+    <div class="mf-grid">
+
+      {# ---------- Property (required) ---------- #}
+      <div class="mf-field mf-full {% if form.property.errors %}has-error{% endif %}">
+        <label for="{{ form.property.id_for_label }}">
+          Property <span class="req">*</span>
+        </label>
+        {{ form.property }}
+        {% if form.property.help_text %}
+          <small class="mf-help">{{ form.property.help_text }}</small>
+        {% endif %}
+        {% for err in form.property.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Category ---------- #}
+      <div class="mf-field {% if form.category.errors %}has-error{% endif %}">
+        <label for="{{ form.category.id_for_label }}">Category</label>
+        {{ form.category }}
+        {% for err in form.category.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Priority ---------- #}
+      <div class="mf-field {% if form.priority.errors %}has-error{% endif %}">
+        <label for="{{ form.priority.id_for_label }}">Priority</label>
+        {{ form.priority }}
+        {% for err in form.priority.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Status ---------- #}
+      <div class="mf-field {% if form.status.errors %}has-error{% endif %}">
+        <label for="{{ form.status.id_for_label }}">Status</label>
+        {{ form.status }}
+        {% for err in form.status.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Reported by ---------- #}
+      <div class="mf-field {% if form.reported_by.errors %}has-error{% endif %}">
+        <label for="{{ form.reported_by.id_for_label }}">Reported by</label>
+        {{ form.reported_by }}
+        {% for err in form.reported_by.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Assigned to ---------- #}
+      <div class="mf-field {% if form.assigned_to.errors %}has-error{% endif %}">
+        <label for="{{ form.assigned_to.id_for_label }}">Assigned to</label>
+        {{ form.assigned_to }}
+        {% for err in form.assigned_to.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Issue (required, full width) ---------- #}
+      <div class="mf-field mf-full {% if form.issue.errors %}has-error{% endif %}">
+        <label for="{{ form.issue.id_for_label }}">
+          Issue <span class="req">*</span>
+        </label>
+        {{ form.issue }}
+        {% for err in form.issue.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Description (full width) ---------- #}
+      <div class="mf-field mf-full {% if form.description.errors %}has-error{% endif %}">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% for err in form.description.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+      {# ---------- Cost ---------- #}
+      <div class="mf-field {% if form.cost.errors %}has-error{% endif %}">
+        <label for="{{ form.cost.id_for_label }}">Cost (KES)</label>
+        {{ form.cost }}
+        {% for err in form.cost.errors %}
+          <small class="mf-error">{{ err }}</small>
+        {% endfor %}
+      </div>
+
+    </div>
+  </section>
+
+  <div class="mf-actions">
+    <a href="{% url 'bnb_maintenance' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      {% if item %}Save changes{% else %}Create request{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .mb { margin-bottom: 18px; }
+  .mf-back {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .mf-back:hover { color: var(--text); }
+  .mf-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-top: 6px;
+    color: var(--text);
+  }
+
+  /* ============================================================ */
+  /*  FORM SHELL                                                  */
+  /* ============================================================ */
+  .mf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 8px 26px 24px;
+    box-shadow: var(--shadow-sm);
+    max-width: 920px;
+  }
+  @media (max-width: 640px) {
+    .mf { padding: 8px 16px 18px; border-radius: 14px; }
+  }
+
+  .mf-section { padding: 22px 0; }
+
+  .mf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .mf-field.mf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .mf-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================ */
+  /*  FIELDS                                                      */
+  /* ============================================================ */
+  .mf-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .mf-field .req { color: #ef4444; margin-left: 2px; }
+
+  /* Form-generated widgets: style every input/select/textarea directly */
+  .mf-field input,
+  .mf-field select,
+  .mf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .mf-field input::placeholder,
+  .mf-field textarea::placeholder {
+    color: var(--muted-2);
+  }
+  .mf-field textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+
+  .mf-field select {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 32px;
+  }
+
+  .mf-field input:hover,
+  .mf-field select:hover,
+  .mf-field textarea:hover {
+    border-color: #cbd5e1;
+  }
+  .mf-field input:focus,
+  .mf-field select:focus,
+  .mf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* Number input: hide spinners for a cleaner look */
+  .mf-field input[type="number"]::-webkit-outer-spin-button,
+  .mf-field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .mf-field input[type="number"] { -moz-appearance: textfield; }
+
+  /* ============================================================ */
+  /*  VALIDATION STATES                                           */
+  /* ============================================================ */
+  .mf-field.has-error input,
+  .mf-field.has-error select,
+  .mf-field.has-error textarea {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .mf-field.has-error input:focus,
+  .mf-field.has-error select:focus,
+  .mf-field.has-error textarea:focus {
+    border-color: #dc2626;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.14);
+  }
+
+  .mf-error {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #b91c1c;
+  }
+  .mf-help {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
+
+  /* ============================================================ */
+  /*  FORM-LEVEL ALERT                                            */
+  /* ============================================================ */
+  .mf-alert {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .mf-alert p { margin: 0; }
+  .mf-alert p + p { margin-top: 4px; }
+  .mf-alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  /* ============================================================ */
+  /*  ACTIONS                                                     */
+  /* ============================================================ */
+  .mf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .mf-actions { flex-direction: column-reverse; }
+    .mf-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .mf-field input, .mf-field select, .mf-field textarea, .mf-back {
+      transition: none;
+    }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,399 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}{% if expense %}Edit expense{% else %}New expense{% endif %} — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_expense_list' %}" class="ef-back">← Back to expenses</a>
+  <h1 class="ef-title">
+    {% if expense %}Edit expense{% else %}Add an expense{% endif %}
+  </h1>
+</div>
+
+{# Info banner — explains the auto-post behaviour #}
+<div class="ef-info">
+  <span class="ef-info-dot" aria-hidden="true"></span>
+  {% if expense %}
+    Editing this expense updates its ledger row automatically — no extra step needed.
+  {% else %}
+    Saving this expense posts it to your financial ledger automatically. Enter the amount as you actually paid it{% if vat_enabled %} — {{ vat_label }} will be split out if enabled{% endif %}.
+  {% endif %}
+</div>
+
+<form method="post" enctype="multipart/form-data" class="ef" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="ef-alert ef-alert-error" role="alert">
+      {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <section class="ef-section">
+    <div class="ef-grid">
+
+      {# ---------- Title (required, full width) ---------- #}
+      <div class="ef-field ef-full {% if form.title.errors %}has-error{% endif %}">
+        <label for="{{ form.title.id_for_label }}">
+          Title <span class="req">*</span>
+        </label>
+        {{ form.title }}
+        {% for err in form.title.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Property ---------- #}
+      <div class="ef-field {% if form.property.errors %}has-error{% endif %}">
+        <label for="{{ form.property.id_for_label }}">Property</label>
+        {{ form.property }}
+        {% for err in form.property.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Category (with inline + New) ---------- #}
+      <div class="ef-field {% if form.category.errors %}has-error{% endif %}">
+        <div class="ef-label-row">
+          <label for="{{ form.category.id_for_label }}">Category</label>
+          <a href="{% url 'bnb_expense_category_add' %}?next={{ request.path|urlencode }}"
+             class="ef-inline-link"
+             title="Add a new category without leaving this form">
+            + New
+          </a>
+        </div>
+        {{ form.category }}
+        {% for err in form.category.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+        {% if not categories %}
+          <small class="ef-hint">
+            No categories yet —
+            <a href="{% url 'bnb_expense_category_list' %}">create one</a>
+            to start grouping expenses.
+          </small>
+        {% endif %}
+      </div>
+
+      {# ---------- Amount (required) ---------- #}
+      <div class="ef-field {% if form.amount.errors %}has-error{% endif %}">
+        <label for="{{ form.amount.id_for_label }}">
+          Amount (KES) <span class="req">*</span>
+        </label>
+        {{ form.amount }}
+        {% for err in form.amount.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Frequency ---------- #}
+      <div class="ef-field {% if form.frequency.errors %}has-error{% endif %}">
+        <label for="{{ form.frequency.id_for_label }}">Frequency</label>
+        {{ form.frequency }}
+        {% for err in form.frequency.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Payment method ---------- #}
+      <div class="ef-field {% if form.payment_method.errors %}has-error{% endif %}">
+        <label for="{{ form.payment_method.id_for_label }}">Payment method</label>
+        {{ form.payment_method }}
+        {% for err in form.payment_method.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Vendor ---------- #}
+      <div class="ef-field {% if form.vendor.errors %}has-error{% endif %}">
+        <label for="{{ form.vendor.id_for_label }}">Vendor</label>
+        {{ form.vendor }}
+        {% for err in form.vendor.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Date ---------- #}
+      <div class="ef-field {% if form.expense_date.errors %}has-error{% endif %}">
+        <label for="{{ form.expense_date.id_for_label }}">Date</label>
+        {{ form.expense_date }}
+        {% for err in form.expense_date.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Description (full) ---------- #}
+      <div class="ef-field ef-full {% if form.description.errors %}has-error{% endif %}">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% for err in form.description.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Notes (full) ---------- #}
+      <div class="ef-field ef-full {% if form.notes.errors %}has-error{% endif %}">
+        <label for="{{ form.notes.id_for_label }}">Notes</label>
+        {{ form.notes }}
+        {% for err in form.notes.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Receipt ---------- #}
+      <div class="ef-field ef-full {% if form.receipt.errors %}has-error{% endif %}">
+        <label for="{{ form.receipt.id_for_label }}">Receipt</label>
+        {% if expense and expense.receipt %}
+          <div class="ef-current-receipt">
+            Current: <a href="{{ expense.receipt.url }}" target="_blank" rel="noopener">
+              {{ expense.receipt.name|truncatechars:40 }}
+            </a>
+          </div>
+        {% endif %}
+        {{ form.receipt }}
+        {% for err in form.receipt.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Paid toggle ---------- #}
+      <div class="ef-field ef-full {% if form.paid.errors %}has-error{% endif %}">
+        <label class="ef-check">{{ form.paid }}<span>Mark as paid</span></label>
+        {% for err in form.paid.errors %}<small class="ef-error">{{ err }}</small>{% endfor %}
+      </div>
+
+    </div>
+  </section>
+
+  <div class="ef-actions">
+    <a href="{% url 'bnb_expense_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      {% if expense %}Save changes{% else %}Add expense{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .mb { margin-bottom: 18px; }
+  .ef-back {
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 700; text-decoration: none;
+    transition: color .15s;
+  }
+  .ef-back:hover { color: var(--text); }
+  .ef-title {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.4px; margin-top: 6px;
+    color: var(--text);
+  }
+
+  /* Info banner */
+  .ef-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    max-width: 920px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #1e40af;
+    font-weight: 500;
+  }
+  .ef-info-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.22);
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .ef {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 8px 26px 24px;
+    box-shadow: var(--shadow-sm);
+    max-width: 920px;
+  }
+  @media (max-width: 640px) {
+    .ef { padding: 8px 16px 18px; border-radius: 14px; }
+  }
+
+  .ef-section { padding: 22px 0; }
+  .ef-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .ef-field.ef-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .ef-grid { grid-template-columns: 1fr; }
+  }
+
+  .ef-field label {
+    font-size: 12.5px; font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .ef-field .req { color: #ef4444; margin-left: 2px; }
+
+  /* Inline label row (label + "+ New") */
+  .ef-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .ef-label-row label { margin-bottom: 0; }
+  .ef-inline-link {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--brand-1);
+    text-decoration: none;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .ef-inline-link:hover { background: rgba(14,165,233,0.10); }
+  .ef-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 4px;
+  }
+  .ef-hint a { color: var(--brand-1); font-weight: 700; }
+
+  .ef-field input:not([type="checkbox"]):not([type="file"]),
+  .ef-field select,
+  .ef-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .ef-field textarea {
+    resize: vertical;
+    min-height: 84px;
+    line-height: 1.5;
+  }
+  .ef-field select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    padding-right: 32px;
+  }
+  .ef-field input:not([type="checkbox"]):not([type="file"]):hover,
+  .ef-field select:hover,
+  .ef-field textarea:hover { border-color: #cbd5e1; }
+  .ef-field input:not([type="checkbox"]):not([type="file"]):focus,
+  .ef-field select:focus,
+  .ef-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .ef-field input[type="file"] {
+    width: 100%;
+    font-size: 13px;
+    color: var(--text-2);
+    padding: 8px 0;
+  }
+  .ef-current-receipt {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .ef-current-receipt a {
+    color: var(--brand-1);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .ef-current-receipt a:hover { text-decoration: underline; }
+
+  .ef-field input[type="number"]::-webkit-outer-spin-button,
+  .ef-field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .ef-field input[type="number"] { -moz-appearance: textfield; }
+
+  .ef-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #f8fafc;
+    user-select: none;
+    transition: border-color .15s, background .15s;
+    width: 100%;
+  }
+  .ef-check:hover { border-color: #cbd5e1; background: #fff; }
+  .ef-check input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--brand-1);
+    cursor: pointer; margin: 0;
+  }
+
+  .ef-field.has-error input:not([type="checkbox"]),
+  .ef-field.has-error select,
+  .ef-field.has-error textarea {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .ef-field.has-error input:not([type="checkbox"]):focus,
+  .ef-field.has-error select:focus,
+  .ef-field.has-error textarea:focus {
+    border-color: #dc2626;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.14);
+  }
+  .ef-field.has-error .ef-check {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+  .ef-error {
+    display: block;
+    margin-top: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #b91c1c;
+  }
+
+  .ef-alert {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .ef-alert p { margin: 0; }
+  .ef-alert p + p { margin-top: 4px; }
+  .ef-alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  .ef-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .ef-actions { flex-direction: column-reverse; }
+    .ef-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ef-field input, .ef-field select, .ef-field textarea,
+    .ef-back, .ef-check { transition: none; }
+  }
+</style>
+{% endblock %}

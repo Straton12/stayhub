@@ -1,0 +1,2114 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+{% block title %}StayHub — Explore the world, one stay at a time{% endblock %}
+
+{% block content %}
+
+<!-- ==================== HERO ==================== -->
+<section class="wv-hero" aria-labelledby="wvHeroTitle">
+  <div class="wv-hero-grid" aria-hidden="true"></div>
+  <div class="wv-hero-glow" aria-hidden="true"></div>
+
+  <div class="mkt-container wv-hero-inner">
+    <div class="wv-hero-left">
+      <div class="wv-flag-row" aria-hidden="true">
+        <span class="wv-flag">🇰🇪</span>
+        <span class="wv-flag">🇹🇿</span>
+        <span class="wv-flag">🇺🇬</span>
+        <span class="wv-flag">🇷🇼</span>
+        <span class="wv-flag">🇬🇧</span>
+        <span class="wv-flag">🇦🇪</span>
+        <span class="wv-flag">🇺🇸</span>
+        <span class="wv-flag-more">+180</span>
+      </div>
+
+      <h1 id="wvHeroTitle" class="wv-title">
+        The world,<br>
+        <span class="wv-title-accent">on your doorstep.</span>
+      </h1>
+
+      <p class="wv-subtitle">
+        Discover stays, tours, food and services from verified hosts and businesses
+        across <strong>6 continents</strong> and <strong>180+ countries</strong>.
+      </p>
+
+      <div class="wv-stats-row">
+        <div class="wv-stat">
+          <div class="wv-stat-num">180+</div>
+          <div class="wv-stat-label">Countries</div>
+        </div>
+        <div class="wv-stat-divider" aria-hidden="true"></div>
+        <div class="wv-stat">
+          <div class="wv-stat-num">{{ total_listings|default:"50K+" }}</div>
+          <div class="wv-stat-label">Listings</div>
+        </div>
+        <div class="wv-stat-divider" aria-hidden="true"></div>
+        <div class="wv-stat">
+          <div class="wv-stat-num">4.9★</div>
+          <div class="wv-stat-label">Avg rating</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wv-hero-right" aria-hidden="true">
+      <div class="wv-globe">
+        <svg viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="92" stroke="url(#wvGlobeStroke)" stroke-width="1.5"/>
+          <ellipse cx="100" cy="100" rx="92" ry="40" stroke="url(#wvGlobeStroke)" stroke-width="1"/>
+          <ellipse cx="100" cy="100" rx="92" ry="70" stroke="url(#wvGlobeStroke)" stroke-width="0.8"/>
+          <ellipse cx="100" cy="100" rx="40" ry="92" stroke="url(#wvGlobeStroke)" stroke-width="1"/>
+          <ellipse cx="100" cy="100" rx="70" ry="92" stroke="url(#wvGlobeStroke)" stroke-width="0.8"/>
+          <line x1="8" y1="100" x2="192" y2="100" stroke="url(#wvGlobeStroke)" stroke-width="1"/>
+          <defs>
+            <linearGradient id="wvGlobeStroke" x1="0" y1="0" x2="200" y2="200">
+              <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+              <stop offset="50%" stop-color="#818cf8" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#f472b6" stop-opacity="0.5"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="wv-dot wv-dot-1"></span>
+        <span class="wv-dot wv-dot-2"></span>
+        <span class="wv-dot wv-dot-3"></span>
+        <span class="wv-dot wv-dot-4"></span>
+        <span class="wv-dot wv-dot-5"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SEARCH ==================== -->
+<section class="wv-search-section" aria-label="Search">
+  <div class="mkt-container">
+    <form class="wv-search" action="{% url 'marketplace:search' %}" method="get" role="search">
+
+      <div class="wv-search-field wv-sf-dest">
+        <span class="wv-sf-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <div class="wv-sf-body">
+          <label for="wvDest">Where to?</label>
+          <input type="text" name="q" id="wvDest" placeholder="Anywhere in the world" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="wv-search-field wv-sf-dates" id="wvDatesField" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
+        <span class="wv-sf-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </span>
+        <div class="wv-sf-body">
+          <label>When</label>
+          <div class="wv-dates-inline" id="wvDatesInline">
+            <span class="wv-date-seg" id="wvCheckIn">Check-in</span>
+            <span class="wv-date-dash">→</span>
+            <span class="wv-date-seg" id="wvCheckOut">Check-out</span>
+          </div>
+          <input type="hidden" name="checkin" id="wvCheckInVal">
+          <input type="hidden" name="checkout" id="wvCheckOutVal">
+        </div>
+
+        <div class="wv-calendar" id="wvCalendar" hidden role="dialog" aria-label="Choose dates">
+          <div class="wv-cal-head">
+            <button type="button" class="wv-cal-nav" data-dir="-1" aria-label="Previous month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="wv-cal-months" id="wvCalMonths"></div>
+            <button type="button" class="wv-cal-nav" data-dir="1" aria-label="Next month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <div class="wv-cal-body">
+            <div class="wv-cal-month" data-month="0"></div>
+            <div class="wv-cal-month" data-month="1"></div>
+          </div>
+          <div class="wv-cal-foot">
+            <button type="button" class="wv-cal-clear">Clear dates</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wv-search-field wv-sf-occ" id="wvOccField" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
+        <span class="wv-sf-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <div class="wv-sf-body">
+          <label>Who's coming</label>
+          <span class="wv-occ-text" id="wvOccText">2 adults · 0 children · 1 room</span>
+        </div>
+        <span class="wv-sf-chev" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+
+        <div class="wv-occ-pop" id="wvOccPop" hidden role="dialog" aria-label="Guests">
+          <div class="wv-occ-row">
+            <div><strong>Adults</strong><span>Age 18+</span></div>
+            <div class="wv-stepper">
+              <button type="button" data-target="adults" data-delta="-1" aria-label="Decrease adults">−</button>
+              <span id="wvAdultsVal">2</span>
+              <button type="button" data-target="adults" data-delta="1" aria-label="Increase adults">+</button>
+            </div>
+          </div>
+          <div class="wv-occ-row">
+            <div><strong>Children</strong><span>Age 0–17</span></div>
+            <div class="wv-stepper">
+              <button type="button" data-target="children" data-delta="-1" aria-label="Decrease children">−</button>
+              <span id="wvChildrenVal">0</span>
+              <button type="button" data-target="children" data-delta="1" aria-label="Increase children">+</button>
+            </div>
+          </div>
+          <div class="wv-occ-row">
+            <div><strong>Rooms</strong><span>Rooms needed</span></div>
+            <div class="wv-stepper">
+              <button type="button" data-target="rooms" data-delta="-1" aria-label="Decrease rooms">−</button>
+              <span id="wvRoomsVal">1</span>
+              <button type="button" data-target="rooms" data-delta="1" aria-label="Increase rooms">+</button>
+            </div>
+          </div>
+          <button type="button" class="wv-occ-done" id="wvOccDone">Done</button>
+        </div>
+      </div>
+
+      <button type="submit" class="wv-search-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span>Search</span>
+      </button>
+
+      <label class="wv-work-check">
+        <input type="checkbox">
+        <span>Business travel</span>
+      </label>
+    </form>
+  </div>
+</section>
+
+<!-- ==================== WHY ==================== -->
+<section class="wv-section wv-why-section" aria-labelledby="wvWhyTitle">
+  <div class="mkt-container">
+    <div class="wv-section-head">
+      <span class="wv-kicker">01 — Why StayHub</span>
+      <h2 id="wvWhyTitle" class="wv-h2">Built global. Powered local.</h2>
+      <p class="wv-lead">Whatever you need on your journey, we've partnered with the people who do it best — everywhere.</p>
+    </div>
+
+    <div class="wv-why-grid">
+      <article class="wv-why-card wv-why-a">
+        <div class="wv-why-num" aria-hidden="true">A</div>
+        <div class="wv-why-illo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="8" y="10" width="42" height="46" rx="4" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+            <path d="M16 22h26M16 30h26M16 38h16" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="46" cy="46" r="10" fill="#fbbf24"/>
+            <path d="M42 46l3 3 6-6" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Book now, pay flexibly</h3>
+        <p>Hold a reservation with no upfront card. Pay with M-Pesa, card or local transfer wherever you land.</p>
+      </article>
+
+      <article class="wv-why-card wv-why-b">
+        <div class="wv-why-num" aria-hidden="true">B</div>
+        <div class="wv-why-illo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="22" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+            <path d="M20 32l8 8 16-16" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 12l4-6M40 12l-4-6" stroke="#fbbf24" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Verified hosts worldwide</h3>
+        <p>Every host is real. Every business is registered. Zero anonymous middlemen, anywhere.</p>
+      </article>
+
+      <article class="wv-why-card wv-why-c">
+        <div class="wv-why-num" aria-hidden="true">C</div>
+        <div class="wv-why-illo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="22" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+            <path d="M32 8c8 8 12 15 12 24s-4 16-12 24" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+            <path d="M32 8c-8 8-12 15-12 24s4 16 12 24" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+            <path d="M10 32h44" stroke="#8b5cf6" stroke-width="2"/>
+          </svg>
+        </div>
+        <h3>One account, everything</h3>
+        <p>Stays, tours, dining, laundry, transport. Book them all from one dashboard, in one currency.</p>
+      </article>
+
+      <article class="wv-why-card wv-why-d">
+        <div class="wv-why-num" aria-hidden="true">D</div>
+        <div class="wv-why-illo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="24" r="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+            <path d="M14 52c2-10 10-16 18-16s16 6 18 16" stroke="#6366f1" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <circle cx="50" cy="44" r="6" fill="#22d3ee"/>
+            <path d="M48 44l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Support in your time zone</h3>
+        <p>Real humans, 24/7, in nine languages. We're there when things don't go to plan.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TRENDING ==================== -->
+{% if featured %}
+<section class="wv-section wv-trend-section" aria-labelledby="wvTrendTitle">
+  <div class="mkt-container">
+    <div class="wv-section-head wv-section-head-row">
+      <div>
+        <span class="wv-kicker">02 — Trending now</span>
+        <h2 id="wvTrendTitle" class="wv-h2">Where the world is going.</h2>
+      </div>
+      <a href="{% url 'marketplace:search' %}" class="wv-cta-link">
+        See all destinations
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+
+    <div class="wv-trend-grid">
+      {% for listing in featured|slice:":2" %}
+        <a href="{% url 'marketplace:listing_detail' listing.slug %}" class="wv-trend wv-trend-lg">
+          {% if listing.cover_image %}
+            <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+          {% elif listing.cover_image_url %}
+            <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+          {% else %}
+            <div class="wv-trend-fallback wv-trend-fb-{{ listing.category.accent }}">
+              <span class="wv-trend-fb-text">{{ listing.title|truncatechars:24 }}</span>
+              <span class="wv-trend-fb-sub">{{ listing.category.name }}</span>
+            </div>
+          {% endif %}
+          <div class="wv-trend-shade"></div>
+          <div class="wv-trend-badge">
+            <span class="wv-trend-badge-dot"></span>
+            Hot
+          </div>
+          <div class="wv-trend-foot">
+            <span class="wv-trend-name">{{ listing.location|default:listing.title|truncatechars:22 }}</span>
+            <span class="wv-trend-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    <div class="wv-trend-grid wv-trend-grid-sm">
+      {% for listing in featured|slice:"2:5" %}
+        <a href="{% url 'marketplace:listing_detail' listing.slug %}" class="wv-trend">
+          {% if listing.cover_image %}
+            <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+          {% elif listing.cover_image_url %}
+            <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+          {% else %}
+            <div class="wv-trend-fallback wv-trend-fb-{{ listing.category.accent }}">
+              <span class="wv-trend-fb-text">{{ listing.title|truncatechars:20 }}</span>
+              <span class="wv-trend-fb-sub">{{ listing.category.name }}</span>
+            </div>
+          {% endif %}
+          <div class="wv-trend-shade"></div>
+          <div class="wv-trend-foot">
+            <span class="wv-trend-name">{{ listing.location|default:listing.title|truncatechars:20 }}</span>
+            <span class="wv-trend-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+
+<!-- ==================== LOVED THIS WEEK ==================== -->
+{% if featured %}
+<section id="listings" class="wv-section wv-love-section" aria-labelledby="wvLoveTitle">  <div class="mkt-container">
+    <div class="wv-section-head wv-section-head-row">
+      <div>
+        <span class="wv-kicker">04 — Curated</span>
+        <h2 id="wvLoveTitle" class="wv-h2">Loved by guests this week.</h2>
+      </div>
+      <a href="{% url 'marketplace:search' %}" class="wv-cta-link">
+        Discover all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+
+    <div class="wv-love-grid">
+      {% for listing in featured|slice:":4" %}
+        <div class="wv-love-card-wrap">
+
+          {# ---- Save-to-wishlist form (submits without navigating the card) ---- #}
+          {% if user.is_authenticated and user.is_guest %}
+            <form method="post"
+                  action="{% url 'marketplace:wishlist_toggle' listing.slug %}"
+                  class="wv-love-heart-form"
+                  data-listing-slug="{{ listing.slug }}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="wv-love-heart {% if listing.pk in user_wishlist_ids %}is-saved{% endif %}"
+                      aria-label="{% if listing.pk in user_wishlist_ids %}Remove from saved{% else %}Save listing{% endif %}"
+                      title="{% if listing.pk in user_wishlist_ids %}Saved{% else %}Save{% endif %}">
+                <svg viewBox="0 0 24 24"
+                     fill="{% if listing.pk in user_wishlist_ids %}currentColor{% else %}none{% endif %}"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'marketplace:listing_detail' listing.slug %}"
+               class="wv-love-heart"
+               aria-label="Save listing"
+               title="Save listing">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </a>
+          {% endif %}
+
+          <a href="{% url 'marketplace:listing_detail' listing.slug %}" class="wv-love-card">
+            <div class="wv-love-img">
+              {% if listing.cover_image %}
+                <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+              {% elif listing.cover_image_url %}
+                <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}" loading="lazy" decoding="async">
+              {% else %}
+                <div class="wv-love-fallback wv-trend-fb-{{ listing.category.accent }}">
+                  <div class="wv-love-fallback-inner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="7" height="7" rx="2"/>
+                      <rect x="14" y="3" width="7" height="7" rx="2"/>
+                      <rect x="3" y="14" width="7" height="7" rx="2"/>
+                      <rect x="14" y="14" width="7" height="7" rx="2"/>
+                    </svg>
+                    <span class="wv-love-fallback-name">{{ listing.title|truncatechars:22 }}</span>
+                    <span class="wv-love-fallback-sub">{{ listing.category.name }}</span>
+                  </div>
+                </div>
+              {% endif %}
+
+              {# ---- Top-right stacked metric pills ON the image ---- #}
+              <div class="wv-love-img-stats" role="group" aria-label="Listing statistics">
+                <span class="wv-img-stat wv-img-stat-saves"
+                      title="{{ listing.wishlist_count|default:0 }} save{{ listing.wishlist_count|default:0|pluralize }}">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  <span class="wv-img-stat-num">{{ listing.wishlist_count|default:0 }}</span>
+                </span>
+
+                {% if listing.review_count %}
+                  <span class="wv-img-stat wv-img-stat-rating"
+                        title="Rated {{ listing.average_rating|floatformat:1 }} out of 5">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/>
+                    </svg>
+                    <span class="wv-img-stat-num">{{ listing.average_rating|floatformat:1 }}</span>
+                  </span>
+                {% endif %}
+
+                <span class="wv-img-stat wv-img-stat-reviews"
+                      title="{{ listing.review_count|default:0 }} review{{ listing.review_count|default:0|pluralize }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <span class="wv-img-stat-num">{{ listing.review_count|default:0 }}</span>
+                </span>
+
+                <span class="wv-img-stat wv-img-stat-views"
+                      title="{{ listing.view_count|default:0 }} view{{ listing.view_count|default:0|pluralize }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span class="wv-img-stat-num">{{ listing.view_count|default:0 }}</span>
+                </span>
+              </div>
+
+              {# ---- Bottom-left bookings badge ---- #}
+              {% if listing.booking_count %}
+                <div class="wv-love-bookings" title="{{ listing.booking_count }} booking{{ listing.booking_count|pluralize }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  <span>{{ listing.booking_count }} booking{{ listing.booking_count|pluralize }}</span>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="wv-love-body">
+              <div class="wv-love-head">
+                <h3 class="wv-love-name">{{ listing.title }}</h3>
+              </div>
+
+              <div class="wv-love-loc">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                {{ listing.location|default:listing.category.name }}
+              </div>
+
+              <div class="wv-love-foot">
+                <span class="wv-love-label">From</span>
+                <span class="wv-love-price">
+                  KES {{ listing.price|floatformat:0 }}
+                  {% if listing.price_unit %}
+                    <span class="wv-love-unit">{{ listing.price_unit }}</span>
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ==================== EXPLORE ==================== -->
+{% if popular_locations %}
+<section class="wv-section wv-explore-section" aria-labelledby="wvExploreTitle">
+  <div class="mkt-container">
+    <div class="wv-section-head wv-section-head-row">
+      <div>
+        <span class="wv-kicker">05 — Explore</span>
+        <h2 id="wvExploreTitle" class="wv-h2">Every corner of the globe.</h2>
+        <p class="wv-lead">Popular destinations with live availability right now.</p>
+      </div>
+      <a href="{% url 'marketplace:search' %}" class="wv-cta-link">
+        Browse everything
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+
+    <div class="wv-explore-grid">
+      {% for loc in popular_locations %}
+        <a href="{% url 'marketplace:search' %}?location={{ loc.name|urlencode }}" class="wv-explore-item">
+          <div class="wv-explore-img">
+            {% if loc.image %}
+              <img src="{{ loc.image }}" alt="{{ loc.name }}" loading="lazy" decoding="async">
+            {% else %}
+              <div class="wv-explore-fallback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+            {% endif %}
+          </div>
+          <div class="wv-explore-info">
+            <strong>{{ loc.name }}</strong>
+            <span>{{ loc.count }} listing{{ loc.count|pluralize }}</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ==================== CTA ==================== -->
+<section class="wv-cta-strip">
+  <div class="mkt-container wv-cta-inner">
+    <div>
+      <h2 class="wv-cta-title">Ready to see the world?</h2>
+      <p class="wv-cta-sub">Join millions of travellers discovering new places every day.</p>
+    </div>
+    <div class="wv-cta-actions">
+      <a href="{% url 'marketplace:search' %}" class="wv-cta-btn wv-cta-btn-primary">Start exploring</a>
+      <a href="{% url 'marketplace:search' %}" class="wv-cta-btn wv-cta-btn-ghost">Browse everything</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================
+     STAYHUB · WORLDVIEW HOMEPAGE
+     ================================================================ */
+
+  html, body { min-height: 100%; }
+
+  .mkt-main {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  body > footer,
+  body > .mkt-footer,
+  .mkt-main + .mkt-footer,
+  .mkt-main + footer {
+    display: block;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    clear: both;
+    padding-top: 48px;
+    padding-bottom: 32px;
+  }
+
+  .wv-hero,
+  .wv-search-section,
+  .wv-section,
+  .wv-cta-strip {
+    --wv-bg:        #050810;
+    --wv-surface:   #ffffff;
+    --wv-surface-2: #f8fafc;
+    --wv-surface-3: #f1f5f9;
+    --wv-border:    #e2e8f0;
+    --wv-border-2:  #eef2f6;
+    --wv-text:      #0f172a;
+    --wv-muted:     #64748b;
+    --wv-muted-2:   #94a3b8;
+    --wv-indigo:    #6366f1;
+    --wv-indigo-2:  #8b5cf6;
+    --wv-cyan:      #22d3ee;
+    --wv-pink:      #f472b6;
+    --wv-radius-lg: 22px;
+    --wv-radius-md: 16px;
+    --wv-radius-sm: 12px;
+    --wv-shadow-sm: 0 4px 12px rgba(15,23,42,0.06);
+    --wv-shadow-md: 0 12px 32px rgba(15,23,42,0.10);
+    --wv-shadow-lg: 0 24px 60px rgba(15,23,42,0.14);
+    --wv-container: 1200px;
+    --wv-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --wv-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mkt-main { padding: 0; }
+
+  .wv-hero-inner,
+  .wv-search,
+  .wv-why-grid,
+  .wv-trend-grid,
+  .wv-cat-grid,
+  .wv-love-grid,
+  .wv-explore-grid,
+  .wv-cta-inner {
+    max-width: var(--wv-container);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ---------- HERO (unchanged) ---------- */
+  .wv-hero {
+    position: relative;
+    background:
+      radial-gradient(1200px 600px at 75% -10%, rgba(99,102,241,0.18), transparent 60%),
+      radial-gradient(900px 500px at 10% 100%, rgba(34,211,238,0.10), transparent 60%),
+      var(--wv-bg);
+    color: #fff;
+    padding: clamp(48px, 7vw, 96px) 0 clamp(72px, 9vw, 120px);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .wv-hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(148,163,184,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(circle at 50% 30%, black 25%, transparent 78%);
+            mask-image: radial-gradient(circle at 50% 30%, black 25%, transparent 78%);
+    pointer-events: none;
+  }
+  .wv-hero-glow {
+    position: absolute;
+    top: -25%;
+    left: 40%;
+    width: min(960px, 95vw);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    background: radial-gradient(circle,
+      rgba(99,102,241,0.32) 0%,
+      rgba(34,211,238,0.18) 40%,
+      transparent 70%);
+    filter: blur(70px);
+    pointer-events: none;
+  }
+
+  .wv-hero-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: clamp(28px, 5vw, 60px);
+    align-items: center;
+    padding-left: clamp(16px, 3vw, 24px);
+    padding-right: clamp(16px, 3vw, 24px);
+  }
+  @media (max-width: 900px) {
+    .wv-hero-inner { grid-template-columns: 1fr; }
+    .wv-hero-right { display: none; }
+  }
+
+  .wv-hero-left { position: relative; z-index: 2; }
+
+  .wv-flag-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: clamp(16px, 2vw, 22px);
+    flex-wrap: wrap;
+  }
+  .wv-flag {
+    font-size: clamp(18px, 2.4vw, 24px);
+    line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  }
+  .wv-flag-more {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #cbd5e1;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+  }
+
+  .wv-title {
+    font-size: clamp(34px, 6vw, 68px);
+    line-height: 1.04;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    margin: 0 0 clamp(14px, 2vw, 22px);
+    color: #fff;
+    text-wrap: balance;
+  }
+  .wv-title-accent {
+    background: linear-gradient(135deg, #22d3ee 0%, #818cf8 45%, #f472b6 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+  }
+  .wv-subtitle {
+    font-size: clamp(14.5px, 1.4vw, 17px);
+    line-height: 1.55;
+    color: #94a3b8;
+    max-width: 560px;
+    margin: 0 0 clamp(22px, 3vw, 32px);
+  }
+  .wv-subtitle strong { color: #fff; font-weight: 700; }
+
+  .wv-stats-row {
+    display: flex; align-items: center;
+    gap: clamp(14px, 2vw, 22px);
+    flex-wrap: wrap;
+  }
+  .wv-stat-num {
+    font-size: clamp(18px, 2vw, 22px);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .wv-stat-label {
+    font-size: 10.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+  .wv-stat-divider {
+    width: 1px;
+    height: 30px;
+    background: rgba(255,255,255,0.10);
+  }
+
+  .wv-hero-right { display: grid; place-items: center; }
+  .wv-globe {
+    position: relative;
+    width: clamp(240px, 30vw, 380px);
+    aspect-ratio: 1;
+    animation: wv-spin 60s linear infinite;
+  }
+  .wv-globe svg { width: 100%; height: 100%; }
+  @keyframes wv-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .wv-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 0 4px rgba(34,211,238,0.20), 0 0 20px rgba(34,211,238,0.8);
+  }
+  .wv-dot-1 { top: 22%; left: 30%; animation: wv-pulse 2.4s ease-in-out infinite; }
+  .wv-dot-2 { top: 42%; left: 62%; background: #f472b6; box-shadow: 0 0 0 4px rgba(244,114,182,0.20), 0 0 20px rgba(244,114,182,0.8); animation: wv-pulse 2.4s ease-in-out 0.6s infinite; }
+  .wv-dot-3 { top: 62%; left: 26%; background: #818cf8; box-shadow: 0 0 0 4px rgba(129,140,248,0.20), 0 0 20px rgba(129,140,248,0.8); animation: wv-pulse 2.4s ease-in-out 1.2s infinite; }
+  .wv-dot-4 { top: 76%; left: 66%; background: #34d399; box-shadow: 0 0 0 4px rgba(52,211,153,0.20), 0 0 20px rgba(52,211,153,0.8); animation: wv-pulse 2.4s ease-in-out 1.8s infinite; }
+  .wv-dot-5 { top: 30%; left: 76%; background: #fbbf24; box-shadow: 0 0 0 4px rgba(251,191,36,0.20), 0 0 20px rgba(251,191,36,0.8); animation: wv-pulse 2.4s ease-in-out 0.9s infinite; }
+  @keyframes wv-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.4); }
+  }
+
+  /* ---------- SEARCH (unchanged) ---------- */
+  .wv-search-section {
+    position: relative;
+    padding: 0 0 24px;
+    margin-top: clamp(-40px, -3vw, -28px);
+    z-index: 10;
+  }
+
+  .wv-search {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.8fr 1.6fr 1.4fr auto;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--wv-border);
+    border-radius: var(--wv-radius-lg);
+    padding: 10px;
+    box-shadow:
+      0 32px 64px -12px rgba(15,23,42,0.18),
+      0 12px 24px -8px rgba(15,23,42,0.10);
+    align-items: stretch;
+    margin-left: clamp(12px, 3vw, 24px);
+    margin-right: clamp(12px, 3vw, 24px);
+  }
+  @media (max-width: 960px) {
+    .wv-search {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "dest dest"
+        "dates occ"
+        "btn btn"
+        "work work";
+    }
+    .wv-sf-dest  { grid-area: dest; }
+    .wv-sf-dates { grid-area: dates; }
+    .wv-sf-occ   { grid-area: occ; }
+    .wv-search-btn { grid-area: btn; }
+    .wv-work-check { grid-area: work; }
+  }
+  @media (max-width: 560px) {
+    .wv-search {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "dest"
+        "dates"
+        "occ"
+        "btn"
+        "work";
+    }
+  }
+
+  .wv-search-field {
+    position: relative;
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--wv-surface-2);
+    border: 1px solid transparent;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.15s var(--wv-ease), border-color 0.15s var(--wv-ease), box-shadow 0.15s var(--wv-ease);
+    min-width: 0;
+  }
+  .wv-search-field:hover,
+  .wv-search-field:focus-visible {
+    background: #fff;
+    border-color: #c7d2fe;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.08);
+  }
+  .wv-sf-icon {
+    flex: 0 0 20px;
+    width: 20px; height: 20px;
+    color: var(--wv-muted-2);
+    display: grid; place-items: center;
+  }
+  .wv-sf-icon svg { width: 18px; height: 18px; }
+  .wv-sf-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .wv-sf-body label {
+    font-size: 10.5px;
+    color: var(--wv-muted-2);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 3px;
+  }
+  .wv-sf-body input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wv-text);
+    padding: 0;
+    font-family: inherit;
+    width: 100%;
+    min-width: 0;
+  }
+  .wv-sf-body input::placeholder { color: var(--wv-muted-2); font-weight: 600; }
+
+  .wv-dates-inline {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wv-text);
+    padding: 2px 0;
+    cursor: pointer;
+  }
+  .wv-date-seg { white-space: nowrap; color: var(--wv-muted-2); }
+  .wv-date-seg.filled { color: var(--wv-text); }
+  .wv-date-dash { color: var(--wv-muted-2); font-size: 12px; }
+
+  .wv-occ-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wv-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wv-sf-chev {
+    flex: 0 0 14px;
+    width: 14px; height: 14px;
+    color: var(--wv-muted-2);
+    display: grid; place-items: center;
+  }
+  .wv-sf-chev svg { width: 14px; height: 14px; }
+
+  .wv-search-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 clamp(20px, 3vw, 30px);
+    background: linear-gradient(135deg, var(--wv-indigo) 0%, var(--wv-indigo-2) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    min-height: 58px;
+    transition: filter 0.15s var(--wv-ease), transform 0.06s var(--wv-ease), box-shadow 0.2s var(--wv-ease);
+    font-family: inherit;
+    letter-spacing: 0.01em;
+    box-shadow: 0 12px 24px -8px rgba(99,102,241,0.55);
+  }
+  .wv-search-btn:hover { filter: brightness(1.08); box-shadow: 0 16px 30px -8px rgba(99,102,241,0.65); }
+  .wv-search-btn:active { transform: translateY(1px); }
+  .wv-search-btn:focus-visible {
+    outline: 3px solid rgba(99,102,241,0.35);
+    outline-offset: 2px;
+  }
+  .wv-search-btn svg { width: 18px; height: 18px; }
+  @media (max-width: 960px) {
+    .wv-search-btn { width: 100%; min-height: 54px; }
+  }
+
+  .wv-work-check {
+    grid-column: 1 / -1;
+    display: inline-flex; align-items: center; gap: 8px;
+    margin: 4px 6px 0;
+    font-size: 13px;
+    color: var(--wv-muted);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .wv-work-check input[type="checkbox"] {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--wv-border);
+    border-radius: 4px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s var(--wv-ease), border-color 0.15s var(--wv-ease);
+  }
+  .wv-work-check input[type="checkbox"]:checked {
+    background: var(--wv-indigo);
+    border-color: var(--wv-indigo);
+  }
+  .wv-work-check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 5px; height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .wv-calendar,
+  .wv-occ-pop {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    background: #fff;
+    border-radius: var(--wv-radius-md);
+    box-shadow:
+      0 30px 70px rgba(15,23,42,0.18),
+      0 8px 20px rgba(15,23,42,0.08);
+    padding: 20px;
+    z-index: 100;
+    color: var(--wv-text);
+    border: 1px solid var(--wv-border-2);
+    animation: wvPopIn 0.22s var(--wv-ease-out) both;
+  }
+  @keyframes wvPopIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .wv-calendar { width: min(640px, calc(100vw - 40px)); }
+  .wv-occ-pop { width: min(340px, calc(100vw - 40px)); }
+  @media (max-width: 720px) {
+    .wv-calendar,
+    .wv-occ-pop {
+      position: fixed;
+      left: 16px; right: 16px;
+      top: auto;
+      margin-top: 12px;
+      width: auto;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+  }
+
+  .wv-cal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .wv-cal-nav {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--wv-border);
+    background: #fff;
+    color: var(--wv-text);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background 0.15s var(--wv-ease), border-color 0.15s var(--wv-ease);
+  }
+  .wv-cal-nav:hover {
+    background: var(--wv-surface-3);
+    border-color: #cbd5e1;
+  }
+  .wv-cal-nav svg { width: 16px; height: 16px; }
+  .wv-cal-months {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--wv-text);
+    letter-spacing: -0.01em;
+  }
+
+  .wv-cal-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .wv-cal-body { grid-template-columns: 1fr; }
+    .wv-cal-body .wv-cal-month:nth-child(2) { display: none; }
+  }
+
+  .wv-cal-month {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .wv-cal-month .wv-dow {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--wv-muted-2);
+    font-weight: 800;
+    text-align: center;
+    padding: 8px 0;
+  }
+  .wv-cal-month .wv-day {
+    aspect-ratio: 1;
+    display: grid; place-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--wv-text);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.12s var(--wv-ease), color 0.12s var(--wv-ease);
+  }
+  .wv-cal-month .wv-day:hover { background: #eef2ff; }
+  .wv-cal-month .wv-day.empty { pointer-events: none; opacity: 0.28; }
+  .wv-cal-month .wv-day.in-range { background: #eef2ff; color: var(--wv-indigo); }
+  .wv-cal-month .wv-day.start,
+  .wv-cal-month .wv-day.end {
+    background: var(--wv-indigo);
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+  }
+
+  .wv-cal-foot {
+    display: flex; justify-content: flex-end;
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px solid var(--wv-border-2);
+  }
+  .wv-cal-clear {
+    background: transparent;
+    border: none;
+    color: var(--wv-indigo);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.15s var(--wv-ease);
+  }
+  .wv-cal-clear:hover { background: rgba(99,102,241,0.08); }
+
+  .wv-occ-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--wv-border-2);
+  }
+  .wv-occ-row:last-of-type { border-bottom: none; }
+  .wv-occ-row strong {
+    display: block;
+    font-size: 13.5px;
+    color: var(--wv-text);
+    font-weight: 800;
+  }
+  .wv-occ-row span {
+    display: block;
+    font-size: 11.5px;
+    color: var(--wv-muted-2);
+    margin-top: 2px;
+  }
+
+  .wv-stepper { display: inline-flex; align-items: center; gap: 10px; }
+  .wv-stepper button {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--wv-indigo);
+    background: #fff;
+    color: var(--wv-indigo);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s var(--wv-ease), color 0.15s var(--wv-ease), transform 0.06s var(--wv-ease);
+  }
+  .wv-stepper button:hover:not(:disabled) {
+    background: var(--wv-indigo);
+    color: #fff;
+  }
+  .wv-stepper button:active:not(:disabled) { transform: scale(0.94); }
+  .wv-stepper button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: var(--wv-border);
+    color: var(--wv-muted-2);
+  }
+  .wv-stepper span {
+    min-width: 24px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--wv-text);
+  }
+
+  .wv-occ-done {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--wv-indigo), var(--wv-indigo-2));
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.15s var(--wv-ease), box-shadow 0.2s var(--wv-ease);
+    box-shadow: 0 8px 18px -6px rgba(99,102,241,0.55);
+  }
+  .wv-occ-done:hover { filter: brightness(1.06); box-shadow: 0 12px 24px -6px rgba(99,102,241,0.65); }
+
+  /* ---------- SHARED SECTION ---------- */
+  .wv-section {
+    padding: clamp(40px, 6vw, 72px) 0;
+  }
+  .wv-section .mkt-container {
+    padding-left: clamp(16px, 3vw, 24px);
+    padding-right: clamp(16px, 3vw, 24px);
+  }
+
+  .wv-section-head { margin-bottom: clamp(24px, 3vw, 36px); max-width: 720px; }
+  .wv-section-head-row {
+    max-width: none;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .wv-kicker {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--wv-indigo);
+    margin-bottom: 12px;
+  }
+  .wv-h2 {
+    font-size: clamp(24px, 3.4vw, 40px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    color: var(--wv-text);
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+  .wv-lead {
+    font-size: clamp(14px, 1.3vw, 16px);
+    color: var(--wv-muted);
+    line-height: 1.55;
+    max-width: 620px;
+    margin: 0;
+  }
+
+  .wv-cta-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--wv-indigo);
+    padding: 8px 12px;
+    border-radius: 10px;
+    transition: background 0.15s var(--wv-ease);
+    white-space: nowrap;
+  }
+  .wv-cta-link:hover { background: rgba(99,102,241,0.08); }
+  .wv-cta-link svg { width: 14px; height: 14px; transition: transform 0.2s var(--wv-ease); }
+  .wv-cta-link:hover svg { transform: translateX(3px); }
+
+  /* ---------- WHY ---------- */
+  .wv-why-section { background: #fff; }
+  .wv-why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    border: 1px solid var(--wv-border);
+    border-radius: var(--wv-radius-lg);
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--wv-shadow-sm);
+  }
+  .wv-why-card {
+    position: relative;
+    padding: clamp(24px, 3vw, 34px) clamp(20px, 2.4vw, 28px);
+    background: #fff;
+    border-right: 1px solid var(--wv-border);
+    border-bottom: 1px solid var(--wv-border);
+    transition: background 0.2s var(--wv-ease);
+  }
+  .wv-why-card:hover { background: #fafbff; }
+  .wv-why-card:nth-child(4n) { border-right: none; }
+  .wv-why-card:nth-last-child(-n + 4) { border-bottom: none; }
+
+  @media (max-width: 900px) {
+    .wv-why-card { border-right: 1px solid var(--wv-border) !important; }
+    .wv-why-card:nth-child(2n) { border-right: none !important; }
+    .wv-why-card:nth-last-child(-n + 2) { border-bottom: none; }
+  }
+  @media (max-width: 560px) {
+    .wv-why-card { border-right: none !important; border-bottom: 1px solid var(--wv-border) !important; }
+    .wv-why-card:last-child { border-bottom: none !important; }
+  }
+
+  .wv-why-num {
+    position: absolute;
+    top: 18px; right: 22px;
+    font-size: clamp(34px, 4vw, 48px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    user-select: none;
+  }
+  .wv-why-a .wv-why-num { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); -webkit-background-clip: text; background-clip: text; }
+  .wv-why-b .wv-why-num { background: linear-gradient(135deg, #d1fae5, #a7f3d0); -webkit-background-clip: text; background-clip: text; }
+  .wv-why-c .wv-why-num { background: linear-gradient(135deg, #ede9fe, #ddd6fe); -webkit-background-clip: text; background-clip: text; }
+  .wv-why-d .wv-why-num { background: linear-gradient(135deg, #cffafe, #a5f3fc); -webkit-background-clip: text; background-clip: text; }
+
+  .wv-why-illo {
+    width: clamp(48px, 6vw, 64px);
+    height: clamp(48px, 6vw, 64px);
+    margin-bottom: 20px;
+    transition: transform 0.3s var(--wv-ease-out);
+  }
+  .wv-why-card:hover .wv-why-illo { transform: translateY(-4px) scale(1.05); }
+  .wv-why-illo svg { width: 100%; height: 100%; }
+
+  .wv-why-card h3 {
+    font-size: clamp(15px, 1.5vw, 17px);
+    font-weight: 800;
+    color: var(--wv-text);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .wv-why-card p {
+    font-size: 13.5px;
+    color: var(--wv-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ---------- TRENDING ---------- */
+  .wv-trend-section { background: var(--wv-surface-2); }
+  .wv-trend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(12px, 1.6vw, 18px);
+    margin-bottom: clamp(12px, 1.6vw, 18px);
+  }
+  .wv-trend-grid-sm {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 0;
+  }
+  @media (max-width: 720px) {
+    .wv-trend-grid,
+    .wv-trend-grid-sm { grid-template-columns: 1fr; }
+  }
+
+  .wv-trend {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--wv-radius-lg);
+    overflow: hidden;
+    display: block;
+    background: #eef2ff;
+    transition: transform 0.3s var(--wv-ease-out), box-shadow 0.3s var(--wv-ease);
+  }
+  .wv-trend-lg { aspect-ratio: 16 / 10; }
+  .wv-trend:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 48px -12px rgba(15,23,42,0.22);
+  }
+  .wv-trend img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center 32%;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    transition: transform 0.6s var(--wv-ease);
+  }
+  .wv-trend:hover img { transform: scale(1.06); }
+
+  .wv-trend-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px;
+    text-align: center;
+    color: #fff;
+  }
+  .wv-trend-fallback::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.22), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.16), transparent 50%);
+    pointer-events: none;
+  }
+  .wv-trend-fb-text {
+    position: relative;
+    font-size: clamp(16px, 1.8vw, 22px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    line-height: 1.2;
+  }
+  .wv-trend-fb-sub {
+    position: relative;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.85;
+  }
+  .wv-trend-fb-sky      { background: linear-gradient(135deg, #38bdf8, #22d3ee); }
+  .wv-trend-fb-emerald  { background: linear-gradient(135deg, #34d399, #10b981); }
+  .wv-trend-fb-amber    { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+  .wv-trend-fb-violet   { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+  .wv-trend-fb-indigo   { background: linear-gradient(135deg, #818cf8, #6366f1); }
+  .wv-trend-fb-rose     { background: linear-gradient(135deg, #fb7185, #f43f5e); }
+  .wv-trend-fb-slate    { background: linear-gradient(135deg, #64748b, #475569); }
+
+  .wv-trend-shade {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(15,23,42,0) 40%, rgba(15,23,42,0.78) 100%);
+    pointer-events: none;
+  }
+
+  .wv-trend-badge {
+    position: absolute;
+    top: 16px; left: 16px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.96);
+    color: #0f172a;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 6px 16px rgba(15,23,42,0.20);
+    z-index: 2;
+  }
+  .wv-trend-badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
+  }
+
+  .wv-trend-foot {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: clamp(14px, 2vw, 22px);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    z-index: 2;
+  }
+  .wv-trend-name {
+    font-size: clamp(18px, 2vw, 26px);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wv-trend-arrow {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    display: grid; place-items: center;
+    color: #0f172a;
+    transition: transform 0.2s var(--wv-ease);
+  }
+  .wv-trend-arrow svg { width: 14px; height: 14px; }
+  .wv-trend:hover .wv-trend-arrow { transform: translateX(4px); }
+
+  /* ---------- LOVED THIS WEEK ---------- */
+  .wv-love-section { background: var(--wv-surface-2); }
+  .wv-love-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: clamp(14px, 1.8vw, 20px);
+  }
+  @media (max-width: 480px) { .wv-love-grid { grid-template-columns: 1fr; } }
+
+  .wv-love-card-wrap {
+    position: relative;
+  }
+
+  .wv-love-card {
+    background: #fff;
+    border: 1px solid var(--wv-border);
+    border-radius: var(--wv-radius-lg);
+    overflow: hidden;
+    display: block;
+    transition: box-shadow 0.3s var(--wv-ease), transform 0.25s var(--wv-ease-out), border-color 0.3s var(--wv-ease);
+  }
+  .wv-love-card:hover {
+    box-shadow:
+      0 24px 48px -12px rgba(15,23,42,0.16),
+      0 8px 16px -8px rgba(15,23,42,0.08);
+    transform: translateY(-5px);
+    border-color: #c7d2fe;
+  }
+
+  .wv-love-img {
+    position: relative;
+    aspect-ratio: 5 / 4;
+    overflow: hidden;
+    background: #eef2ff;
+  }
+  .wv-love-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center 32%;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    transition: transform 0.5s var(--wv-ease);
+  }
+  .wv-love-card:hover .wv-love-img img { transform: scale(1.05); }
+
+  .wv-love-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    overflow: hidden;
+  }
+  .wv-love-fallback::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.22), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.16), transparent 50%);
+    pointer-events: none;
+  }
+  .wv-love-fallback-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    padding: 16px;
+  }
+  .wv-love-fallback-inner svg {
+    width: 40px; height: 40px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .wv-love-fallback-name {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    line-height: 1.2;
+  }
+  .wv-love-fallback-sub {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.85;
+  }
+
+  /* ---------- IMAGE TOP-LEFT BADGES ---------- */
+  .wv-love-img-top {
+    position: absolute;
+    top: 12px; left: 12px;
+    display: flex; align-items: center; gap: 6px;
+    z-index: 2;
+    max-width: calc(100% - 60px);
+    flex-wrap: wrap;
+  }
+  .wv-love-cat {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.72);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wv-love-blocked {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(239,68,68,0.92);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ---------- STATS STACKED ON THE IMAGE (top-right) ---------- */
+  .wv-love-img-stats {
+    position: absolute;
+    top: 12px;
+    right: 56px;                 /* leaves room for heart button (36px) + gap */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    z-index: 3;
+    pointer-events: none;        /* clicks fall through to the card link */
+    max-width: calc(100% - 120px);
+  }
+
+  .wv-img-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px 4px 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.18s ease;
+  }
+
+  .wv-img-stat svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+
+  .wv-img-stat-num {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wv-img-stat-saves   svg { color: #f472b6; }
+  .wv-img-stat-rating  svg { color: #fbbf24; }
+  .wv-img-stat-reviews svg { color: #a5b4fc; }
+  .wv-img-stat-views   svg { color: #22d3ee; }
+
+  .wv-love-card:hover .wv-img-stat {
+    transform: translateX(-2px);
+    background: rgba(15, 23, 42, 0.88);
+  }
+
+  @media (max-width: 480px) {
+    .wv-love-img-stats {
+      right: 52px;
+      gap: 5px;
+    }
+    .wv-img-stat {
+      padding: 3px 8px 3px 7px;
+      font-size: 10.5px;
+    }
+    .wv-img-stat svg {
+      width: 10px;
+      height: 10px;
+    }
+    .wv-img-stat-num {
+      font-size: 10.5px;
+    }
+  }
+
+  /* ---------- BOTTOM-LEFT BOOKINGS BADGE ---------- */
+  .wv-love-bookings {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 4px 9px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .wv-love-bookings svg {
+    width: 11px;
+    height: 11px;
+    color: #34d399;
+    flex-shrink: 0;
+  }
+
+  /* The heart (unchanged) */
+  .wv-love-heart-form {
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 4;
+    margin: 0;
+  }
+  .wv-love-heart {
+    position: relative;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.96);
+    border: none;
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: #0f172a;
+    box-shadow:
+      0 4px 12px rgba(15,23,42,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: transform 0.22s var(--wv-ease-out), color 0.18s var(--wv-ease), box-shadow 0.22s var(--wv-ease);
+    padding: 0;
+    text-decoration: none;
+  }
+  .wv-love-heart:hover {
+    transform: scale(1.12);
+    color: #ef4444;
+    box-shadow: 0 8px 20px rgba(239,68,68,0.28);
+  }
+  .wv-love-heart.is-saved { color: #ef4444; }
+  .wv-love-heart svg { width: 15px; height: 15px; }
+
+  .wv-love-body { padding: 14px 16px 16px; }
+  .wv-love-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .wv-love-name {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--wv-text);
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .wv-love-loc {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px;
+    color: var(--wv-muted);
+    margin-bottom: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wv-love-loc svg { width: 12px; height: 12px; flex-shrink: 0; color: var(--wv-muted-2); }
+
+  .wv-love-foot {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--wv-border-2);
+  }
+  .wv-love-label {
+    font-size: 10.5px;
+    color: var(--wv-muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+  .wv-love-price {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--wv-text);
+    letter-spacing: -0.02em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .wv-love-unit {
+    font-size: 10.5px;
+    color: var(--wv-muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  /* ---------- EXPLORE ---------- */
+  .wv-explore-section { background: #fff; }
+  .wv-explore-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: clamp(12px, 1.6vw, 18px);
+  }
+  @media (max-width: 560px) { .wv-explore-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 380px) { .wv-explore-grid { grid-template-columns: 1fr; } }
+
+  .wv-explore-item {
+    position: relative;
+    border-radius: var(--wv-radius-md);
+    overflow: hidden;
+    display: block;
+    color: #fff;
+    aspect-ratio: 1;
+    background: #eef2ff;
+    transition: transform 0.25s var(--wv-ease-out), box-shadow 0.3s var(--wv-ease);
+  }
+  .wv-explore-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 48px -12px rgba(15,23,42,0.22);
+  }
+
+  .wv-explore-img {
+    position: absolute; inset: 0;
+    overflow: hidden;
+  }
+  .wv-explore-img::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(15,23,42,0.05) 0%, rgba(15,23,42,0.78) 100%);
+  }
+  .wv-explore-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    transition: transform 0.5s var(--wv-ease);
+  }
+  .wv-explore-item:hover .wv-explore-img img { transform: scale(1.06); }
+
+  .wv-explore-fallback {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #c7d2fe, #a5f3fc);
+    color: rgba(255,255,255,0.9);
+  }
+  .wv-explore-fallback svg { width: 48px; height: 48px; }
+
+  .wv-explore-info {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: clamp(12px, 1.6vw, 18px);
+    z-index: 1;
+  }
+  .wv-explore-info strong {
+    display: block;
+    font-size: clamp(15px, 1.4vw, 18px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wv-explore-info span {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.9;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  }
+
+  /* ---------- CTA STRIP ---------- */
+  .wv-cta-strip {
+    background:
+      radial-gradient(700px 400px at 15% 0%, rgba(34,211,238,0.20), transparent 60%),
+      radial-gradient(700px 400px at 85% 100%, rgba(139,92,246,0.22), transparent 60%),
+      linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    color: #fff;
+    padding: clamp(40px, 6vw, 64px) 0 clamp(48px, 8vw, 80px);
+    position: relative;
+    overflow: hidden;
+  }
+  .wv-cta-strip .mkt-container {
+    padding-left: clamp(16px, 3vw, 24px);
+    padding-right: clamp(16px, 3vw, 24px);
+  }
+
+  .wv-cta-inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap;
+    z-index: 1;
+  }
+  .wv-cta-title {
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin: 0 0 6px;
+  }
+  .wv-cta-sub {
+    font-size: clamp(13.5px, 1.3vw, 15px);
+    color: rgba(255,255,255,0.72);
+    margin: 0;
+  }
+  .wv-cta-actions {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .wv-cta-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: filter 0.15s var(--wv-ease), transform 0.06s var(--wv-ease), background 0.2s var(--wv-ease), box-shadow 0.2s var(--wv-ease);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .wv-cta-btn:active { transform: translateY(1px); }
+  .wv-cta-btn:focus-visible { outline: 3px solid rgba(255,255,255,0.4); outline-offset: 2px; }
+  .wv-cta-btn-primary {
+    background: #fff;
+    color: #0f172a;
+    box-shadow: 0 12px 24px -8px rgba(0,0,0,0.35);
+  }
+  .wv-cta-btn-primary:hover { filter: brightness(0.96); }
+  .wv-cta-btn-ghost {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border-color: rgba(255,255,255,0.20);
+  }
+  .wv-cta-btn-ghost:hover { background: rgba(255,255,255,0.16); }
+
+  @media (max-width: 720px) {
+    .wv-cta-actions { width: 100%; }
+    .wv-cta-btn { flex: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wv-globe,
+    .wv-dot { animation: none !important; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // ============= Calendar widget =============
+  (function () {
+    var field = document.getElementById('wvDatesField');
+    var pop = document.getElementById('wvCalendar');
+    var checkInEl = document.getElementById('wvCheckIn');
+    var checkOutEl = document.getElementById('wvCheckOut');
+    var checkInVal = document.getElementById('wvCheckInVal');
+    var checkOutVal = document.getElementById('wvCheckOutVal');
+    var monthsWrap = document.getElementById('wvCalMonths');
+    var monthEls = document.querySelectorAll('.wv-cal-month');
+    if (!field || !pop) return;
+
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var state = {
+      start: null,
+      end: null,
+      cursor: new Date(today.getFullYear(), today.getMonth(), 1)
+    };
+
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var dows = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+    function fmtShort(d) {
+      if (!d) return null;
+      var dd = d.getDate().toString().padStart(2, '0');
+      var mm = (d.getMonth() + 1).toString().padStart(2, '0');
+      return dd + '/' + mm + '/' + d.getFullYear();
+    }
+    function fmtISO(d) {
+      if (!d) return '';
+      var mm = (d.getMonth() + 1).toString().padStart(2, '0');
+      var dd = d.getDate().toString().padStart(2, '0');
+      return d.getFullYear() + '-' + mm + '-' + dd;
+    }
+
+    function renderMonth(container, monthDate) {
+      var y = monthDate.getFullYear(), m = monthDate.getMonth();
+      var first = new Date(y, m, 1);
+      var startDow = first.getDay();
+      var daysIn = new Date(y, m + 1, 0).getDate();
+
+      var html = '';
+      dows.forEach(function (d) { html += '<div class="wv-dow">' + d + '</div>'; });
+      for (var i = 0; i < startDow; i++) html += '<div class="wv-day empty"></div>';
+      for (var day = 1; day <= daysIn; day++) {
+        var d = new Date(y, m, day);
+        var cls = 'wv-day';
+        if (d < today) cls += ' empty';
+        if (state.start && d.getTime() === state.start.getTime()) cls += ' start';
+        if (state.end && d.getTime() === state.end.getTime()) cls += ' end';
+        if (state.start && state.end && d > state.start && d < state.end) cls += ' in-range';
+        html += '<div class="' + cls + '" data-date="' + fmtISO(d) + '">' + day + '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function render() {
+      var m1 = new Date(state.cursor.getFullYear(), state.cursor.getMonth(), 1);
+      var m2 = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
+      monthsWrap.textContent = months[m1.getMonth()] + ' — ' + months[m2.getMonth()] + ' ' + m2.getFullYear();
+      renderMonth(monthEls[0], m1);
+      renderMonth(monthEls[1], m2);
+    }
+
+    function applyDates() {
+      checkInEl.textContent  = state.start ? fmtShort(state.start) : 'Check-in';
+      checkOutEl.textContent = state.end   ? fmtShort(state.end)   : 'Check-out';
+      checkInEl.classList.toggle('filled', !!state.start);
+      checkOutEl.classList.toggle('filled', !!state.end);
+      checkInVal.value  = state.start ? fmtISO(state.start) : '';
+      checkOutVal.value = state.end   ? fmtISO(state.end)   : '';
+    }
+
+    monthEls.forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        var cell = e.target.closest('.wv-day');
+        if (!cell || cell.classList.contains('empty')) return;
+        var d = new Date(cell.dataset.date);
+        if (!state.start || (state.start && state.end)) {
+          state.start = d; state.end = null;
+        } else if (d > state.start) {
+          state.end = d;
+        } else {
+          state.start = d;
+        }
+        applyDates();
+        render();
+        if (state.start && state.end) {
+          setTimeout(function () { pop.hidden = true; }, 160);
+        }
+      });
+    });
+
+    document.querySelectorAll('.wv-cal-nav').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        state.cursor.setMonth(state.cursor.getMonth() + parseInt(btn.dataset.dir, 10));
+        render();
+      });
+    });
+
+    document.querySelector('.wv-cal-clear').addEventListener('click', function (e) {
+      e.stopPropagation();
+      state.start = null; state.end = null;
+      applyDates();
+      render();
+    });
+
+    field.addEventListener('click', function (e) {
+      if (e.target.closest('.wv-calendar')) return;
+      pop.hidden = false;
+      field.setAttribute('aria-expanded', 'true');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', function (e) {
+      if (!field.contains(e.target)) {
+        pop.hidden = true;
+        field.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    render();
+    applyDates();
+  })();
+
+  // ============= Occupancy widget =============
+  (function () {
+    var field = document.getElementById('wvOccField');
+    var pop = document.getElementById('wvOccPop');
+    var text = document.getElementById('wvOccText');
+    var doneBtn = document.getElementById('wvOccDone');
+    if (!field || !pop) return;
+
+    var occ = { adults: 2, children: 0, rooms: 1 };
+
+    function update() {
+      var a = document.getElementById('wvAdultsVal');
+      var c = document.getElementById('wvChildrenVal');
+      var r = document.getElementById('wvRoomsVal');
+      if (a) a.textContent = occ.adults;
+      if (c) c.textContent = occ.children;
+      if (r) r.textContent = occ.rooms;
+      text.textContent = occ.adults + ' adult' + (occ.adults !== 1 ? 's' : '')
+        + ' · ' + occ.children + ' child' + (occ.children !== 1 ? 'ren' : '')
+        + ' · ' + occ.rooms + ' room' + (occ.rooms !== 1 ? 's' : '');
+      document.querySelectorAll('.wv-stepper button').forEach(function (b) {
+        var t = b.dataset.target;
+        var delta = parseInt(b.dataset.delta, 10);
+        var value = occ[t] + delta;
+        b.disabled = value < (t === 'children' ? 0 : 1);
+      });
+    }
+
+    document.querySelectorAll('.wv-stepper button').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var t = b.dataset.target;
+        var delta = parseInt(b.dataset.delta, 10);
+        var next = occ[t] + delta;
+        var min = t === 'children' ? 0 : 1;
+        if (next < min) return;
+        if (next > 30) return;
+        occ[t] = next;
+        update();
+      });
+    });
+
+    doneBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      pop.hidden = true;
+      field.setAttribute('aria-expanded', 'false');
+    });
+
+    field.addEventListener('click', function (e) {
+      if (e.target.closest('.wv-occ-pop')) return;
+      pop.hidden = false;
+      field.setAttribute('aria-expanded', 'true');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', function (e) {
+      if (!field.contains(e.target)) {
+        pop.hidden = true;
+        field.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    update();
+  })();
+
+  // ============= Heart-button guard =============
+  (function () {
+    document.querySelectorAll('.wv-love-heart-form').forEach(function (form) {
+      form.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+      form.addEventListener('submit', function (e) {
+        e.stopPropagation();
+      });
+    });
+  })();
+</script>
+{% endblock %}

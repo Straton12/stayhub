@@ -1,0 +1,163 @@
+{% extends 'payments/base.html' %}
+{% block pay_title %}Waiting for M-Pesa{% endblock %}
+
+{% block pay_content %}
+
+<div class="pay-header">
+  <h1>Check your phone</h1>
+  <p>We've sent an M-Pesa prompt to <strong>{{ attempt.mpesa_phone|default:booking.customer_phone }}</strong>.</p>
+</div>
+
+<div class="pay-card pay-card-center">
+
+  <div class="wait-spinner" aria-hidden="true">
+    <span class="ring"></span>
+    <span class="phone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    </span>
+  </div>
+
+  <h2 class="wait-title">Awaiting your M-Pesa PIN</h2>
+  <p class="wait-text">
+    Enter your M-Pesa PIN on your phone to complete the payment of
+    <strong>KES {{ attempt.amount|floatformat:2 }}</strong>.
+  </p>
+
+  <div class="wait-refs">
+    <div class="wait-ref">
+      <span>Booking</span>
+      <strong>{{ booking.reference }}</strong>
+    </div>
+    <div class="wait-ref">
+      <span>Payment ref</span>
+      <strong>{{ attempt.reference }}</strong>
+    </div>
+  </div>
+
+  {% if sandbox %}
+    <div class="sandbox-note sandbox-note-tight">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div>
+        <strong>Sandbox mode</strong>
+        <span>Nothing was actually sent to your phone. Click below to simulate a successful payment.</span>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'payments:mpesa_sandbox_confirm' attempt.pk %}" style="margin-top:18px;">
+      {% csrf_token %}
+      <button type="submit" class="mkt-btn" style="width:100%; justify-content:center; padding:13px 16px; font-size:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Simulate successful payment
+      </button>
+    </form>
+  {% else %}
+    <div class="wait-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      This page will update automatically once the payment is confirmed.
+    </div>
+  {% endif %}
+
+  <div class="pay-actions" style="justify-content:center;">
+    <a href="{% url 'guestaccount:booking_detail' booking.pk %}" class="mkt-btn ghost">Back to booking</a>
+    <a href="{% url 'payments:failed' booking.pk %}" class="mkt-btn ghost">Payment didn't work?</a>
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block pay_extra_head %}
+<style>
+  .pay-card-center { text-align: center; }
+
+  .wait-spinner {
+    position: relative;
+    width: 90px; height: 90px;
+    margin: 6px auto 22px;
+    display: grid; place-items: center;
+  }
+  .wait-spinner .ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 3px solid #e0e7ff;
+    border-top-color: var(--brand-1);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wait-spinner .phone {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #eef2ff;
+    display: grid; place-items: center;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .wait-spinner .phone svg { width: 20px; height: 20px; }
+
+  .wait-title {
+    font-size: 20px; font-weight: 800;
+    letter-spacing: -0.3px; margin-bottom: 8px;
+  }
+  .wait-text {
+    font-size: 13.5px; color: var(--muted);
+    line-height: 1.6; max-width: 480px;
+    margin: 0 auto 20px;
+  }
+  .wait-text strong { color: var(--text); }
+
+  .wait-refs {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; max-width: 400px;
+    margin: 0 auto 20px;
+  }
+  @media (max-width: 480px) { .wait-refs { grid-template-columns: 1fr; } }
+
+  .wait-ref {
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    text-align: left;
+  }
+  .wait-ref span {
+    display: block;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2); font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .wait-ref strong {
+    display: block;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; color: var(--text);
+    font-weight: 700;
+  }
+
+  .wait-hint {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .wait-hint svg { width: 14px; height: 14px; }
+
+  .sandbox-note {
+    display: flex; gap: 12px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    text-align: left;
+    color: #78350f;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .sandbox-note-tight { margin-top: 6px; }
+  .sandbox-note svg { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; color: #b45309; }
+  .sandbox-note strong { display: block; font-size: 13px; font-weight: 700; }
+  .sandbox-note span { display: block; font-size: 12px; color: #92400e; margin-top: 2px; line-height: 1.5; }
+</style>
+{% endblock %}

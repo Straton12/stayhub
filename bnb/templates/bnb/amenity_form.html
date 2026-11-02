@@ -1,0 +1,171 @@
+{% extends 'bnb/propertiessub_base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit amenity{% else %}Add amenity{% endif %} — BnB{% endblock %}
+
+{% block content %}
+
+<div class="amf-head">
+  <a href="{% url 'bnb_amenities' %}" class="amf-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to amenities
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ amenity.name }}"{% else %}Add amenity{% endif %}</h1>
+  <p class="muted">Keep this short and recognizable so it fits on cards.</p>
+</div>
+
+<form method="post" class="amf">
+  {% csrf_token %}
+
+  <div class="amf-grid">
+    <div class="amf-field amf-full">
+      <label for="name">Name <span class="req">*</span></label>
+      <input type="text" id="name" name="name" required
+             value="{{ amenity.name|default:'' }}"
+             placeholder="e.g. Wi-Fi, Pool, Air conditioning"
+             maxlength="80">
+    </div>
+
+    <div class="amf-field">
+      <label for="icon">Icon</label>
+      <select id="icon" name="icon">
+        {% for key, label in icon_choices %}
+          <option value="{{ key }}" {% if amenity.icon == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="amf-field">
+      <label for="category">Category</label>
+      <select id="category" name="category">
+        {% for key, label in category_choices %}
+          <option value="{{ key }}" {% if amenity.category == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="amf-field">
+      <label for="display_order">Display order</label>
+      <input type="number" id="display_order" name="display_order" min="0"
+             value="{{ amenity.display_order|default:10 }}">
+      <p class="amf-hint">Lower numbers appear first.</p>
+    </div>
+
+    <div class="amf-field">
+      <label class="amf-check">
+        <input type="checkbox" name="is_active" value="1"
+               {% if amenity.is_active or mode == 'create' %}checked{% endif %}>
+        <span>Active — visible when picking amenities</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="amf-actions">
+    <a href="{% url 'bnb_amenities' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"/>
+      </svg>
+      {% if mode == 'edit' %}Save changes{% else %}Add amenity{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .amf-head {
+    margin-bottom: 22px;
+  }
+  .amf-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    margin-left: -8px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+  }
+  .amf-back:hover { color: var(--brand-1); background: rgba(14,165,233,0.06); }
+  .amf-back svg { width: 13px; height: 13px; }
+  .amf-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .amf-head p { font-size: 13px; }
+
+  .amf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 22px 26px;
+    box-shadow: var(--shadow-sm);
+    max-width: 640px;
+  }
+  .amf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+    margin-bottom: 22px;
+  }
+  .amf-field.amf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .amf-grid { grid-template-columns: 1fr; } }
+
+  .amf-field label {
+    display: block;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .amf-field .req { color: #ef4444; }
+  .amf-field input,
+  .amf-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .amf-field input:hover,
+  .amf-field select:hover { border-color: #cbd5e1; }
+  .amf-field input:focus,
+  .amf-field select:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .amf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 5px;
+  }
+  .amf-check {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    padding-top: 6px;
+  }
+  .amf-check input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--brand-1);
+    cursor: pointer;
+  }
+
+  .amf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+  }
+</style>
+{% endblock %}

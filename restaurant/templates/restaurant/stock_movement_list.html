@@ -1,0 +1,398 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Stock Movements — Restaurant{% endblock %}
+{% block page_title %}Stock Movements{% endblock %}
+{% block breadcrumb %}<span class="crumb">Inventory › Movements</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="mv-header">
+  <div>
+    <h1>Stock Movement Ledger</h1>
+    <p>
+      {% if movements %}
+        {{ movements|length }} movement{{ movements|length|pluralize }} recorded.
+        {% if date_from or date_to or item_id or movement_type %}
+          <a href="{% url 'restaurant_stock_movement_list' %}" style="color:var(--brand-2); font-weight:600; margin-left:6px;">Clear filters</a>
+        {% endif %}
+      {% else %}
+        No stock movements recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px; flex-wrap:wrap;">
+    <a href="{% url 'restaurant_stock_list' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3"/>
+        <path d="M3 8h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8z"/>
+        <line x1="10" y1="13" x2="14" y2="13"/>
+      </svg>
+      Stock Items
+    </a>
+    <a href="{% url 'restaurant_stock_movement_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Record Movement
+    </a>
+  </div>
+</div>
+
+{% if movements %}
+
+<!-- ============ KPIs ============ -->
+<div class="mv-kpis">
+  <div class="mv-kpi">
+    <div class="mv-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mv-kpi-value" id="kpiIn">+0</div>
+      <div class="mv-kpi-label">Total In</div>
+    </div>
+  </div>
+
+  <div class="mv-kpi">
+    <div class="mv-kpi-icon k-rose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+        <polyline points="17 18 23 18 23 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mv-kpi-value" id="kpiOut">-0</div>
+      <div class="mv-kpi-label">Total Out</div>
+    </div>
+  </div>
+
+  <div class="mv-kpi">
+    <div class="mv-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mv-kpi-value" id="kpiValue">KES 0</div>
+      <div class="mv-kpi-label">Total Value</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<form method="get" class="mv-toolbar">
+  <div class="mv-toolbar-row">
+    <div class="mv-select">
+      <label for="item">Item</label>
+      <select id="item" name="item">
+        <option value="">All items</option>
+        {% for it in items %}
+          <option value="{{ it.id }}" {% if item_id|stringformat:"s" == it.id|stringformat:"s" %}selected{% endif %}>
+            {{ it.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mv-select">
+      <label for="type">Movement Type</label>
+      <select id="type" name="type">
+        <option value="">All types</option>
+        {% for value, label in movement_types %}
+          <option value="{{ value }}" {% if movement_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mv-date-field">
+      <label for="from">From</label>
+      <input type="date" id="from" name="from" value="{{ date_from|date:'Y-m-d'|default:'' }}">
+    </div>
+
+    <div class="mv-date-field">
+      <label for="to">To</label>
+      <input type="date" id="to" name="to" value="{{ date_to|date:'Y-m-d'|default:'' }}">
+    </div>
+
+    <button type="submit" class="btn">Filter</button>
+    {% if item_id or movement_type or date_from or date_to %}
+      <a href="{% url 'restaurant_stock_movement_list' %}" class="btn secondary">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Item</th>
+        <th>Type</th>
+        <th class="right">Quantity</th>
+        <th class="right">Unit Cost</th>
+        <th class="right">Total Value</th>
+        <th>Reference</th>
+        <th>Recorded By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mv in movements %}
+      <tr class="mv-row mv-type-{{ mv.movement_type }}">
+        <td>
+          <div class="mv-date">{{ mv.created_at|date:"M j, Y" }}</div>
+          <div class="mv-time">{{ mv.created_at|date:"H:i" }}</div>
+        </td>
+
+        <td>
+          <a href="{% url 'restaurant_stock_detail' mv.stock_item.id %}" class="mv-item-link">
+            {{ mv.stock_item.name }}
+          </a>
+          <div class="mv-item-unit">{{ mv.stock_item.unit }}</div>
+        </td>
+
+        <td>
+          <span class="mv-type mv-type-pill-{{ mv.movement_type }}">
+            {% if mv.movement_type == 'in' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+            {% elif mv.movement_type == 'out' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            {% elif mv.movement_type == 'adjustment' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>
+            {% elif mv.movement_type == 'waste' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            {% endif %}
+            {{ mv.get_movement_type_display }}
+          </span>
+        </td>
+
+        <td class="right">
+          <div class="mv-qty {% if mv.movement_type == 'in' %}positive{% elif mv.movement_type == 'out' or mv.movement_type == 'waste' %}negative{% endif %}">
+            {% if mv.movement_type == 'in' %}+{% elif mv.movement_type == 'out' or mv.movement_type == 'waste' %}-{% elif mv.quantity_signed < 0 %}{% endif %}{{ mv.quantity|floatformat:2 }}
+          </div>
+        </td>
+
+        <td class="right">
+          <span class="mv-cost">KES {{ mv.unit_cost|floatformat:2 }}</span>
+        </td>
+
+        <td class="right">
+          <span class="mv-total">KES {{ mv.total_cost|floatformat:2 }}</span>
+        </td>
+
+        <td>
+          {% if mv.reason %}
+            <div class="mv-reason">{{ mv.reason }}</div>
+          {% endif %}
+          {% if mv.purchase_order %}
+            <a href="{% url 'restaurant_po_detail' mv.purchase_order.id %}" class="mv-ref-pill">
+              {{ mv.purchase_order.reference }}
+            </a>
+          {% elif mv.order %}
+            <a href="{% url 'restaurant_order_detail' mv.order.id %}" class="mv-ref-pill">
+              Order #{{ mv.order.id }}
+            </a>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if mv.created_by %}
+            <div class="mv-user">
+              <div class="mv-avatar">{{ mv.created_by.username|slice:":1"|upper }}</div>
+              <span>{{ mv.created_by.username }}</span>
+            </div>
+          {% else %}
+            <span class="muted">System</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="mv-empty">
+  <div class="mv-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 7 8 12 13 7"/>
+      <line x1="8" y1="12" x2="8" y2="21"/>
+      <polyline points="21 17 16 12 11 17"/>
+      <line x1="16" y1="12" x2="16" y2="3"/>
+    </svg>
+  </div>
+  <h4>No stock movements found</h4>
+  <p class="muted">
+    {% if item_id or movement_type or date_from or date_to %}
+      No movements match your filters. <a href="{% url 'restaurant_stock_movement_list' %}" style="color:var(--brand-2);">Clear filters</a>
+    {% else %}
+      Movements are created automatically when you receive deliveries, sell dishes, or adjust stock.
+    {% endif %}
+  </p>
+  {% if not item_id and not movement_type and not date_from and not date_to %}
+    <a href="{% url 'restaurant_stock_movement_add' %}" class="btn" style="margin-top:14px;">Record First Movement</a>
+  {% endif %}
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Stock Movements ================= */
+
+  .mv-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .mv-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .mv-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .mv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .mv-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .mv-kpi-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .mv-kpi-icon svg { width: 20px; height: 20px; }
+  .mv-kpi-icon.k-green { background: #ecfdf5; color: #047857; }
+  .mv-kpi-icon.k-rose  { background: #fef2f2; color: #b91c1c; }
+  .mv-kpi-icon.k-blue  { background: #eff6ff; color: #1d4ed8; }
+
+  .mv-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .mv-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Toolbar ---- */
+  .mv-toolbar { background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+  .mv-toolbar-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+
+  .mv-select label, .mv-date-field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .mv-select select, .mv-date-field input { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; min-width: 160px; background: #fff; }
+  .mv-select select:focus, .mv-date-field input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  /* ---- Table cells ---- */
+  .mv-date { font-size: 13px; font-weight: 700; color: var(--text); }
+  .mv-time { font-size: 11px; color: var(--muted-2); margin-top: 1px; }
+
+  .mv-item-link { font-size: 13.5px; font-weight: 700; color: var(--text); text-decoration: none; }
+  .mv-item-link:hover { color: var(--brand-2); text-decoration: underline; }
+  .mv-item-unit { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-top: 2px; }
+
+  /* Type pills */
+  .mv-type {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+    border-radius: 999px; font-size: 11.5px; font-weight: 700;
+    white-space: nowrap; border: 1px solid transparent;
+  }
+  .mv-type svg { width: 12px; height: 12px; }
+  .mv-type-pill-in         { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .mv-type-pill-out        { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .mv-type-pill-adjustment { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .mv-type-pill-waste      { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .mv-type-pill-transfer   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+
+  .mv-qty { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+  .mv-qty.positive { color: #047857; }
+  .mv-qty.negative { color: #b91c1c; }
+
+  .mv-cost { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .mv-total { font-size: 13px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .mv-reason { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-style: italic; }
+  .mv-ref-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 6px; background: #f1f5f9;
+    color: var(--text-2); font-size: 11px; font-weight: 700; text-decoration: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    border: 1px solid var(--line); transition: all 0.15s;
+  }
+  .mv-ref-pill:hover { background: var(--brand-1); color: #fff; border-color: var(--brand-2); }
+
+  .mv-user { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+  .mv-avatar {
+    width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+    background: linear-gradient(135deg, #fbbf24, #f97316); color: #fff;
+    font-size: 10px; font-weight: 800;
+  }
+
+  /* Row tinting by type */
+  .mv-row.mv-type-in:hover         { background: #ecfdf5; }
+  .mv-row.mv-type-out:hover        { background: #fef2f2; }
+  .mv-row.mv-type-adjustment:hover { background: #fef3c7; }
+  .mv-row.mv-type-waste:hover      { background: #fef2f2; }
+
+  /* ---- Empty state ---- */
+  .mv-empty {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .mv-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .mv-empty-ico svg { width: 30px; height: 30px; }
+  .mv-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    th:nth-child(6), td:nth-child(6),
+    th:nth-child(8), td:nth-child(8) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .mv-header { flex-direction: column; align-items: stretch; }
+    th:nth-child(5), td:nth-child(5) { display: none; }
+    .mv-toolbar-row { flex-direction: column; align-items: stretch; }
+    .mv-select select, .mv-date-field input { width: 100%; }
+    .mv-toolbar .btn { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // --- KPI counters computed client-side ---
+    var rows = document.querySelectorAll('.mv-row');
+    var totalIn = 0;
+    var totalOut = 0;
+    var totalValue = 0;
+
+    rows.forEach(function (r) {
+      // Detect movement type from class
+      var isIn = r.classList.contains('mv-type-in');
+      var isOut = r.classList.contains('mv-type-out') || r.classList.contains('mv-type-waste');
+
+      var qtyEl = r.querySelector('.mv-qty');
+      if (qtyEl) {
+        var qty = parseFloat((qtyEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(qty)) {
+          if (isIn) totalIn += qty;
+          else if (isOut) totalOut += qty;
+        }
+      }
+
+      var totalEl = r.querySelector('.mv-total');
+      if (totalEl) {
+        var val = parseFloat((totalEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(val)) totalValue += val;
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiIn', '+' + totalIn.toLocaleString(undefined, { maximumFractionDigits: 2 }));
+    setText('kpiOut', '-' + totalOut.toLocaleString(undefined, { maximumFractionDigits: 2 }));
+    setText('kpiValue', 'KES ' + totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+  })();
+</script>
+{% endblock %}

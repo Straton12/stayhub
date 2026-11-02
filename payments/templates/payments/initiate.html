@@ -1,0 +1,246 @@
+{% extends 'payments/base.html' %}
+{% block pay_title %}Pay for booking{% endblock %}
+
+{% block pay_content %}
+
+<div class="pay-header">
+  <h1>Complete your payment</h1>
+  <p>Pay for booking <strong>{{ booking.reference }}</strong> to confirm your reservation.</p>
+</div>
+
+<div class="pay-card">
+
+  {% if sandbox %}
+    <div class="sandbox-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div>
+        <strong>Sandbox mode</strong>
+        <span>No real money will move. Payments complete automatically for testing.</span>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="pay-summary">
+    <div class="pay-summary-row">
+      <span>Booking reference</span>
+      <strong>{{ booking.reference }}</strong>
+    </div>
+    <div class="pay-summary-row">
+      <span>Listing</span>
+      <strong>{{ booking.listing.title }}</strong>
+    </div>
+    <div class="pay-summary-row">
+      <span>Total</span>
+      <strong>KES {{ booking.total_amount|floatformat:2 }}</strong>
+    </div>
+    {% if booking.amount_paid > 0 %}
+      <div class="pay-summary-row">
+        <span>Already paid</span>
+        <strong>KES {{ booking.amount_paid|floatformat:2 }}</strong>
+      </div>
+    {% endif %}
+    <div class="pay-summary-total">
+      <span>Amount due now</span>
+      <strong>KES {{ remaining|floatformat:2 }}</strong>
+    </div>
+  </div>
+
+  <form method="post" class="pay-form">
+    {% csrf_token %}
+
+    <div class="pay-methods">
+      <label class="pay-method">
+        <input type="radio" name="method" value="mpesa" checked>
+        <span class="pay-method-face">
+          <span class="pay-method-icon mp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </span>
+          <span class="pay-method-text">
+            <strong>M-Pesa</strong>
+            <span>Pay via STK push to your phone</span>
+          </span>
+        </span>
+      </label>
+
+      <label class="pay-method">
+        <input type="radio" name="method" value="card">
+        <span class="pay-method-face">
+          <span class="pay-method-icon cd">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </span>
+          <span class="pay-method-text">
+            <strong>Card</strong>
+            <span>Visa, Mastercard, international</span>
+          </span>
+        </span>
+      </label>
+    </div>
+
+    <div class="pay-phone-field" id="mpesaFields">
+      <label for="phone">M-Pesa phone number</label>
+      <input class="pay-input" type="text" id="phone" name="phone"
+             value="{{ prefill_phone }}" placeholder="+254 7XX XXX XXX">
+      <p class="pay-hint">You'll receive an STK prompt on this number. Enter your M-Pesa PIN to complete.</p>
+    </div>
+
+    <div class="pay-actions">
+      <a href="{% url 'guestaccount:booking_detail' booking.pk %}" class="mkt-btn ghost">Cancel</a>
+      <button type="submit" class="mkt-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Pay KES {{ remaining|floatformat:0 }}
+      </button>
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}
+
+
+{% block pay_extra_head %}
+<style>
+  .sandbox-note {
+    display: flex; gap: 12px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    color: #78350f;
+  }
+  .sandbox-note svg { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; color: #b45309; }
+  .sandbox-note strong { display: block; font-size: 13px; font-weight: 700; }
+  .sandbox-note span { display: block; font-size: 12px; color: #92400e; margin-top: 2px; line-height: 1.5; }
+
+  .pay-summary {
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 22px;
+  }
+  .pay-summary-row {
+    display: flex; justify-content: space-between;
+    gap: 12px; padding: 6px 0;
+    font-size: 13px; color: var(--muted);
+  }
+  .pay-summary-row strong { color: var(--text); font-weight: 600; text-align: right; }
+
+  .pay-summary-total {
+    display: flex; justify-content: space-between;
+    gap: 12px;
+    padding-top: 14px; margin-top: 10px;
+    border-top: 1px dashed var(--line);
+    align-items: baseline;
+  }
+  .pay-summary-total span {
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.7px; color: var(--muted);
+    font-weight: 700;
+  }
+  .pay-summary-total strong {
+    font-size: 24px; color: var(--brand-1);
+    font-weight: 800; letter-spacing: -0.5px;
+  }
+
+  .pay-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 560px) { .pay-methods { grid-template-columns: 1fr; } }
+
+  .pay-method { position: relative; cursor: pointer; display: block; }
+  .pay-method input {
+    position: absolute; opacity: 0; pointer-events: none;
+  }
+  .pay-method-face {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .pay-method:hover .pay-method-face {
+    border-color: #c7d2fe;
+    background: #f8fafc;
+  }
+  .pay-method input:checked + .pay-method-face {
+    border-color: var(--brand-1);
+    background: linear-gradient(180deg, #f5f3ff, #eef2ff);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+  }
+
+  .pay-method-icon {
+    width: 40px; height: 40px;
+    flex: 0 0 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .pay-method-icon svg { width: 18px; height: 18px; }
+  .pay-method-icon.mp { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .pay-method-icon.cd { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .pay-method-text strong {
+    display: block; font-size: 13.5px;
+    color: var(--text); font-weight: 700;
+  }
+  .pay-method-text span {
+    display: block; font-size: 11.5px;
+    color: var(--muted); margin-top: 2px;
+  }
+
+  .pay-phone-field {
+    padding: 16px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    margin-bottom: 4px;
+  }
+  .pay-phone-field[hidden] { display: none; }
+  .pay-phone-field label {
+    display: block;
+    font-size: 12.5px; font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .pay-input {
+    width: 100%; padding: 11px 12px;
+    border: 1px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #fff; color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .pay-input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .pay-hint {
+    font-size: 11.5px; color: var(--muted-2);
+    margin-top: 8px; line-height: 1.55;
+  }
+</style>
+{% endblock %}
+
+
+{% block pay_extra_js %}
+<script>
+  // Toggle the phone field based on the selected method
+  (function () {
+    var radios = document.querySelectorAll('input[name="method"]');
+    var phoneField = document.getElementById('mpesaFields');
+    function apply() {
+      var v = 'mpesa';
+      radios.forEach(function (r) { if (r.checked) v = r.value; });
+      if (phoneField) phoneField.hidden = (v !== 'mpesa');
+    }
+    radios.forEach(function (r) { r.addEventListener('change', apply); });
+    apply();
+  })();
+</script>
+{% endblock %}

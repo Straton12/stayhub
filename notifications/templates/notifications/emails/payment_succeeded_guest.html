@@ -1,0 +1,6 @@
+<p>Hi {{ booking.customer_name }},</p>
+<p>Your payment of <b>KES {{ booking.amount_paid }}</b> has been received.</p>
+<p>Reference: <b>{{ booking.reference }}</b></p>
+{% if receipt_url %}<p><a href="{{ receipt_url }}">Download your receipt</a></p>{% endif %}
+<p><a href="{{ view_url }}">View your booking</a></p>
+<p>— StayHub</p>

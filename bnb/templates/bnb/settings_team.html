@@ -1,0 +1,20 @@
+{% extends 'bnb/settingssub_base.html' %}
+{% block title %}Team settings — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.4px;">Team</h1>
+  <p class="muted" style="margin-top:4px;">Roster overview.</p>
+</div>
+
+<div class="grid mb">
+  <div class="card"><h3>Total staff</h3><div class="value">{{ staff_count }}</div></div>
+  <div class="card kpi green"><h3>Managers</h3><div class="value">{{ managers_count }}</div></div>
+  <div class="card kpi"><h3>Receptionists</h3><div class="value">{{ receptionists_count }}</div></div>
+  <div class="card kpi amber"><h3>Housekeepers</h3><div class="value">{{ housekeepers_count }}</div></div>
+  <div class="card kpi purple"><h3>Maintenance</h3><div class="value">{{ maintenance_count }}</div></div>
+  <div class="card"><h3>Accountants</h3><div class="value">{{ accountants_count }}</div></div>
+</div>
+
+<a href="{% url 'bnb_staff_list' %}" class="btn">Manage staff</a>
+{% endblock %}

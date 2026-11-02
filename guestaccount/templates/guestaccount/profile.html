@@ -1,0 +1,739 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}My profile{% endblock %}
+
+{% block ga_content %}
+
+<!-- ==================== HEADER ==================== -->
+<div class="ga-header">
+  <span class="ga-eyebrow">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    Account settings
+  </span>
+  <h1>My profile</h1>
+  <p>Keep your contact details up to date so bookings, receipts and updates always reach you.</p>
+</div>
+
+<!-- ==================== LAYOUT ==================== -->
+<div class="gp-layout">
+
+  <!-- ============ MAIN FORM ============ -->
+  <form method="post" class="gp-form" id="gpForm" novalidate>
+    {% csrf_token %}
+
+    <!-- Section: Personal -->
+    <section class="gp-section">
+      <header class="gp-section-head">
+        <span class="gp-section-icon icon-indigo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <div>
+          <h2>Personal details</h2>
+          <p>Used on bookings, receipts, and any messages we send you.</p>
+        </div>
+      </header>
+
+      <div class="gp-grid">
+        <div class="gp-field gp-full">
+          <label for="full_name">Full name</label>
+          <div class="gp-input-wrap">
+            <span class="gp-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input class="gp-input" type="text" id="full_name" name="full_name"
+                   value="{{ user.full_name|default:'' }}"
+                   placeholder="e.g. Jane Mwangi"
+                   autocomplete="name">
+          </div>
+          <p class="gp-help">This is how businesses will greet you in messages.</p>
+        </div>
+
+        <div class="gp-field">
+          <label for="email">Email address</label>
+          <div class="gp-input-wrap">
+            <span class="gp-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            <input class="gp-input" type="email" id="email" name="email"
+                   value="{{ user.email }}"
+                   placeholder="you@example.com"
+                   autocomplete="email">
+          </div>
+          <p class="gp-help">Used to sign in and receive receipts.</p>
+        </div>
+
+        <div class="gp-field">
+          <label for="phone">Phone number</label>
+          <div class="gp-input-wrap">
+            <span class="gp-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <input class="gp-input" type="text" id="phone" name="phone"
+                   value="{{ user.phone }}"
+                   placeholder="+254 7XX XXX XXX"
+                   autocomplete="tel">
+          </div>
+          <p class="gp-help">Shared with the business only when you book.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Address -->
+    <section class="gp-section">
+      <header class="gp-section-head">
+        <span class="gp-section-icon icon-sky" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </span>
+        <div>
+          <h2>Where are you based?</h2>
+          <p>Optional — helps us recommend nearby listings and services.</p>
+        </div>
+      </header>
+
+      <div class="gp-grid">
+        <div class="gp-field">
+          <label for="country">Country</label>
+          <div class="gp-input-wrap">
+            <span class="gp-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M2 12h20"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </span>
+            <input class="gp-input" type="text" id="country" name="country"
+                   value="{{ profile.country }}"
+                   placeholder="e.g. Kenya"
+                   autocomplete="country-name">
+          </div>
+        </div>
+
+        <div class="gp-field">
+          <label for="city">City</label>
+          <div class="gp-input-wrap">
+            <span class="gp-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"/>
+                <path d="M5 21V7l7-4 7 4v14"/>
+                <path d="M9 21v-6h6v6"/>
+              </svg>
+            </span>
+            <input class="gp-input" type="text" id="city" name="city"
+                   value="{{ profile.city }}"
+                   placeholder="e.g. Nairobi"
+                   autocomplete="address-level2">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Preferences -->
+    <section class="gp-section">
+      <header class="gp-section-head">
+        <span class="gp-section-icon icon-violet" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </span>
+        <div>
+          <h2>Communication</h2>
+          <p>Choose how we keep in touch about your bookings and new listings.</p>
+        </div>
+      </header>
+
+      <label class="gp-toggle-row">
+        <div class="gp-toggle-text">
+          <strong>News &amp; offers</strong>
+          <span>Send me occasional updates about new listings, seasonal offers and partner businesses.</span>
+        </div>
+        <input type="checkbox" class="gp-switch" name="marketing_opt_in" value="1"
+               {% if profile.marketing_opt_in %}checked{% endif %}>
+      </label>
+
+      <label class="gp-toggle-row gp-toggle-row-locked">
+        <div class="gp-toggle-text">
+          <strong>Booking alerts</strong>
+          <span>Get notified about upcoming check-ins, payment reminders and receipts.</span>
+        </div>
+        <input type="checkbox" class="gp-switch" checked disabled>
+      </label>
+    </section>
+
+    <!-- Actions -->
+    <div class="gp-actions">
+      <a href="{% url 'guestaccount:password_change' %}" class="gp-btn gp-btn-outline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4" y="11" width="16" height="10" rx="2"/>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>
+        Change password
+      </a>
+      <button type="submit" class="gp-btn gp-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        Save changes
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ SIDE PANEL ============ -->
+  <aside class="gp-aside">
+
+    <!-- Profile card -->
+    <div class="gp-profile-card">
+      <div class="gp-profile-cover" aria-hidden="true">
+        <svg viewBox="0 0 200 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gpCoverGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="50%" stop-color="#8b5cf6"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+            <radialGradient id="gpCoverGlow" cx="0.5" cy="0.5" r="0.7">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+          </defs>
+          <rect width="200" height="100" fill="url(#gpCoverGrad)"/>
+          <rect width="200" height="100" fill="url(#gpCoverGlow)"/>
+          <circle cx="30" cy="20" r="40" fill="rgba(255,255,255,0.08)"/>
+          <circle cx="180" cy="80" r="50" fill="rgba(255,255,255,0.06)"/>
+        </svg>
+      </div>
+
+      <div class="gp-profile-body">
+        <div class="gp-avatar-lg">{{ user.display_name|slice:":1"|upper }}</div>
+        <h3>{{ user.display_name }}</h3>
+        <p class="gp-profile-email">{{ user.email }}</p>
+
+        <div class="gp-profile-meta">
+          <div class="gp-meta-item">
+            <span class="gp-meta-label">Member since</span>
+            <span class="gp-meta-value">{{ user.date_joined|date:"M Y" }}</span>
+          </div>
+          <div class="gp-meta-item">
+            <span class="gp-meta-label">Role</span>
+            <span class="gp-meta-value">Guest</span>
+          </div>
+        </div>
+
+        <a href="{% url 'guestaccount:home' %}" class="gp-profile-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          View my bookings
+        </a>
+      </div>
+    </div>
+
+    <!-- Tip: privacy -->
+    <div class="gp-tip gp-tip-blue">
+      <span class="gp-tip-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </span>
+      <div>
+        <strong>Your privacy matters</strong>
+        <span>Your phone and email are only shared with a business <em>after</em> you make a booking — never before.</span>
+      </div>
+    </div>
+
+    <!-- Tip: password -->
+    <div class="gp-tip gp-tip-amber">
+      <span class="gp-tip-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="11" width="16" height="10" rx="2"/>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>
+      </span>
+      <div>
+        <strong>Keep your account safe</strong>
+        <span>Change your password every few months. <a href="{% url 'guestaccount:password_change' %}">Update now</a>.</span>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     PROFILE PAGE
+     ================================================================ */
+
+  /* ---- Layout ---- */
+  .gp-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+    padding-bottom: 60px;
+  }
+  @media (max-width: 900px) {
+    .gp-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form card ---- */
+  .gp-form {
+    background: #fff;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 20px;
+    padding: 6px 26px 24px;
+    box-shadow:
+      0 24px 60px -16px rgba(15,23,42,0.10),
+      0 12px 24px -12px rgba(15,23,42,0.05);
+  }
+
+  .gp-section {
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line-2, #f2f4fa);
+  }
+  .gp-section:last-of-type { border-bottom: none; }
+
+  .gp-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .gp-section-icon {
+    flex: 0 0 42px;
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .gp-section-icon svg { width: 19px; height: 19px; }
+  .gp-section-icon.icon-sky    { background: #eff6ff; color: #0369a1; border-color: #bae6fd; }
+  .gp-section-icon.icon-violet { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .gp-section-icon.icon-indigo { background: #eef2ff; color: #4f46e5; border-color: #e0e7ff; }
+
+  .gp-section-head h2 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.2px;
+    margin-bottom: 4px;
+  }
+  .gp-section-head p {
+    font-size: 12.5px;
+    color: var(--muted, #5b657a);
+    line-height: 1.5;
+  }
+
+  /* ---- Grid & fields ---- */
+  .gp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 18px;
+  }
+  .gp-field.gp-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .gp-grid { grid-template-columns: 1fr; }
+  }
+
+  .gp-field { display: flex; flex-direction: column; }
+  .gp-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2, #334155);
+    letter-spacing: 0.2px;
+    margin-bottom: 7px;
+  }
+
+  .gp-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .gp-input-icon {
+    position: absolute;
+    left: 14px;
+    display: grid; place-items: center;
+    width: 18px; height: 18px;
+    color: var(--muted-2, #8b94a8);
+    pointer-events: none;
+    transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gp-input-icon svg { width: 16px; height: 16px; }
+
+  .gp-input {
+    width: 100%;
+    padding: 12px 14px 12px 42px;
+    border: 1.5px solid var(--line, #eaedf4);
+    border-radius: 12px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text, #0b1220);
+    outline: none;
+    transition:
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+  }
+  .gp-input::placeholder { color: var(--muted-2, #8b94a8); }
+  .gp-input:hover { background: #fff; border-color: #cbd5e1; }
+  .gp-input:focus {
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .gp-input-wrap:focus-within .gp-input-icon { color: #6366f1; }
+
+  .gp-help {
+    font-size: 11.5px;
+    color: var(--muted-2, #8b94a8);
+    margin-top: 7px;
+    line-height: 1.5;
+  }
+
+  /* ---- Toggle rows ---- */
+  .gp-toggle-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 10px;
+  }
+  .gp-toggle-row:last-of-type { margin-bottom: 0; }
+  .gp-toggle-row:hover { border-color: #c7d2fe; background: #f8faff; }
+  .gp-toggle-row-locked { cursor: default; opacity: 0.92; }
+  .gp-toggle-row-locked:hover { border-color: var(--line, #eaedf4); background: #fff; }
+
+  .gp-toggle-text { min-width: 0; flex: 1; }
+  .gp-toggle-text strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.1px;
+    margin-bottom: 3px;
+  }
+  .gp-toggle-text span {
+    display: block;
+    font-size: 12px;
+    color: var(--muted, #5b657a);
+    line-height: 1.55;
+  }
+
+  /* Switch */
+  .gp-switch {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 0 0 42px;
+    width: 42px; height: 24px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 3px;
+  }
+  .gp-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+      0 1px 3px rgba(15,23,42,0.20),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .gp-switch:checked {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  }
+  .gp-switch:checked::after { transform: translateX(18px); }
+  .gp-switch:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+  }
+  .gp-switch:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .gp-switch:disabled::after { box-shadow: 0 1px 3px rgba(15,23,42,0.15); }
+
+  /* ---- Actions ---- */
+  .gp-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 24px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line-2, #f2f4fa);
+    flex-wrap: wrap;
+  }
+
+  .gp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition:
+      filter 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gp-btn svg { width: 15px; height: 15px; }
+  .gp-btn:active { transform: translateY(1px); }
+  .gp-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+  .gp-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow:
+      0 12px 26px -8px rgba(99,102,241,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .gp-btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 34px -8px rgba(99,102,241,0.65);
+  }
+
+  .gp-btn-outline {
+    background: #fff;
+    color: var(--text-2, #334155);
+    border-color: var(--line, #eaedf4);
+  }
+  .gp-btn-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text, #0b1220);
+  }
+
+  /* ================= Aside ================= */
+  .gp-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 88px;
+  }
+  @media (max-width: 900px) {
+    .gp-aside { position: static; }
+  }
+
+  /* ---- Profile card ---- */
+  .gp-profile-card {
+    background: #fff;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+      0 20px 48px -16px rgba(15,23,42,0.10),
+      0 8px 18px -10px rgba(15,23,42,0.05);
+  }
+  .gp-profile-cover {
+    height: 96px;
+    position: relative;
+    overflow: hidden;
+  }
+  .gp-profile-cover svg { width: 100%; height: 100%; display: block; }
+
+  .gp-profile-body {
+    padding: 0 20px 22px;
+    text-align: center;
+    margin-top: -36px;
+    position: relative;
+    z-index: 1;
+  }
+  .gp-avatar-lg {
+    width: 68px; height: 68px;
+    margin: 0 auto 12px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    color: #fff;
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    box-shadow:
+      0 12px 26px -6px rgba(99,102,241,0.42),
+      0 0 0 4px #fff,
+      inset 0 1px 0 rgba(255,255,255,0.30);
+  }
+
+  .gp-profile-body h3 {
+    font-size: 16.5px;
+    font-weight: 800;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.2px;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  .gp-profile-email {
+    font-size: 12.5px;
+    color: var(--muted, #5b657a);
+    margin-bottom: 18px;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .gp-profile-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line-2, #f2f4fa);
+    border-bottom: 1px solid var(--line-2, #f2f4fa);
+    margin-bottom: 16px;
+  }
+  .gp-meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .gp-meta-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2, #8b94a8);
+    font-weight: 700;
+  }
+  .gp-meta-value {
+    font-size: 13.5px;
+    color: var(--text, #0b1220);
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .gp-profile-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6366f1;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition:
+      color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gp-profile-link:hover {
+    color: #8b5cf6;
+    background: rgba(99,102,241,0.08);
+  }
+  .gp-profile-link svg { width: 13px; height: 13px; }
+
+  /* ---- Tips ---- */
+  .gp-tip {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid;
+    line-height: 1.55;
+  }
+  .gp-tip-blue {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e3a8a;
+  }
+  .gp-tip-amber {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #78350f;
+  }
+  .gp-tip-icon {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(15,23,42,0.06);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .gp-tip-blue  .gp-tip-icon { color: #1e40af; }
+  .gp-tip-amber .gp-tip-icon { color: #b45309; }
+  .gp-tip-icon svg { width: 15px; height: 15px; }
+
+  .gp-tip strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 3px;
+    color: inherit;
+  }
+  .gp-tip span {
+    display: block;
+    font-size: 12px;
+    line-height: 1.55;
+    color: inherit;
+    opacity: 0.9;
+  }
+  .gp-tip em { font-style: normal; font-weight: 800; }
+  .gp-tip a { color: inherit; font-weight: 800; text-decoration: underline; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .gp-form { padding: 4px 18px 20px; border-radius: 18px; }
+    .gp-actions { justify-content: stretch; }
+    .gp-actions .gp-btn { flex: 1; justify-content: center; }
+    .gp-profile-cover { height: 80px; }
+    .gp-profile-body { margin-top: -32px; }
+    .gp-avatar-lg { width: 60px; height: 60px; font-size: 24px; }
+  }
+
+  /* ---- Reduced motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}

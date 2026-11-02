@@ -1,0 +1,798 @@
+{% extends 'marketplace/manage/base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit category{% else %}Add category{% endif %} — Marketplace{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit category{% else %}Add category{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="cf-header">
+  <a href="{% url 'marketplace:manage_categories' %}" class="cf-back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to categories
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ category.name }}"{% else %}Add a new category{% endif %}</h1>
+  <p>
+    Categories group your listings on the marketplace homepage. Add as many as you
+    need — Stays, Tours, Food, Laundry, and anything else.
+  </p>
+</div>
+
+<!-- ============ ERROR SUMMARY ============ -->
+{% if form.errors or form.non_field_errors %}
+  <div class="cf-error-summary" role="alert">
+    <div class="cf-error-summary-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div style="flex:1; min-width:0;">
+      <strong>There's a problem with your submission.</strong>
+      <p>Fix the highlighted fields below and try again.</p>
+
+      <ul class="cf-error-list">
+        {% for e in form.non_field_errors %}
+          <li>
+            <span class="cf-error-where">Form</span>
+            <span class="cf-error-what">{{ e }}</span>
+          </li>
+        {% endfor %}
+
+        {% for field in form %}
+          {% if field.errors %}
+            {% for e in field.errors %}
+              <li>
+                <span class="cf-error-where">{{ field.label }}</span>
+                <span class="cf-error-what">{{ e }}</span>
+              </li>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endif %}
+
+<div class="cf-layout">
+
+  <!-- ============ FORM ============ -->
+  <form method="post" class="cf-form" id="categoryForm">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+    <!-- ============ Section 1: Basics ============ -->
+    <section class="cf-section">
+      <header class="cf-section-head">
+        <span class="cf-step">1</span>
+        <div>
+          <h2>Basics</h2>
+          <p>Name, slug and a short description.</p>
+        </div>
+      </header>
+
+      <div class="cf-grid">
+        <div class="cf-field cf-full {% if form.name.errors %}cf-field-error{% endif %}">
+          <label for="{{ form.name.id_for_label }}">Category name <span class="req">*</span></label>
+          {{ form.name }}
+          <p class="cf-hint">Shown on the marketplace — e.g. "Stays", "Tours &amp; Travel".</p>
+          {% for e in form.name.errors %}<p class="cf-error">{{ e }}</p>{% endfor %}
+        </div>
+
+        <div class="cf-field {% if form.slug.errors %}cf-field-error{% endif %}">
+          <label for="{{ form.slug.id_for_label }}">Slug <span class="req">*</span></label>
+          {{ form.slug }}
+          <p class="cf-hint">Short, lowercase, no spaces — e.g. <code>stays</code>.</p>
+          {% for e in form.slug.errors %}<p class="cf-error">{{ e }}</p>{% endfor %}
+        </div>
+
+        <div class="cf-field {% if form.display_order.errors %}cf-field-error{% endif %}">
+          <label for="{{ form.display_order.id_for_label }}">Display order</label>
+          {{ form.display_order }}
+          <p class="cf-hint">Lower numbers appear first on the homepage.</p>
+          {% for e in form.display_order.errors %}<p class="cf-error">{{ e }}</p>{% endfor %}
+        </div>
+
+        <div class="cf-field cf-full {% if form.description.errors %}cf-field-error{% endif %}">
+          <label for="{{ form.description.id_for_label }}">Short description</label>
+          {{ form.description }}
+          <p class="cf-hint">Shown under the category tile on the homepage.</p>
+          {% for e in form.description.errors %}<p class="cf-error">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Section 2: Icon ============ -->
+    <section class="cf-section">
+      <header class="cf-section-head">
+        <span class="cf-step">2</span>
+        <div>
+          <h2>Icon</h2>
+          <p>Pick a symbol that represents this category.</p>
+        </div>
+      </header>
+
+      {# Keep the underlying <select> for form submission (still the source of truth) #}
+      <div class="cf-visually-hidden">
+        {{ form.icon }}
+      </div>
+
+      <div class="cf-icon-grid" role="radiogroup" aria-label="Category icon">
+        {% with current_icon=form.icon.value|default:"grid" %}
+        <button type="button" class="cf-icon-btn {% if current_icon == 'bed' %}is-active{% endif %}" data-icon="bed" aria-label="Bed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+          <span>Bed</span>
+        </button>
+        <button type="button" class="cf-icon-btn {% if current_icon == 'globe' %}is-active{% endif %}" data-icon="globe" aria-label="Globe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Globe</span>
+        </button>
+        <button type="button" class="cf-icon-btn {% if current_icon == 'utensils' %}is-active{% endif %}" data-icon="utensils" aria-label="Utensils">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+          <span>Utensils</span>
+        </button>
+        <button type="button" class="cf-icon-btn {% if current_icon == 'shirt' %}is-active{% endif %}" data-icon="shirt" aria-label="Shirt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Shirt</span>
+        </button>
+        <button type="button" class="cf-icon-btn {% if current_icon == 'car' %}is-active{% endif %}" data-icon="car" aria-label="Car">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+          <span>Car</span>
+        </button>
+        <button type="button" class="cf-icon-btn {% if current_icon == 'grid' %}is-active{% endif %}" data-icon="grid" aria-label="Grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Grid</span>
+        </button>
+        {% endwith %}
+      </div>
+    </section>
+
+    <!-- ============ Section 3: Colour accent ============ -->
+    <section class="cf-section">
+      <header class="cf-section-head">
+        <span class="cf-step">3</span>
+        <div>
+          <h2>Colour accent</h2>
+          <p>Used on the category tile and the first letter badge.</p>
+        </div>
+      </header>
+
+      <div class="cf-visually-hidden">
+        {{ form.accent }}
+      </div>
+
+      {% with current_accent=form.accent.value|default:"indigo" %}
+        <div class="cf-accent-grid" role="radiogroup" aria-label="Colour accent">
+          <button type="button" class="cf-accent-btn accent-sky     {% if current_accent == 'sky' %}is-active{% endif %}"     data-accent="sky"     aria-label="Sky blue"><span class="cf-accent-swatch"></span><span>Sky</span></button>
+          <button type="button" class="cf-accent-btn accent-emerald {% if current_accent == 'emerald' %}is-active{% endif %}" data-accent="emerald" aria-label="Emerald green"><span class="cf-accent-swatch"></span><span>Emerald</span></button>
+          <button type="button" class="cf-accent-btn accent-amber   {% if current_accent == 'amber' %}is-active{% endif %}"   data-accent="amber"   aria-label="Amber orange"><span class="cf-accent-swatch"></span><span>Amber</span></button>
+          <button type="button" class="cf-accent-btn accent-violet  {% if current_accent == 'violet' %}is-active{% endif %}"  data-accent="violet"  aria-label="Violet"><span class="cf-accent-swatch"></span><span>Violet</span></button>
+          <button type="button" class="cf-accent-btn accent-indigo  {% if current_accent == 'indigo' %}is-active{% endif %}"  data-accent="indigo"  aria-label="Indigo"><span class="cf-accent-swatch"></span><span>Indigo</span></button>
+          <button type="button" class="cf-accent-btn accent-rose    {% if current_accent == 'rose' %}is-active{% endif %}"    data-accent="rose"    aria-label="Rose pink"><span class="cf-accent-swatch"></span><span>Rose</span></button>
+        </div>
+      {% endwith %}
+    </section>
+
+    <!-- ============ Actions ============ -->
+    <div class="cf-actions">
+      <a href="{% url 'marketplace:manage_categories' %}" class="btn secondary">Cancel</a>
+      <button type="submit" class="btn success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        {% if mode == 'edit' %}Save changes{% else %}Add category{% endif %}
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ LIVE PREVIEW ============ -->
+  <aside class="cf-aside">
+    <div class="cf-preview-wrap">
+      <div class="cf-preview-label">Live preview</div>
+      <div class="cf-preview-note">How this category will look on the marketplace homepage.</div>
+
+      <div class="cf-preview-card" id="cfPreview" data-accent="{% if form.accent.value %}{{ form.accent.value }}{% else %}indigo{% endif %}">
+        <span class="cf-preview-ico" id="cfPreviewIcon" aria-hidden="true">
+          {# Initial icon — JS will swap on change #}
+          {% if form.icon.value == 'bed' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+          {% elif form.icon.value == 'globe' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          {% elif form.icon.value == 'utensils' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+          {% elif form.icon.value == 'shirt' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+          {% elif form.icon.value == 'car' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          {% endif %}
+        </span>
+
+        <div class="cf-preview-body">
+          <div class="cf-preview-name" id="cfPreviewName">
+            {% if form.name.value %}{{ form.name.value }}{% else %}Category name{% endif %}
+          </div>
+          <div class="cf-preview-desc" id="cfPreviewDesc">
+            {% if form.description.value %}{{ form.description.value }}{% else %}Short description{% endif %}
+          </div>
+        </div>
+
+        <span class="cf-preview-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="cf-tip">
+      <span class="cf-tip-ico tip-indigo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </span>
+      <div>
+        <strong>Tips</strong>
+        <ul class="cf-tip-list">
+          <li>Keep the slug short so URLs stay clean.</li>
+          <li>Use a distinct icon and colour per category — helps users scan fast.</li>
+          <li>Categories with listings can't be deleted.</li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     Error summary (matches manage/form.html pattern)
+     ============================================================ */
+  .cf-error-summary {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 12px;
+    color: #991b1b;
+  }
+  .cf-error-summary-icon {
+    flex: 0 0 34px; width: 34px; height: 34px;
+    border-radius: 10px;
+    background: #fee2e2; color: #b91c1c;
+    display: grid; place-items: center;
+  }
+  .cf-error-summary-icon svg { width: 18px; height: 18px; }
+  .cf-error-summary strong {
+    display: block;
+    font-size: 14px; font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .cf-error-summary p { font-size: 12.5px; opacity: 0.9; }
+  .cf-error-list {
+    list-style: none;
+    margin: 10px 0 2px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cf-error-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .cf-error-where {
+    flex: 0 0 auto;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .cf-error-what { flex: 1; min-width: 0; color: #7f1d1d; font-weight: 500; }
+
+  /* ============================================================
+     Header
+     ============================================================ */
+  .cf-header { margin-bottom: 22px; max-width: 720px; }
+  .cf-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    margin-bottom: 10px; padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+  }
+  .cf-back:hover { color: var(--brand-1); background: rgba(99,102,241,0.06); }
+  .cf-back svg { width: 14px; height: 14px; }
+  .cf-header h1 {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+  .cf-header p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  /* ============================================================
+     Layout
+     ============================================================ */
+  .cf-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) { .cf-layout { grid-template-columns: 1fr; } }
+
+  /* ============================================================
+     Form
+     ============================================================ */
+  .cf-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 6px 26px 24px;
+  }
+
+  .cf-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .cf-section:last-of-type { border-bottom: none; }
+  .cf-section-head {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .cf-step {
+    flex: 0 0 30px; width: 30px; height: 30px;
+    border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(99,102,241,0.35);
+  }
+  .cf-section-head h2 {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    margin-bottom: 3px;
+  }
+  .cf-section-head p {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .cf-field.cf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .cf-grid { grid-template-columns: 1fr; } }
+
+  .cf-field { display: flex; flex-direction: column; }
+  .cf-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .cf-field .req { color: #ef4444; margin-left: 2px; }
+  .cf-field input,
+  .cf-field select,
+  .cf-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f8fafc;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .cf-field input:focus,
+  .cf-field select:focus,
+  .cf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .cf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .cf-hint code {
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+  .cf-error {
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  /* Field error state */
+  .cf-field.cf-field-error > label { color: #b91c1c; }
+  .cf-field.cf-field-error input,
+  .cf-field.cf-field-error select,
+  .cf-field.cf-field-error textarea {
+    border-color: #ef4444;
+    background: #fff5f5;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.12);
+  }
+
+  /* Hide the underlying <select> but keep it in the DOM for form submission */
+  .cf-visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ============================================================
+     Icon grid picker
+     ============================================================ */
+  .cf-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+  }
+  .cf-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px;
+    background: #f8fafc;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cf-icon-btn svg { width: 22px; height: 22px; }
+  .cf-icon-btn:hover {
+    border-color: #c7d2fe;
+    background: #fff;
+    color: var(--brand-1);
+  }
+  .cf-icon-btn.is-active {
+    border-color: var(--brand-1);
+    background: #eef2ff;
+    color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+  }
+
+  /* ============================================================
+     Accent grid picker
+     ============================================================ */
+  .cf-accent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+  .cf-accent-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: #f8fafc;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cf-accent-btn:hover { background: #fff; border-color: #c7d2fe; color: var(--text); }
+  .cf-accent-btn.is-active {
+    border-color: var(--brand-1);
+    background: #eef2ff;
+    color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+  }
+  .cf-accent-swatch {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.10);
+  }
+  .cf-accent-btn.accent-sky     .cf-accent-swatch { background: linear-gradient(135deg, #0ea5e9, #22d3ee); }
+  .cf-accent-btn.accent-emerald .cf-accent-swatch { background: linear-gradient(135deg, #10b981, #22d3ee); }
+  .cf-accent-btn.accent-amber   .cf-accent-swatch { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .cf-accent-btn.accent-violet  .cf-accent-swatch { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+  .cf-accent-btn.accent-indigo  .cf-accent-swatch { background: linear-gradient(135deg, #6366f1, #22d3ee); }
+  .cf-accent-btn.accent-rose    .cf-accent-swatch { background: linear-gradient(135deg, #f43f5e, #8b5cf6); }
+
+  /* ============================================================
+     Actions
+     ============================================================ */
+  .cf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ============================================================
+     Preview sidebar
+     ============================================================ */
+  .cf-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 84px;
+  }
+  @media (max-width: 1000px) { .cf-aside { position: static; } }
+
+  .cf-preview-wrap {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 18px;
+  }
+  .cf-preview-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted-2);
+    margin-bottom: 4px;
+  }
+  .cf-preview-note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  /* The card mimics your homepage tile styling */
+  .cf-preview-card {
+    --cf-accent: #6366f1;
+    --cf-accent-soft: #eef2ff;
+    --cf-accent-border: #e0e7ff;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    transition: all 0.2s;
+  }
+  .cf-preview-card[data-accent="sky"] {
+    --cf-accent: #0369a1; --cf-accent-soft: #eff6ff; --cf-accent-border: #bae6fd;
+  }
+  .cf-preview-card[data-accent="emerald"] {
+    --cf-accent: #047857; --cf-accent-soft: #ecfdf5; --cf-accent-border: #a7f3d0;
+  }
+  .cf-preview-card[data-accent="amber"] {
+    --cf-accent: #b45309; --cf-accent-soft: #fffbeb; --cf-accent-border: #fde68a;
+  }
+  .cf-preview-card[data-accent="violet"] {
+    --cf-accent: #6d28d9; --cf-accent-soft: #f5f3ff; --cf-accent-border: #ddd6fe;
+  }
+  .cf-preview-card[data-accent="rose"] {
+    --cf-accent: #be123c; --cf-accent-soft: #fff1f2; --cf-accent-border: #fecdd3;
+  }
+
+  .cf-preview-ico {
+    flex: 0 0 48px;
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--cf-accent-soft);
+    color: var(--cf-accent);
+    border: 1px solid var(--cf-accent-border);
+  }
+  .cf-preview-ico svg { width: 22px; height: 22px; }
+
+  .cf-preview-body { flex: 1; min-width: 0; }
+  .cf-preview-name {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cf-preview-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .cf-preview-arrow {
+    flex: 0 0 26px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--cf-accent-soft);
+    color: var(--cf-accent);
+    border: 1px solid var(--cf-accent-border);
+  }
+  .cf-preview-arrow svg { width: 12px; height: 12px; }
+
+  /* Tip */
+  .cf-tip {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cf-tip-ico {
+    flex: 0 0 34px; width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .cf-tip-ico svg { width: 16px; height: 16px; }
+  .tip-indigo { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+  .cf-tip strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .cf-tip-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding-left: 18px;
+    list-style: disc;
+  }
+  .cf-tip-list li { margin-bottom: 4px; }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- Auto-slug from name ----
+    var nameEl = document.getElementById('{{ form.name.id_for_label }}');
+    var slugEl = document.getElementById('{{ form.slug.id_for_label }}');
+    var slugEdited = false;
+
+    if (slugEl && slugEl.value) slugEdited = true;   // existing value on edit
+
+    if (nameEl && slugEl) {
+      nameEl.addEventListener('input', function () {
+        if (slugEdited) return;
+        slugEl.value = nameEl.value
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .slice(0, 40);
+      });
+      slugEl.addEventListener('input', function () { slugEdited = true; });
+    }
+
+    // ---- Icon picker ----
+    var iconSelect = document.getElementById('{{ form.icon.id_for_label }}');
+    var iconButtons = document.querySelectorAll('.cf-icon-btn');
+    var previewIcon = document.getElementById('cfPreviewIcon');
+
+    var iconSvgs = {
+      bed:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>',
+      globe:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      utensils: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>',
+      shirt:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>',
+      car:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>',
+      grid:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>'
+    };
+
+    iconButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = btn.dataset.icon;
+
+        iconButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+
+        if (iconSelect) {
+          iconSelect.value = key;
+          // Dispatch change in case any listener cares
+          iconSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (previewIcon && iconSvgs[key]) {
+          previewIcon.innerHTML = iconSvgs[key];
+        }
+      });
+    });
+
+    // ---- Accent picker ----
+    var accentSelect = document.getElementById('{{ form.accent.id_for_label }}');
+    var accentButtons = document.querySelectorAll('.cf-accent-btn');
+    var previewCard = document.getElementById('cfPreview');
+
+    accentButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = btn.dataset.accent;
+
+        accentButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+
+        if (accentSelect) {
+          accentSelect.value = key;
+          accentSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (previewCard) {
+          previewCard.dataset.accent = key;
+        }
+      });
+    });
+
+    // ---- Live name + description in preview ----
+    var namePreview = document.getElementById('cfPreviewName');
+    var descPreview = document.getElementById('cfPreviewDesc');
+    var descInput = document.getElementById('{{ form.description.id_for_label }}');
+
+    if (nameEl && namePreview) {
+      nameEl.addEventListener('input', function () {
+        namePreview.textContent = nameEl.value || 'Category name';
+      });
+    }
+    if (descInput && descPreview) {
+      descInput.addEventListener('input', function () {
+        descPreview.textContent = descInput.value || 'Short description';
+      });
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,451 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Create Organization — StayHub{% endblock %}
+{% block page_title %}Create Organization{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header strip ============ -->
+<div class="co-header">
+  <div class="co-header-left">
+    <a href="{% url 'superadmin_orgs' %}" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to organizations
+    </a>
+    <h1>Create a new organization</h1>
+    <p>Set up a business workspace and its first admin account. The admin will use these credentials to sign in and manage their team.</p>
+  </div>
+</div>
+
+<div class="co-layout">
+
+  <!-- ============ Form ============ -->
+  <form method="post" class="co-form" novalidate>
+    {% csrf_token %}
+
+    <!-- Step 1: Organization -->
+    <section class="co-section">
+      <header class="co-section-head">
+        <span class="co-step">1</span>
+        <div>
+          <h2>Organization details</h2>
+          <p>Basic information about the business joining the platform.</p>
+        </div>
+      </header>
+
+      <div class="co-grid">
+        <div class="co-field co-full">
+          <label for="{{ org_form.name.id_for_label }}">Organization name <span class="req">*</span></label>
+          {{ org_form.name }}
+          {% if org_form.name.errors %}
+            <p class="co-error">{{ org_form.name.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div class="co-field co-full">
+          <label for="{{ org_form.org_type.id_for_label }}">Organization type <span class="req">*</span></label>
+          {{ org_form.org_type }}
+          <p class="co-hint">Determines which workspace modules the org admin will see by default.</p>
+          {% if org_form.org_type.errors %}
+            <p class="co-error">{{ org_form.org_type.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div class="co-field">
+          <label for="{{ org_form.email.id_for_label }}">Email</label>
+          {{ org_form.email }}
+        </div>
+
+        <div class="co-field">
+          <label for="{{ org_form.phone.id_for_label }}">Phone</label>
+          {{ org_form.phone }}
+        </div>
+
+        <div class="co-field co-full">
+          <label for="{{ org_form.location.id_for_label }}">Location</label>
+          {{ org_form.location }}
+          <p class="co-hint">City or area — used later for geo-based partner recommendations.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: Admin -->
+    <section class="co-section">
+      <header class="co-section-head">
+        <span class="co-step">2</span>
+        <div>
+          <h2>Organization admin account</h2>
+          <p>This user will own the workspace and can create staff accounts later.</p>
+        </div>
+      </header>
+
+      <div class="co-grid">
+        <div class="co-field">
+          <label for="{{ admin_form.username.id_for_label }}">Username <span class="req">*</span></label>
+          {{ admin_form.username }}
+          {% if admin_form.username.errors %}
+            <p class="co-error">{{ admin_form.username.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div class="co-field">
+          <label for="{{ admin_form.email.id_for_label }}">Email</label>
+          {{ admin_form.email }}
+        </div>
+
+        <div class="co-field">
+          <label for="{{ admin_form.phone.id_for_label }}">Phone</label>
+          {{ admin_form.phone }}
+        </div>
+
+        <div class="co-field">
+          <label for="{{ admin_form.password1.id_for_label }}">Password <span class="req">*</span></label>
+          <div class="pw-wrap">
+            {{ admin_form.password1 }}
+            <button type="button" class="pw-toggle" data-target="{{ admin_form.password1.id_for_label }}" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          {% if admin_form.password1.errors %}
+            <p class="co-error">{{ admin_form.password1.errors|striptags }}</p>
+          {% endif %}
+        </div>
+
+        <div class="co-field co-full">
+          <label for="{{ admin_form.password2.id_for_label }}">Confirm password <span class="req">*</span></label>
+          {{ admin_form.password2 }}
+          {% if admin_form.password2.errors %}
+            <p class="co-error">{{ admin_form.password2.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Non-field errors -->
+    {% if org_form.non_field_errors or admin_form.non_field_errors %}
+    <div class="co-alert error">
+      {{ org_form.non_field_errors }}
+      {{ admin_form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="co-actions">
+      <a href="{% url 'superadmin_orgs' %}" class="btn secondary">Cancel</a>
+      <button type="submit" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        Create Organization &amp; Admin
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ Side tips ============ -->
+  <aside class="co-aside">
+    <div class="co-tip">
+      <div class="co-tip-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <div>
+        <h4>What happens next</h4>
+        <ol class="co-list">
+          <li>The organization is created and marked active.</li>
+          <li>The admin user is created with role <strong>Organization Admin</strong>.</li>
+          <li>The admin signs in at the same login page as you.</li>
+          <li>They'll see only their organization's workspace.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="co-tip">
+      <div class="co-tip-icon accent-purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+          <path d="m2 17 10 5 10-5"/>
+          <path d="m2 12 10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Choosing a type</h4>
+        <ul class="co-list">
+          <li><strong>BnB</strong> — short-stay rentals and property management.</li>
+          <li><strong>Tours</strong> — packages, guides, vehicles.</li>
+          <li><strong>Restaurant</strong> — menu, orders, suppliers.</li>
+          <li><strong>Laundry</strong> — services, pickups, deliveries.</li>
+          <li><strong>Mixed</strong> — multiple businesses under one org.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="co-tip">
+      <div class="co-tip-icon accent-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Security</h4>
+        <p class="co-tip-text">
+          Use a strong password. Businesses have their own separate, isolated workspace — no cross-org data leaks.
+        </p>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Create Organization page ================= */
+
+  /* ---- Header ---- */
+  .co-header {
+    margin-bottom: 22px;
+  }
+  .co-header-left { max-width: 760px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--brand-1); background: rgba(99,102,241,0.06); }
+  .back-link svg { width: 14px; height: 14px; }
+
+  .co-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .co-header p {
+    font-size: 13.5px; color: var(--muted); line-height: 1.55;
+  }
+
+  /* ---- Layout: form + aside ---- */
+  .co-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) {
+    .co-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Form panel ---- */
+  .co-form {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    padding: 8px 24px 22px;
+  }
+
+  .co-section {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .co-section:last-of-type { border-bottom: none; }
+
+  .co-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .co-step {
+    flex: 0 0 28px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(99,102,241,0.35);
+  }
+  .co-section-head h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+  .co-section-head p {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ---- Grid of fields ---- */
+  .co-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 16px;
+  }
+  .co-field.co-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .co-grid { grid-template-columns: 1fr; }
+  }
+
+  .co-field { display: flex; flex-direction: column; }
+  .co-field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+  }
+  .co-field label .req { color: var(--danger); margin-left: 2px; }
+
+  /* Inputs inherit base styling; just fix bottom margin so grid works well */
+  .co-field .input, .co-field select, .co-field textarea { margin-bottom: 0; }
+
+  .co-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 5px;
+    line-height: 1.45;
+  }
+  .co-error {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 5px;
+    font-weight: 500;
+  }
+
+  /* ---- Password toggle ---- */
+  .pw-wrap {
+    position: relative;
+  }
+  .pw-wrap .input { padding-right: 42px; }
+  .pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--muted-2);
+    cursor: pointer;
+  }
+  .pw-toggle:hover { color: var(--brand-1); background: #f1f5f9; }
+  .pw-toggle svg { width: 15px; height: 15px; }
+
+  /* ---- Non-field alert ---- */
+  .co-alert.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .co-alert.error ul { margin: 0; padding-left: 16px; }
+
+  /* ---- Actions ---- */
+  .co-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+
+  /* ---- Aside ---- */
+  .co-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 84px;
+  }
+  @media (max-width: 1000px) {
+    .co-aside { position: static; }
+  }
+
+  .co-tip {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .co-tip-icon {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .co-tip-icon.accent-purple {
+    background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe;
+  }
+  .co-tip-icon.accent-amber {
+    background: #fffbeb; color: #b45309; border-color: #fde68a;
+  }
+  .co-tip-icon svg { width: 16px; height: 16px; }
+  .co-tip h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .co-tip-text, .co-list {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .co-list { margin: 0; padding-left: 18px; }
+  .co-list li { margin-bottom: 4px; }
+  .co-list strong { color: var(--text-2); }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .co-form { padding: 4px 16px 16px; }
+    .co-header h1 { font-size: 18px; }
+    .co-actions { justify-content: stretch; }
+    .co-actions .btn { flex: 1; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // Password show / hide toggles
+  document.querySelectorAll('.pw-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      var isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      btn.style.color = isHidden ? '#4f46e5' : '';
+    });
+  });
+</script>
+{% endblock %}

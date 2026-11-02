@@ -1,0 +1,83 @@
+{% extends 'bnb/base.html' %}
+{% block title %}Notifications — BnB{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.4px;">Notifications</h1>
+  <p class="muted" style="margin-top:4px;">{{ items|length }} entr{{ items|length|pluralize:"y,ies" }}.</p>
+</div>
+
+{% if items %}
+  <div class="notif-list">
+    {% for n in items %}
+      <div class="notif-row">
+        <div class="notif-icon">
+          {% if n.event|slice:":4" == "bnb." %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>
+          {% elif "marketplace" in n.event %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {% endif %}
+        </div>
+        <div class="notif-body">
+          <div class="notif-subject">{{ n.subject }}</div>
+          {% if n.body %}<div class="notif-text">{{ n.body|truncatechars:180 }}</div>{% endif %}
+          <div class="notif-meta">
+            <span class="tag">{{ n.event|default:"notification" }}</span>
+            {% if n.to_email %}<span>{{ n.to_email }}</span>{% endif %}
+            {% if n.to_phone %}<span>{{ n.to_phone }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="notif-time">{{ n.created_at|date:"d M Y · H:i" }}</div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-card">
+    <div class="empty-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+    <h4>You're all caught up</h4>
+    <p class="muted">New notifications will appear here.</p>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .notif-list { display: flex; flex-direction: column; gap: 10px; }
+  .notif-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow .18s, border-color .18s;
+  }
+  .notif-row:hover { box-shadow: var(--shadow-md); border-color: #dbe2f0; }
+  @media (max-width: 640px) { .notif-row { grid-template-columns: 36px 1fr; } .notif-time { grid-column: 2/-1; } }
+
+  .notif-icon {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .notif-icon svg { width: 20px; height: 20px; }
+  .notif-body { min-width: 0; }
+  .notif-subject { font-size: 13.5px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .notif-text { font-size: 12.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 6px; }
+  .notif-meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted-2); align-items: center; }
+  .notif-time { font-size: 11.5px; color: var(--muted-2); white-space: nowrap; text-align: right; }
+
+  .empty-card { text-align: center; padding: 56px 24px; background: #fff; border: 1px dashed var(--line); border-radius: 18px; }
+  .empty-ico { width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 20px; display: grid; place-items: center; background: #e0f2fe; color: var(--brand-2); border: 1px solid #bae6fd; }
+  .empty-ico svg { width: 32px; height: 32px; }
+  .empty-card h4 { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+</style>
+{% endblock %}

@@ -1,0 +1,655 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Super Admin — StayHub{% endblock %}
+{% block page_title %}Super Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ============ Welcome banner ============ -->
+<div class="sa-hero">
+  <div class="sa-hero-text">
+    <h1>Welcome back, {{ user.username|capfirst }}.</h1>
+    <p>You have full control over the platform. Manage organizations, their admins, and network membership from here.</p>
+  </div>
+  <div class="sa-hero-actions">
+    <a href="{% url 'superadmin_create_org' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Create Organization
+    </a>
+    <a href="{% url 'superadmin_orgs' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/>
+        <path d="M5 21V7l7-4 7 4v14"/>
+      </svg>
+      View All
+    </a>
+  </div>
+</div>
+
+<!-- ============ KPI cards ============ -->
+<div class="grid mb">
+  <div class="card kpi indigo">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/>
+        <path d="M5 21V7l7-4 7 4v14"/>
+        <path d="M9 21v-6h6v6"/>
+      </svg>
+    </div>
+    <h3>Organizations</h3>
+    <div class="value">{{ org_count }}</div>
+    <div class="sub">Total on the platform</div>
+  </div>
+
+  <div class="card kpi green">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <h3>Active</h3>
+    <div class="value">{{ active_count }}</div>
+    <div class="sub">
+      {% if org_count %}
+        {{ active_count }} of {{ org_count }} active
+      {% else %}
+        No organizations yet
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card kpi amber">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <line x1="7" y1="7" x2="10" y2="10"/>
+        <line x1="17" y1="7" x2="14" y2="10"/>
+        <line x1="7" y1="17" x2="10" y2="14"/>
+        <line x1="17" y1="17" x2="14" y2="14"/>
+      </svg>
+    </div>
+    <h3>In Network</h3>
+    <div class="value">{{ network_count }}</div>
+    <div class="sub">Joined partner network</div>
+  </div>
+
+  <div class="card kpi rose">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <h3>Total Users</h3>
+    <div class="value">{{ user_count }}</div>
+    <div class="sub">Across all organizations</div>
+  </div>
+</div>
+
+<!-- ============ Organizations table ============ -->
+<div class="section-head">
+  <div>
+    <h3 class="section-title">Organizations</h3>
+    <p class="muted" style="margin-top:4px;">
+      {% if orgs %}
+        Showing {{ orgs|length }} organization{{ orgs|length|pluralize }}
+      {% else %}
+        Nothing to show yet
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'superadmin_create_org' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Organization
+  </a>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Organization</th>
+        <th>Type</th>
+        <th>Location</th>
+        <th>Status</th>
+        <th>Network</th>
+        <th style="text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for org in orgs %}
+      <tr>
+        <td>
+          <div class="org-cell">
+            <div class="org-cell-avatar" data-type="{{ org.org_type }}">
+              {{ org.name|slice:":1"|upper }}
+            </div>
+            <div class="org-cell-meta">
+              <div class="org-cell-name">{{ org.name }}</div>
+              {% if org.email %}
+                <div class="org-cell-sub">{{ org.email }}</div>
+              {% elif org.phone %}
+                <div class="org-cell-sub">{{ org.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="type-pill type-{{ org.org_type }}">
+            {{ org.get_org_type_display }}
+          </span>
+        </td>
+        <td>
+          {% if org.location %}
+            <span class="muted-line">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-ico">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ org.location }}
+            </span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if org.is_active %}
+            <span class="tag green"><span class="dot"></span> Active</span>
+          {% else %}
+            <span class="tag red"><span class="dot"></span> Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if org.network_joined %}
+            <span class="tag"><span class="dot"></span> Joined</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right; white-space:nowrap;">
+          <a href="{% url 'superadmin_org_detail' org.id %}" class="btn sm secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            View
+          </a>
+          <button type="button"
+                  class="btn sm {% if org.is_active %}danger{% else %}success{% endif %} js-toggle-org"
+                  data-org-name="{{ org.name }}"
+                  data-org-active="{{ org.is_active|yesno:'1,0' }}"
+                  data-url="{% url 'superadmin_toggle_org' org.id %}">
+            {% if org.is_active %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              Disable
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Enable
+            {% endif %}
+          </button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">
+          <div class="empty-state">
+            <div class="empty-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"/>
+                <path d="M5 21V7l7-4 7 4v14"/>
+                <path d="M9 21v-6h6v6"/>
+              </svg>
+            </div>
+            <h4>No organizations yet</h4>
+            <p class="muted">Create your first organization and its admin to get started.</p>
+            <a href="{% url 'superadmin_create_org' %}" class="btn" style="margin-top:14px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Create Organization
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Super Admin page-specific styles ================= */
+
+  /* ---- Hero banner ---- */
+  .sa-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 22px 24px;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    background:
+      radial-gradient(600px 200px at 0% 0%, rgba(99,102,241,0.22), transparent 60%),
+      radial-gradient(500px 200px at 100% 100%, rgba(34,211,238,0.20), transparent 60%),
+      linear-gradient(135deg, #0b1436 0%, #101a3d 55%, #1c2b6b 100%);
+    color: #e2e8f0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(11,20,54,0.28);
+  }
+  .sa-hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(700px 300px at 80% -20%, rgba(139,92,246,0.35), transparent 60%);
+    pointer-events: none;
+  }
+  .sa-hero-text { position: relative; z-index: 1; min-width: 240px; }
+  .sa-hero-text h1 {
+    font-size: 22px; font-weight: 800; color: #fff;
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .sa-hero-text p {
+    font-size: 13.5px; color: #c7d2fe; max-width: 560px; line-height: 1.55;
+  }
+  .sa-hero-actions {
+    position: relative; z-index: 1;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .sa-hero-actions .btn {
+    background: linear-gradient(135deg, #818cf8, #22d3ee);
+    box-shadow: 0 10px 24px rgba(99,102,241,0.45);
+  }
+  .sa-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: none;
+  }
+  .sa-hero-actions .btn.secondary:hover {
+    background: rgba(255,255,255,0.14);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+  }
+
+  /* ---- KPI cards with icons ---- */
+  .card.kpi { padding-left: 22px; position: relative; }
+  .card.kpi .kpi-icon {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .card.kpi .kpi-icon svg { width: 16px; height: 16px; }
+  .card.kpi.green .kpi-icon { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .card.kpi.amber .kpi-icon { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .card.kpi.rose  .kpi-icon { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .card.kpi .value { font-size: 30px; }
+
+  /* ---- Section header ---- */
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  /* ---- Org cell ---- */
+  .org-cell { display: flex; align-items: center; gap: 12px; }
+  .org-cell-avatar {
+    width: 38px; height: 38px; flex: 0 0 38px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 6px 14px rgba(99,102,241,0.35);
+    letter-spacing: -0.5px;
+  }
+  .org-cell-avatar[data-type="bnb"]        { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+  .org-cell-avatar[data-type="tours"]      { background: linear-gradient(135deg, #10b981, #059669); }
+  .org-cell-avatar[data-type="restaurant"] { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .org-cell-avatar[data-type="laundry"]    { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+  .org-cell-avatar[data-type="mixed"]      { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
+  .org-cell-meta { min-width: 0; }
+  .org-cell-name { font-weight: 700; color: #0f172a; font-size: 13.5px; letter-spacing: -0.1px; }
+  .org-cell-sub  { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+  /* ---- Type pills ---- */
+  .type-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 600;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  .type-pill.type-bnb        { background: #eff6ff; color: #075985; border-color: #bae6fd; }
+  .type-pill.type-tours      { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .type-pill.type-restaurant { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .type-pill.type-laundry    { background: #eef2ff; color: #3730a3; border-color: #e0e7ff; }
+  .type-pill.type-mixed      { background: #fdf2f8; color: #9d174d; border-color: #fbcfe8; }
+
+  /* ---- Muted line with icon ---- */
+  .muted-line {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #475569; font-size: 12.5px;
+  }
+  .inline-ico { width: 12px; height: 12px; color: #94a3b8; }
+
+  /* ---- Empty state ---- */
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .empty-ico svg { width: 26px; height: 26px; }
+  .empty-state h4 {
+    font-size: 15px; font-weight: 700; color: #0f172a;
+    margin-bottom: 4px;
+  }
+
+  /* ---- Small responsive tweaks ---- */
+  @media (max-width: 640px) {
+    .sa-hero { padding: 18px; }
+    .sa-hero-text h1 { font-size: 18px; }
+    .card.kpi .value { font-size: 24px; }
+    .org-cell-avatar { width: 32px; height: 32px; flex-basis: 32px; font-size: 13px; }
+  }
+
+  /* ================= Custom confirm modal ================= */
+  .sa-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    animation: saFadeIn 0.18s ease forwards;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @keyframes saFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .sa-modal {
+    background: #fff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow:
+      0 24px 60px rgba(15,23,42,0.30),
+      0 2px 0 rgba(255,255,255,0.06) inset;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.96) translateY(6px);
+    opacity: 0;
+    animation: saPop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.05s forwards;
+  }
+  @keyframes saPop {
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .sa-modal-top {
+    height: 6px;
+    background: linear-gradient(90deg, #6366f1, #22d3ee);
+  }
+  .sa-modal.disable .sa-modal-top {
+    background: linear-gradient(90deg, #ef4444, #f59e0b);
+  }
+
+  .sa-modal-body {
+    padding: 26px 24px 8px;
+    text-align: center;
+  }
+
+  .sa-modal-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    position: relative;
+  }
+  .sa-modal.disable .sa-modal-icon {
+    background: #fef2f2; color: #b91c1c; border-color: #fecaca;
+  }
+  .sa-modal-icon::after {
+    content: "";
+    position: absolute; inset: -6px;
+    border-radius: 22px;
+    background: radial-gradient(closest-side, rgba(99,102,241,0.18), transparent);
+    z-index: -1;
+  }
+  .sa-modal.disable .sa-modal-icon::after {
+    background: radial-gradient(closest-side, rgba(239,68,68,0.18), transparent);
+  }
+  .sa-modal-icon svg { width: 30px; height: 30px; }
+
+  .sa-modal h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  .sa-modal p {
+    font-size: 13.5px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .sa-modal p strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .sa-modal p .sa-em {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .sa-modal.disable p .sa-em {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .sa-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 18px 20px 20px;
+  }
+  .sa-modal-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter 0.15s, transform 0.05s, box-shadow 0.15s, background 0.15s;
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .sa-modal-btn:active { transform: translateY(1px); }
+
+  .sa-modal-btn.cancel {
+    background: #fff;
+    color: #334155;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+  .sa-modal-btn.cancel:hover { background: #f8fafc; }
+
+  .sa-modal-btn.confirm {
+    color: #fff;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 6px 16px rgba(99,102,241,0.35);
+  }
+  .sa-modal-btn.confirm:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 8px 20px rgba(99,102,241,0.45);
+  }
+  .sa-modal.disable .sa-modal-btn.confirm {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 6px 16px rgba(239,68,68,0.35);
+  }
+  .sa-modal.disable .sa-modal-btn.confirm:hover {
+    box-shadow: 0 8px 20px rgba(239,68,68,0.45);
+  }
+
+  @media (max-width: 480px) {
+    .sa-modal-body { padding: 22px 20px 6px; }
+    .sa-modal-actions { grid-template-columns: 1fr; padding: 14px 16px 16px; }
+    .sa-modal h3 { font-size: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sa-modal-backdrop,
+    .sa-modal {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // ============== Custom confirm modal for org enable/disable ==============
+  (function () {
+    var buttons = document.querySelectorAll('.js-toggle-org');
+    if (!buttons.length) return;
+
+    function openModal(opts) {
+      // opts: { orgName, isActive (bool), url }
+      if (document.getElementById('saModalBackdrop')) return;
+
+      var disable = opts.isActive;
+      var title = disable ? 'Disable this organization?' : 'Enable this organization?';
+      var body = disable
+        ? '<strong>' + opts.orgName + '</strong> will be deactivated. Their users will be locked out of the workspace until you enable it again. <span class="sa-em">Data is preserved.</span>'
+        : '<strong>' + opts.orgName + '</strong> will become active again and their users will regain access to the workspace. <span class="sa-em">Safe to do any time.</span>';
+      var confirmLabel = disable ? 'Yes, disable' : 'Yes, enable';
+      var loadingLabel = disable ? 'Disabling…' : 'Enabling…';
+
+      var modalHTML =
+        '<div class="sa-modal-backdrop" id="saModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="saModalTitle">' +
+          '<div class="sa-modal ' + (disable ? 'disable' : 'enable') + '">' +
+            '<div class="sa-modal-top"></div>' +
+            '<div class="sa-modal-body">' +
+              '<div class="sa-modal-icon" aria-hidden="true">' +
+                (disable
+                  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+                ) +
+              '</div>' +
+              '<h3 id="saModalTitle">' + title + '</h3>' +
+              '<p>' + body + '</p>' +
+            '</div>' +
+            '<div class="sa-modal-actions">' +
+              '<button type="button" class="sa-modal-btn cancel" data-action="cancel">Cancel</button>' +
+              '<button type="button" class="sa-modal-btn confirm" data-action="confirm">' + confirmLabel + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      var wrap = document.createElement('div');
+      wrap.innerHTML = modalHTML;
+      var backdrop = wrap.firstChild;
+      document.body.appendChild(backdrop);
+
+      var confirmBtn = backdrop.querySelector('[data-action="confirm"]');
+      var cancelBtn  = backdrop.querySelector('[data-action="cancel"]');
+
+      function close() {
+        backdrop.style.transition = 'opacity 0.15s ease';
+        backdrop.style.opacity = '0';
+        setTimeout(function () {
+          if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+          document.body.style.overflow = '';
+        }, 150);
+      }
+
+      document.body.style.overflow = 'hidden';
+
+      cancelBtn.addEventListener('click', close);
+
+      confirmBtn.addEventListener('click', function () {
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.75';
+        confirmBtn.textContent = loadingLabel;
+        window.location.href = opts.url;
+      });
+
+      backdrop.addEventListener('click', function (ev) {
+        if (ev.target === backdrop) close();
+      });
+
+      document.addEventListener('keydown', function esc(ev) {
+        if (ev.key === 'Escape') {
+          close();
+          document.removeEventListener('keydown', esc);
+        }
+      });
+
+      setTimeout(function () { confirmBtn.focus(); }, 60);
+    }
+
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal({
+          orgName: btn.dataset.orgName || 'this organization',
+          isActive: btn.dataset.orgActive === '1',
+          url: btn.dataset.url,
+        });
+      });
+    });
+  })();
+</script>
+{% endblock %}

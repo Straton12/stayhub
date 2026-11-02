@@ -1,0 +1,462 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Reservations — Restaurant{% endblock %}
+{% block page_title %}Reservations{% endblock %}
+{% block breadcrumb %}<span class="crumb">Reservations</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="rl-header">
+  <div>
+    <h1>Reservations</h1>
+    <p>
+      {% if items %}
+        {{ items|length }} reservation{{ items|length|pluralize }} on the books.
+      {% else %}
+        No reservations recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'restaurant_reservation_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Reservation
+  </a>
+</div>
+
+{% if items %}
+
+<!-- ============ KPIs ============ -->
+<div class="rl-kpis">
+  <div class="rl-kpi">
+    <div class="rl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rl-kpi-value">{{ items|length }}</div>
+      <div class="rl-kpi-label">Total reservations</div>
+    </div>
+  </div>
+
+  <div class="rl-kpi">
+    <div class="rl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rl-kpi-value" id="kpiGuests">0</div>
+      <div class="rl-kpi-label">Total guests expected</div>
+    </div>
+  </div>
+
+  <div class="rl-kpi">
+    <div class="rl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rl-kpi-value" id="kpiToday">0</div>
+      <div class="rl-kpi-label">Today</div>
+    </div>
+  </div>
+
+  <div class="rl-kpi">
+    <div class="rl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rl-kpi-value" id="kpiUpcoming">0</div>
+      <div class="rl-kpi-label">Upcoming</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<div class="rl-toolbar">
+  <div class="rl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="rlSearch" placeholder="Search by customer or phone…" autocomplete="off">
+  </div>
+  
+  <div class="rl-tabs">
+    <button class="rl-tab active" data-filter="all">All</button>
+    <button class="rl-tab" data-filter="pending">Pending</button>
+    <button class="rl-tab" data-filter="confirmed">Confirmed</button>
+    <button class="rl-tab" data-filter="seated">Seated</button>
+    <button class="rl-tab" data-filter="completed">Completed</button>
+  </div>
+</div>
+
+<!-- ============ Grid ============ -->
+<div class="rl-grid" id="rlGrid">
+  {% for r in items %}
+  <article class="rl-card"
+           data-search="{{ r.customer_name|lower }} {{ r.customer_phone|lower }}"
+           data-time="{{ r.reservation_time|date:'c' }}"
+           data-status="{{ r.status }}"
+           onclick="window.location='{% url 'restaurant_reservation_detail' r.id %}';"
+           style="cursor: pointer;">
+    
+    <!-- Date Strip -->
+    <div class="rl-date-strip">
+      <div class="rl-date-day">{{ r.reservation_time|date:"d" }}</div>
+      <div class="rl-date-month">{{ r.reservation_time|date:"M" }}</div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="rl-card-body">
+      <div class="rl-card-head">
+        <div class="rl-avatar">{{ r.customer_name|slice:":1"|upper }}</div>
+        <div class="rl-card-id">
+          <h3 class="rl-name">{{ r.customer_name }}</h3>
+          {% if r.customer_phone %}
+            <span class="rl-phone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              {{ r.customer_phone }}
+            </span>
+          {% else %}
+            <span class="rl-phone rl-phone-missing">No phone</span>
+          {% endif %}
+        </div>
+        
+        <!-- Status Pill -->
+        <span class="status-pill status-{{ r.status }}">
+          <span class="dot"></span>
+          {{ r.get_status_display }}
+        </span>
+      </div>
+
+      <div class="rl-meta">
+        <div class="rl-meta-item">
+          <span class="rl-meta-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+          <span class="rl-meta-text">{{ r.reservation_time|date:"D, d M Y · H:i" }}</span>
+        </div>
+        <div class="rl-meta-item">
+          <span class="rl-meta-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </span>
+          <span class="rl-meta-text">
+            {{ r.guests }} guest{{ r.guests|pluralize }}
+          </span>
+        </div>
+      </div>
+
+      {% if r.notes %}
+        <p class="rl-notes">{{ r.notes }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Card Footer (Actions) -->
+    <div class="rl-card-footer" onclick="event.stopPropagation();">
+      <span class="rl-guests-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        {{ r.guests }} seat{{ r.guests|pluralize }}
+      </span>
+      
+      <!-- Quick Actions based on status -->
+      <div class="flex" style="gap:6px;">
+        {% if r.status == 'pending' %}
+          <a href="{% url 'restaurant_reservation_status' r.id 'confirmed' %}" class="btn sm success">Confirm</a>
+        {% elif r.status == 'confirmed' %}
+          <a href="{% url 'restaurant_reservation_status' r.id 'seated' %}" class="btn sm warn">Seat Now</a>
+        {% elif r.status == 'seated' %}
+          <a href="{% url 'restaurant_reservation_status' r.id 'completed' %}" class="btn sm secondary">Complete</a>
+        {% endif %}
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="rl-empty-filter" id="rlEmptyFilter" hidden>
+  <div class="rl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try adjusting your search or status filters.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="rl-empty">
+  <div class="rl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  </div>
+  <h4>No reservations yet</h4>
+  <p class="muted">Booked tables and guests will appear here.</p>
+  <a href="{% url 'restaurant_reservation_add' %}" class="btn" style="margin-top:14px;">Add First Reservation</a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Reservations page ================= */
+
+  /* ---- Header ---- */
+  .rl-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .rl-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .rl-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .rl-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .rl-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .rl-kpi-icon {
+    flex: 0 0 40px; width: 40px; height: 40px; border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .rl-kpi-icon svg { width: 18px; height: 18px; }
+  .rl-kpi-icon.k-amber  { background: #fef3c7; color: #b45309; }
+  .rl-kpi-icon.k-green  { background: #ecfdf5; color: #047857; }
+  .rl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; }
+  .rl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; }
+
+  .rl-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .rl-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Toolbar ---- */
+  .rl-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .rl-search { position: relative; flex: 1 1 280px; max-width: 380px; }
+  .rl-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted-2); pointer-events: none; }
+  .rl-search input {
+    width: 100%; padding: 10px 12px 10px 38px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13.5px; background: #fff; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .rl-search input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .rl-tabs { display: inline-flex; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-sm); overflow-x: auto; max-width: 100%; }
+  .rl-tab {
+    padding: 6px 12px; font-size: 12.5px; font-weight: 600; border: none; border-radius: 7px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+    white-space: nowrap; font-family: inherit;
+  }
+  .rl-tab:hover { background: #fef3c7; color: #b45309; }
+  .rl-tab.active { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; box-shadow: 0 4px 10px rgba(245,158,11,0.30); }
+
+  /* ---- Grid & Cards ---- */
+  .rl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+  .rl-card {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm);
+    overflow: hidden; display: flex; flex-direction: column; transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s; position: relative;
+  }
+  .rl-card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(15,23,42,0.10); border-color: #dbe2f0; }
+
+  /* Date Strip */
+  .rl-date-strip {
+    flex: 0 0 60px; background: linear-gradient(180deg, #fef3c7, #fde68a); border-bottom: 1px solid #fcd34d;
+    display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px;
+    color: #78350f;
+  }
+  .rl-date-day { font-size: 24px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+  .rl-date-month { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; opacity: 0.85; margin-top:2px; }
+
+  /* Card Body */
+  .rl-card-body { flex: 1; padding: 16px; display: flex; flex-direction: column; }
+  .rl-card-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  
+  .rl-avatar {
+    width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px;
+    display: grid; place-items: center; background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 800; font-size: 15px; box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  }
+  .rl-card-id { min-width: 0; flex: 1; }
+  .rl-name { font-size: 14.5px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rl-phone { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); text-decoration: none; }
+  .rl-phone svg { width: 11px; height: 11px; color: var(--muted-2); flex: 0 0 11px; }
+  .rl-phone-missing { color: var(--muted-2); font-style: italic; }
+
+  /* Status Pill */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-pending   { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-confirmed { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .status-pill.status-seated    { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .status-pill.status-completed { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* Meta */
+  .rl-meta { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .rl-meta-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+  .rl-meta-icon { flex: 0 0 18px; width: 18px; height: 18px; display: grid; place-items: center; color: var(--muted-2); }
+  .rl-meta-icon svg { width: 13px; height: 13px; }
+  .rl-meta-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rl-notes { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; background: #f8fafc; padding: 8px; border-radius: 8px; }
+
+  /* Card Footer */
+  .rl-card-footer {
+    border-top: 1px solid var(--line-2); padding: 12px 16px; background: #fafbfe;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .rl-guests-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: #fff; color: var(--text-2); border: 1px solid var(--line);
+    border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  }
+  .rl-guests-badge svg { width: 12px; height: 12px; color: var(--brand-1); }
+
+  /* Empty states */
+  .rl-empty-filter, .rl-empty {
+    text-align: center; padding: 50px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .rl-empty-ico {
+    width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .rl-empty-ico svg { width: 28px; height: 28px; }
+  .rl-empty h4, .rl-empty-filter h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .rl-header h1 { font-size: 20px; }
+    .rl-header { flex-direction: column; align-items: stretch; }
+    .rl-grid { grid-template-columns: 1fr; }
+    .rl-tabs { width: 100%; }
+    .rl-tab { flex: 0 0 auto; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var search = document.getElementById('rlSearch');
+    var tabs   = document.querySelectorAll('.rl-tab');
+    var cards  = document.querySelectorAll('.rl-card');
+    var grid   = document.getElementById('rlGrid');
+    var empty  = document.getElementById('rlEmptyFilter');
+
+    var state = { q: '', filter: 'all' };
+
+    // --- KPI counters computed client-side ---
+    var totalGuests = 0;
+    var today = 0;
+    var upcoming = 0;
+
+    var now = new Date();
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var endOfToday = new Date(startOfToday.getTime() + 86400000);
+
+    cards.forEach(function (c) {
+      // Guests
+      var badge = c.querySelector('.rl-guests-badge');
+      if (badge) {
+        var n = parseInt((badge.textContent || '').replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(n)) totalGuests += n;
+      }
+
+      // Time-based counts
+      var iso = c.dataset.time;
+      if (iso) {
+        var d = new Date(iso);
+        if (!isNaN(d.getTime())) {
+          if (d >= startOfToday && d < endOfToday) today++;
+          if (d >= now) upcoming++;
+        }
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiGuests', totalGuests);
+    setText('kpiToday', today);
+    setText('kpiUpcoming', upcoming);
+
+    // --- Filtering ---
+    function apply() {
+      if (!grid) return;
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var st   = c.dataset.status || '';
+        
+        var matchQ = !state.q || text.indexOf(state.q) !== -1;
+        var matchF = state.filter === 'all' || st === state.filter;
+        
+        var ok = matchQ && matchF;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      
+      if (empty) empty.hidden = visible !== 0;
+      if (grid) grid.style.display = visible === 0 ? 'none' : '';
+    }
+
+    if (search) {
+      search.addEventListener('input', function () {
+        state.q = search.value.trim().toLowerCase();
+        apply();
+      });
+    }
+
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        state.filter = t.dataset.filter;
+        apply();
+      });
+    });
+  })();
+</script>
+{% endblock %}

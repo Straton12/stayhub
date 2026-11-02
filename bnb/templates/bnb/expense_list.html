@@ -1,0 +1,567 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Expenses — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="ex-head">
+  <div>
+    <h1>Expenses</h1>
+    <p class="muted">
+      {% if pill_counts.all %}
+        {{ pill_counts.all }} expense{{ pill_counts.all|pluralize }} across your properties.
+      {% else %}
+        No expenses recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ex-head-actions">
+    <a href="{% url 'bnb_expense_category_list' %}" class="btn secondary sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7h18"/>
+        <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+        <rect x="3" y="7" width="18" height="14" rx="2"/>
+        <line x1="3" y1="11" x2="21" y2="11"/>
+      </svg>
+      Categories
+    </a>
+    <a href="{% url 'bnb_finance_ledger' %}?range=month" class="btn secondary sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="14" y2="18"/>
+      </svg>
+      View ledger
+    </a>
+    <a href="{% url 'bnb_expense_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add expense
+    </a>
+  </div>
+</div>
+
+{# ==================== KPI ROW ==================== #}
+{% if pill_counts.all %}
+<div class="ex-kpis">
+  <div class="ex-kpi ex-kpi-all">
+    <div class="ex-kpi-label">Total</div>
+    <div class="ex-kpi-value">KES {{ total_all|floatformat:0|intcomma }}</div>
+    <div class="ex-kpi-sub">{{ pill_counts.all }} expense{{ pill_counts.all|pluralize }}</div>
+  </div>
+  <div class="ex-kpi ex-kpi-month">
+    <div class="ex-kpi-label">This month</div>
+    <div class="ex-kpi-value">KES {{ total_month|floatformat:0|intcomma }}</div>
+    <div class="ex-kpi-sub">Rolling since month start</div>
+  </div>
+  <div class="ex-kpi ex-kpi-unpaid">
+    <div class="ex-kpi-label">Unpaid</div>
+    <div class="ex-kpi-value">KES {{ total_unpaid|floatformat:0|intcomma }}</div>
+    <div class="ex-kpi-sub">Bills still owed</div>
+  </div>
+</div>
+
+{% if vat_enabled is not None %}
+  <div class="ex-vat-hint {% if vat_enabled %}is-on{% else %}is-off{% endif %}">
+    <span class="ex-vat-dot" aria-hidden="true"></span>
+    {% if vat_enabled %}
+      {{ vat_label }} is enabled — every expense posts to the ledger with VAT split out.
+    {% else %}
+      {{ vat_label }} is off — every expense posts to the ledger at gross amount. <a href="{% url 'bnb_finance_settings' %}">Enable {{ vat_label }}</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endif %}
+
+{# ==================== FILTER PILLS ==================== #}
+<div class="ex-pills" role="group" aria-label="Filter by frequency">
+  <a class="ex-pill {% if not frequency %}is-active{% endif %}"
+     href="?{% if paid_filter %}paid={{ paid_filter }}&{% endif %}{% if category_id %}category={{ category_id }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}">
+    All <span class="ex-pill-count">{{ pill_counts.all }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'one_off' %}is-active{% endif %}"
+     href="?frequency=one_off{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    One-off <span class="ex-pill-count">{{ pill_counts.one_off }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'daily' %}is-active{% endif %}"
+     href="?frequency=daily{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Daily <span class="ex-pill-count">{{ pill_counts.daily }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'weekly' %}is-active{% endif %}"
+     href="?frequency=weekly{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Weekly <span class="ex-pill-count">{{ pill_counts.weekly }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'monthly' %}is-active{% endif %}"
+     href="?frequency=monthly{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Monthly <span class="ex-pill-count">{{ pill_counts.monthly }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'quarterly' %}is-active{% endif %}"
+     href="?frequency=quarterly{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Quarterly <span class="ex-pill-count">{{ pill_counts.quarterly }}</span>
+  </a>
+  <a class="ex-pill {% if frequency == 'yearly' %}is-active{% endif %}"
+     href="?frequency=yearly{% if paid_filter %}&paid={{ paid_filter }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Yearly <span class="ex-pill-count">{{ pill_counts.yearly }}</span>
+  </a>
+</div>
+
+{# ==================== TOOLBAR ==================== #}
+<form method="get" class="ex-toolbar">
+  {% if frequency %}<input type="hidden" name="frequency" value="{{ frequency }}">{% endif %}
+
+  <div class="ex-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by title, vendor, property, category…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?{% if frequency %}frequency={{ frequency }}&{% endif %}{% if paid_filter %}paid={{ paid_filter }}&{% endif %}{% if category_id %}category={{ category_id }}&{% endif %}sort={{ sort }}"
+         class="ex-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="paid" class="ex-select" aria-label="Filter by paid status" onchange="this.form.submit()">
+    <option value="">All payments</option>
+    <option value="paid"   {% if paid_filter == 'paid' %}selected{% endif %}>Paid</option>
+    <option value="unpaid" {% if paid_filter == 'unpaid' %}selected{% endif %}>Unpaid</option>
+  </select>
+
+  <select name="category" class="ex-select" aria-label="Filter by category" onchange="this.form.submit()">
+    <option value="">All categories</option>
+    {% for c in categories %}
+      <option value="{{ c.id }}" {% if category_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="sort" class="ex-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="newest"     {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+    <option value="oldest"     {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+    <option value="amount"     {% if sort == 'amount' %}selected{% endif %}>Highest amount</option>
+    <option value="amount_asc" {% if sort == 'amount_asc' %}selected{% endif %}>Lowest amount</option>
+    <option value="title"      {% if sort == 'title' %}selected{% endif %}>Title A → Z</option>
+  </select>
+</form>
+
+{# ==================== TABLE OR EMPTY ==================== #}
+{% if expenses %}
+
+  <div class="ex-count-row">
+    <span class="ex-count">
+      {{ filtered_count }} expense{{ filtered_count|pluralize }} · KES {{ filtered_total|floatformat:0|intcomma }} total
+    </span>
+  </div>
+
+  <div class="table-wrap ex-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Title</th>
+          <th>Property</th>
+          <th>Category</th>
+          <th>Frequency</th>
+          <th class="ex-num">Amount</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in expenses %}
+          <tr>
+            <td data-label="Date" class="ex-date">
+              {{ e.expense_date|date:"d M Y" }}
+              <span class="ex-ledger-dot" title="Posted to ledger" aria-label="Posted to ledger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+            </td>
+            <td data-label="Title">
+              <div class="ex-title">{{ e.title }}</div>
+              {% if e.vendor %}<div class="ex-sub">{{ e.vendor }}</div>{% endif %}
+            </td>
+            <td data-label="Property">{{ e.property.name|default:"—" }}</td>
+            <td data-label="Category">
+              {% if e.category %}
+                <span class="ex-tag">{{ e.category.name }}</span>
+              {% else %}
+                <span class="ex-tag ex-tag-gray">Uncategorised</span>
+              {% endif %}
+            </td>
+            <td data-label="Frequency">
+              <span class="ex-tag ex-tag-gray">{{ e.get_frequency_display }}</span>
+            </td>
+            <td data-label="Amount" class="ex-num">
+              <strong>KES {{ e.amount|floatformat:0|intcomma }}</strong>
+            </td>
+            <td data-label="Status">
+              {% if e.paid %}
+                <span class="ex-tag ex-tag-green">Paid</span>
+              {% else %}
+                <span class="ex-tag ex-tag-amber">Unpaid</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="ex-actions">
+                <a href="{% url 'bnb_expense_edit' e.id %}" class="btn sm secondary">Edit</a>
+                <form method="post" action="{% url 'bnb_expense_delete' e.id %}"
+                      onsubmit="return confirm('Delete this expense? The ledger row will be removed too.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn sm danger-outline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% else %}
+
+  {# ==================== EMPTY ==================== #}
+  {% if frequency or paid_filter or category_id or q %}
+    <div class="ex-empty">
+      <div class="ex-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No expenses match your filters</h4>
+      <p class="muted">Try clearing the search or switching to "All".</p>
+      <a href="{% url 'bnb_expense_list' %}" class="btn secondary" style="margin-top:14px;">
+        Clear filters
+      </a>
+    </div>
+  {% else %}
+    <div class="ex-empty">
+      <div class="ex-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <h4>No expenses recorded</h4>
+      <p class="muted">Add your first expense — it posts to the ledger automatically.</p>
+      <a href="{% url 'bnb_expense_add' %}" class="btn" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add expense
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .ex-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ex-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .ex-head p { font-size: 13px; }
+  .ex-head-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* ============================================================ */
+  /*  KPI ROW                                                     */
+  /* ============================================================ */
+  .ex-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 14px;
+  }
+  @media (max-width: 720px) { .ex-kpis { grid-template-columns: 1fr; } }
+
+  .ex-kpi {
+    position: relative; padding: 14px 18px;
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .ex-kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .ex-kpi-all::before    { background: #94a3b8; }
+  .ex-kpi-month::before  { background: #0ea5e9; }
+  .ex-kpi-unpaid::before { background: #f59e0b; }
+
+  .ex-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .ex-kpi-value {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.5px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .ex-kpi-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 4px; }
+
+  /* VAT hint strip */
+  .ex-vat-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    line-height: 1.5;
+  }
+  .ex-vat-hint.is-on  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .ex-vat-hint.is-off { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+  .ex-vat-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148,163,184,0.22);
+    flex-shrink: 0;
+  }
+  .ex-vat-hint.is-on .ex-vat-dot {
+    background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.22);
+  }
+  .ex-vat-hint a {
+    color: var(--brand-1);
+    font-weight: 700;
+    margin-left: 4px;
+    text-decoration: none;
+  }
+  .ex-vat-hint a:hover { text-decoration: underline; }
+
+  /* ============================================================ */
+  /*  FILTER PILLS                                                */
+  /* ============================================================ */
+  .ex-pills {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .ex-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 700;
+    background: #fff; color: var(--muted);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .ex-pill:hover { background: #f8fafc; color: var(--text-2); border-color: #cbd5e1; }
+  .ex-pill.is-active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .ex-pill-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 6px;
+    border-radius: 999px; font-size: 10.5px; font-weight: 800;
+    background: #f1f5f9; color: var(--muted);
+  }
+  .ex-pill.is-active .ex-pill-count {
+    background: rgba(255,255,255,0.25); color: #fff;
+  }
+
+  /* ============================================================ */
+  /*  TOOLBAR                                                     */
+  /* ============================================================ */
+  .ex-toolbar {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 16px; flex-wrap: nowrap; width: 100%;
+  }
+  .ex-search {
+    position: relative; flex: 1 1 auto; min-width: 180px;
+  }
+  .ex-search svg {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2); pointer-events: none;
+  }
+  .ex-search input {
+    width: 100%;
+    padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff; color: var(--text);
+    outline: none; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .ex-search input::placeholder { color: var(--muted-2); }
+  .ex-search input:hover { border-color: #cbd5e1; }
+  .ex-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .ex-search-reset {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #e2e8f0; color: #475569;
+    text-decoration: none; font-size: 14px; font-weight: 700;
+    line-height: 1;
+  }
+  .ex-search-reset:hover { background: #cbd5e1; }
+
+  .ex-select {
+    flex: 0 1 auto; padding: 10px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px; font-size: 13px;
+    background: #fff; color: var(--text);
+    cursor: pointer; font-family: inherit;
+    outline: none; min-width: 0; max-width: 160px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .ex-select:hover { border-color: #cbd5e1; }
+  .ex-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* ============================================================ */
+  /*  COUNT ROW                                                   */
+  /* ============================================================ */
+  .ex-count-row { margin-bottom: 10px; }
+  .ex-count {
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted-2);
+  }
+
+  /* ============================================================ */
+  /*  TABLE                                                       */
+  /* ============================================================ */
+  .ex-table { margin-bottom: 20px; }
+  .ex-date {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+  .ex-title { font-weight: 700; color: var(--text); }
+  .ex-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .ex-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ex-actions {
+    display: flex; gap: 6px;
+    justify-content: flex-end;
+    white-space: nowrap;
+  }
+
+  .ex-ledger-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #047857;
+    vertical-align: middle;
+    flex-shrink: 0;
+    border: 1px solid #a7f3d0;
+  }
+  .ex-ledger-dot svg { width: 9px; height: 9px; }
+
+  .ex-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #eff6ff; color: #1e40af;
+    border: 1px solid #bfdbfe;
+    white-space: nowrap;
+  }
+  .ex-tag-gray  { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .ex-tag-green { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .ex-tag-amber { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+  /* ============================================================ */
+  /*  EMPTY                                                       */
+  /* ============================================================ */
+  .ex-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+    margin-bottom: 24px;
+  }
+  .ex-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .ex-empty-ico svg { width: 26px; height: 26px; }
+  .ex-empty h4 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .ex-empty p {
+    font-size: 13px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 720px) {
+    .ex-toolbar { gap: 6px; }
+    .ex-search { min-width: 120px; }
+    .ex-select {
+      padding: 10px 8px;
+      font-size: 12.5px;
+      max-width: 110px;
+    }
+    .ex-search input {
+      padding: 10px 30px 10px 34px;
+      font-size: 12.5px;
+    }
+    .ex-pills { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+    .ex-pills::-webkit-scrollbar { height: 0; }
+  }
+
+  @media (max-width: 480px) {
+    .ex-search { min-width: 100px; }
+    .ex-search input::placeholder { color: transparent; }
+    .ex-select {
+      max-width: 90px;
+      font-size: 12px;
+      padding: 10px 6px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ex-pill { transition: none; }
+  }
+</style>
+{% endblock %}

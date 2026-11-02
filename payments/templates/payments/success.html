@@ -1,0 +1,128 @@
+{% extends 'payments/base.html' %}
+{% block pay_title %}Payment successful{% endblock %}
+
+{% block pay_content %}
+
+<div class="pay-card pay-success">
+  <div class="success-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  </div>
+
+  <h1 class="success-title">Payment successful</h1>
+  <p class="success-text">
+    Thank you! Your booking is confirmed and your receipt is ready.
+  </p>
+
+  <div class="success-refs">
+    <div class="success-ref">
+      <span>Booking</span>
+      <strong>{{ booking.reference }}</strong>
+    </div>
+    {% if receipt %}
+      <div class="success-ref">
+        <span>Receipt</span>
+        <strong>{{ receipt.number }}</strong>
+      </div>
+    {% endif %}
+    <div class="success-ref">
+      <span>Amount</span>
+      <strong>KES {{ booking.amount_paid|floatformat:2 }}</strong>
+    </div>
+    {% if booking.start_date %}
+      <div class="success-ref">
+        <span>Date</span>
+        <strong>{{ booking.start_date|date:"D, d M Y" }}</strong>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="success-actions">
+    {% if receipt %}
+      <a href="{% url 'payments:receipt_detail' receipt.pk %}" class="mkt-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        View receipt
+      </a>
+    {% endif %}
+    <a href="{% url 'guestaccount:booking_detail' booking.pk %}" class="mkt-btn outline">
+      View booking
+    </a>
+    <a href="{% url 'marketplace:home' %}" class="mkt-btn ghost">
+      Keep browsing
+    </a>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block pay_extra_head %}
+<style>
+  .pay-success { text-align: center; padding: 34px 26px; }
+
+  .success-icon {
+    width: 80px; height: 80px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #047857;
+    box-shadow: 0 12px 30px rgba(16,185,129,0.28);
+    border: 1px solid #6ee7b7;
+    animation: pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  }
+  @keyframes pop {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .success-icon svg { width: 38px; height: 38px; }
+
+  .success-title {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .success-text {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.6; max-width: 460px;
+    margin: 0 auto 24px;
+  }
+
+  .success-refs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 480px;
+    margin: 0 auto 26px;
+  }
+  @media (max-width: 480px) { .success-refs { grid-template-columns: 1fr; } }
+
+  .success-ref {
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    text-align: left;
+  }
+  .success-ref span {
+    display: block;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2); font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .success-ref strong {
+    display: block;
+    font-size: 13.5px; color: var(--text);
+    font-weight: 700;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.3px;
+    word-break: break-word;
+  }
+
+  .success-actions {
+    display: flex; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .success-actions .mkt-btn { padding: 12px 18px; font-size: 13.5px; }
+</style>
+{% endblock %}

@@ -1,0 +1,628 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}My receipts{% endblock %}
+
+{% block ga_content %}
+
+<!-- ==================== HEADER ==================== -->
+<div class="ga-header">
+  <span class="ga-eyebrow">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    Documents
+  </span>
+  <h1>Receipts</h1>
+  <p>
+    {% if receipts %}
+      You have {{ receipts|length }} receipt{{ receipts|length|pluralize }} on record — download or view any of them anytime.
+    {% else %}
+      Every completed payment generates a receipt. They'll all appear here.
+    {% endif %}
+  </p>
+</div>
+
+{% if receipts %}
+
+<!-- ==================== KPIs ==================== -->
+<div class="ga-kpis">
+  <div class="ga-kpi">
+    <div class="ga-kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="14" x2="15" y2="14"/>
+        <line x1="9" y1="18" x2="13" y2="18"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ga-kpi-value">{{ receipts|length }}</div>
+      <div class="ga-kpi-label">Total receipts</div>
+    </div>
+  </div>
+
+  <div class="ga-kpi">
+    <div class="ga-kpi-icon green" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ga-kpi-value" id="kpiTotal">KES 0</div>
+      <div class="ga-kpi-label">Total paid</div>
+    </div>
+  </div>
+
+  <div class="ga-kpi">
+    <div class="ga-kpi-icon amber" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ga-kpi-value" id="kpiLatest">—</div>
+      <div class="ga-kpi-label">Latest issued</div>
+    </div>
+  </div>
+
+  <div class="ga-kpi">
+    <div class="ga-kpi-icon rose" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="ga-kpi-value" id="kpiBusinesses">0</div>
+      <div class="ga-kpi-label">Businesses paid</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOOLBAR ==================== -->
+<div class="rl-toolbar">
+  <div class="rl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="rlSearch" placeholder="Search by receipt #, listing, or business…" autocomplete="off" aria-label="Search receipts">
+  </div>
+  <div class="rl-count" id="rlCount">{{ receipts|length }} receipt{{ receipts|length|pluralize }}</div>
+</div>
+
+<!-- ==================== RECEIPTS GRID ==================== -->
+<div class="ga-grid" id="rlGrid">
+  {% for r in receipts %}
+    <a href="{% url 'payments:receipt_detail' r.pk %}"
+       class="rl-card"
+       data-search="{{ r.number|lower }} {{ r.guest_booking.listing.title|lower }} {{ r.business_name|lower }} {{ r.customer_name|lower }}">
+
+      <!-- Left accent strip -->
+      <div class="rl-accent" aria-hidden="true"></div>
+
+      <!-- Top row: icon + receipt status -->
+      <div class="rl-card-top">
+        <div class="rl-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="14" x2="15" y2="14"/>
+            <line x1="9" y1="18" x2="13" y2="18"/>
+          </svg>
+        </div>
+        <span class="rl-badge">
+          <span class="dot"></span>
+          Paid
+        </span>
+      </div>
+
+      <!-- Receipt number -->
+      <div class="rl-number">{{ r.number }}</div>
+
+      <!-- Description -->
+      <div class="rl-desc">
+        <strong title="{{ r.guest_booking.listing.title }}">{{ r.guest_booking.listing.title|truncatechars:44 }}</strong>
+        {% if r.business_name %}
+          <span title="{{ r.business_name }}">{{ r.business_name }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Meta -->
+      <div class="rl-meta">
+        <span title="Issued {{ r.issued_at|date:'d M Y' }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          {{ r.issued_at|date:"d M Y" }}
+        </span>
+        {% if r.guest_booking.reference %}
+          <span title="Booking {{ r.guest_booking.reference }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 7h-9"/>
+              <path d="M14 17H5"/>
+              <circle cx="17" cy="17" r="3"/>
+              <circle cx="7" cy="7" r="3"/>
+            </svg>
+            {{ r.guest_booking.reference }}
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Footer: amount + arrow -->
+      <div class="rl-footer">
+        <div class="rl-amount">
+          <span class="rl-amount-label">Amount paid</span>
+          <strong>KES {{ r.amount|floatformat:2 }}</strong>
+        </div>
+        <span class="rl-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </span>
+      </div>
+
+    </a>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="rl-empty-filter" id="rlEmptyFilter" hidden>
+  <div class="ga-empty-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No receipts match your search</h4>
+  <p>Try a different receipt number or listing name.</p>
+</div>
+
+{% else %}
+
+<!-- ==================== EMPTY STATE ==================== -->
+<div class="ga-empty rl-empty-wrap">
+  <div class="ga-empty-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="9" y1="14" x2="15" y2="14"/>
+      <line x1="9" y1="18" x2="13" y2="18"/>
+    </svg>
+  </div>
+  <h4>No receipts yet</h4>
+  <p>When you complete a payment on StayHub, your receipt will be issued instantly and appear right here — ready to download at any time.</p>
+  <a href="{% url 'marketplace:home' %}" class="rl-btn rl-btn-primary" style="margin-top:18px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Browse listings
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     RECEIPT LIST
+     ================================================================ */
+
+  /* ---- Toolbar ---- */
+  .rl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 24px 0 20px;
+  }
+  .rl-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 440px;
+  }
+  .rl-search svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2, #8b94a8);
+    pointer-events: none;
+  }
+  .rl-search input {
+    width: 100%;
+    padding: 11px 16px 11px 40px;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 999px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text, #0b1220);
+    outline: none;
+    font-family: inherit;
+    transition:
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rl-search input::placeholder { color: var(--muted-2, #8b94a8); }
+  .rl-search input:hover { border-color: #cbd5e1; }
+  .rl-search input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .rl-count {
+    font-size: 12.5px;
+    color: var(--muted, #5b657a);
+    font-weight: 700;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 999px;
+    box-shadow:
+      0 1px 2px rgba(15,23,42,0.04),
+      0 1px 3px rgba(15,23,42,0.03);
+    white-space: nowrap;
+  }
+
+  /* ---- Receipt card ---- */
+  .rl-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px;
+    padding: 18px 20px 16px 24px;
+    box-shadow:
+      0 1px 2px rgba(15,23,42,0.04),
+      0 1px 3px rgba(15,23,42,0.03);
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    min-height: 220px;
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rl-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 20px 44px -12px rgba(15,23,42,0.14),
+      0 8px 16px -8px rgba(15,23,42,0.06);
+    border-color: #dbe2f0;
+  }
+  .rl-card:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+  }
+
+  /* Left accent strip */
+  .rl-accent {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #10b981 0%, #34d399 100%);
+  }
+
+  /* Top row */
+  .rl-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .rl-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    box-shadow:
+      0 6px 14px -4px rgba(16,185,129,0.22),
+      inset 0 1px 0 rgba(255,255,255,0.65);
+  }
+  .rl-icon svg { width: 20px; height: 20px; }
+
+  .rl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .rl-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16,185,129,0.22);
+  }
+
+  /* Receipt number */
+  .rl-number {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    letter-spacing: 0.02em;
+    margin-bottom: 12px;
+    align-self: flex-start;
+  }
+
+  /* Description */
+  .rl-desc { margin-bottom: 14px; min-width: 0; }
+  .rl-desc strong {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.2px;
+    line-height: 1.35;
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rl-desc span {
+    display: block;
+    font-size: 12px;
+    color: var(--muted, #5b657a);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Meta row */
+  .rl-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted, #5b657a);
+    padding: 12px 0;
+    border-top: 1px dashed var(--line-2, #f2f4fa);
+    border-bottom: 1px dashed var(--line-2, #f2f4fa);
+    margin-bottom: 14px;
+  }
+  .rl-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+  .rl-meta svg {
+    width: 12px; height: 12px;
+    color: var(--muted-2, #8b94a8);
+    flex: 0 0 12px;
+  }
+
+  /* Footer: amount + arrow */
+  .rl-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .rl-amount {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .rl-amount-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2, #8b94a8);
+    font-weight: 700;
+  }
+  .rl-amount strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: #047857;
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .rl-arrow {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: #f1f5f9;
+    border: 1px solid var(--line, #eaedf4);
+    display: grid; place-items: center;
+    color: var(--muted, #5b657a);
+    flex-shrink: 0;
+    transition:
+      color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rl-arrow svg { width: 15px; height: 15px; }
+  .rl-card:hover .rl-arrow {
+    color: #fff;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: transparent;
+    transform: translateX(3px);
+    box-shadow: 0 8px 16px -4px rgba(16,185,129,0.42);
+  }
+
+  /* ---- Filtered-empty state ---- */
+  .rl-empty-filter {
+    text-align: center;
+    padding: 52px 24px;
+    background:
+      radial-gradient(520px 240px at 50% 0%, rgba(99,102,241,0.06), transparent 60%),
+      #fff;
+    border: 1px dashed var(--line, #eaedf4);
+    border-radius: 20px;
+    margin-top: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .rl-empty-filter::before {
+    content: "";
+    position: absolute;
+    top: -20%; left: 50%;
+    transform: translateX(-50%);
+    width: 400px; height: 200px;
+    background: radial-gradient(circle, rgba(99,102,241,0.10), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .rl-empty-filter h4 {
+    font-size: 16.5px;
+    font-weight: 800;
+    color: var(--text, #0b1220);
+    letter-spacing: -0.2px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .rl-empty-filter p {
+    font-size: 13.5px;
+    color: var(--muted, #5b657a);
+    max-width: 360px;
+    margin: 0 auto;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  /* Empty-state button */
+  .rl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    font-family: inherit;
+    border: 1px solid transparent;
+    transition:
+      filter 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rl-btn svg { width: 15px; height: 15px; }
+  .rl-btn:active { transform: translateY(1px); }
+  .rl-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+  .rl-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow:
+      0 12px 26px -8px rgba(99,102,241,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .rl-btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 34px -8px rgba(99,102,241,0.65);
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 640px) {
+    .rl-card { padding: 16px 18px 14px 22px; min-height: 0; border-radius: 16px; }
+    .rl-amount strong { font-size: 16.5px; }
+    .rl-number { font-size: 12px; }
+    .rl-desc strong { font-size: 13.5px; }
+    .rl-meta span { max-width: 120px; }
+  }
+
+  /* ---- Reduced motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}
+
+
+{% block ga_extra_js %}
+<script>
+  (function () {
+    // ---- Search filter ----
+    var search = document.getElementById('rlSearch');
+    var cards  = document.querySelectorAll('.rl-card');
+    var grid   = document.getElementById('rlGrid');
+    var count  = document.getElementById('rlCount');
+    var empty  = document.getElementById('rlEmptyFilter');
+
+    function apply() {
+      if (!grid || !search) return;
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) count.textContent = visible + ' receipt' + (visible === 1 ? '' : 's');
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      grid.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+
+    // ---- KPIs computed client-side ----
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    var total = 0;
+    var businesses = {};
+    var latest = null;
+
+    cards.forEach(function (c) {
+      var amtEl = c.querySelector('.rl-amount strong');
+      if (amtEl) {
+        var n = parseFloat((amtEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(n)) total += n;
+      }
+      var bizEl = c.querySelector('.rl-desc span');
+      if (bizEl) {
+        var b = (bizEl.textContent || '').trim().toLowerCase();
+        if (b) businesses[b] = true;
+      }
+      var dateEl = c.querySelector('.rl-meta span');
+      if (dateEl && !latest) {
+        latest = (dateEl.textContent || '').trim();
+      }
+    });
+
+    setText('kpiTotal', 'KES ' + total.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+    setText('kpiBusinesses', Object.keys(businesses).length);
+    setText('kpiLatest', latest || '—');
+  })();
+</script>
+{% endblock %}

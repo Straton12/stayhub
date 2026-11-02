@@ -1,0 +1,422 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Profit margin — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="pm-header">
+  <div>
+    <h1>Financial Performance</h1>
+    <p class="muted">A visual overview of your revenue, expenses, and profit over the last 12 months.</p>
+  </div>
+  <div class="pm-header-actions">
+    <a href="{% url 'bnb_finance_profit_ledger' %}" class="btn secondary sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      View Ledger
+    </a>
+  </div>
+</div>
+
+{# ==================== KPI CARDS ==================== #}
+<div class="pm-kpis">
+  <div class="pm-kpi pm-kpi-rev">
+    <div class="pm-kpi-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    </div>
+    <div class="pm-kpi-body">
+      <div class="pm-kpi-label">Total Revenue</div>
+      <div class="pm-kpi-value">KES {{ total_revenue|floatformat:0|intcomma }}</div>
+    </div>
+  </div>
+
+  <div class="pm-kpi pm-kpi-exp">
+    <div class="pm-kpi-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+    </div>
+    <div class="pm-kpi-body">
+      <div class="pm-kpi-label">Total Expenses</div>
+      <div class="pm-kpi-value">KES {{ total_expenses|floatformat:0|intcomma }}</div>
+    </div>
+  </div>
+
+  <div class="pm-kpi pm-kpi-profit {% if total_profit < 0 %}is-loss{% endif %}">
+    <div class="pm-kpi-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </div>
+    <div class="pm-kpi-body">
+      <div class="pm-kpi-label">Net Profit</div>
+      <div class="pm-kpi-value">KES {{ total_profit|floatformat:0|intcomma }}</div>
+    </div>
+  </div>
+
+  <div class="pm-kpi pm-kpi-margin {% if overall_margin < 0 %}is-loss{% endif %}">
+    <div class="pm-kpi-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+    </div>
+    <div class="pm-kpi-body">
+      <div class="pm-kpi-label">Overall Margin</div>
+      <div class="pm-kpi-value">{{ overall_margin }}<span class="pm-pct">%</span></div>
+    </div>
+  </div>
+</div>
+
+{# ==================== CHART ROW ==================== #}
+<div class="pm-chart-card">
+  <div class="pm-chart-head">
+    <div>
+      <h3 class="pm-chart-title">Revenue vs Expenses</h3>
+      <p class="pm-chart-sub">12-month trend</p>
+    </div>
+    <div class="pm-legend">
+      <span class="pm-legend-item"><span class="pm-dot pm-dot-rev"></span>Revenue</span>
+      <span class="pm-legend-item"><span class="pm-dot pm-dot-exp"></span>Expenses</span>
+    </div>
+  </div>
+  <div class="pm-chart-wrap">
+    <canvas id="pmChart"></canvas>
+  </div>
+</div>
+
+{# ==================== MONTHLY GRID ==================== #}
+<div class="pm-section-head">
+  <h2>Monthly Breakdown</h2>
+  <div class="pm-highlights">
+    <span class="pm-hl pm-hl-green">Best: {{ best_month.month|date:"M Y" }} ({{ best_month.margin }}%)</span>
+    <span class="pm-hl pm-hl-red">Worst: {{ worst_month.month|date:"M Y" }} ({{ worst_month.margin }}%)</span>
+  </div>
+</div>
+
+<div class="pm-grid">
+  {% for m in monthly_data %}
+    <div class="pm-card {% if not m.positive %}pm-card-loss{% endif %}">
+      
+      <!-- Card Header -->
+      <div class="pm-card-head">
+        <div class="pm-card-month">{{ m.month|date:"F Y" }}</div>
+        <div class="pm-card-margin {% if m.margin >= 20 %}text-green{% elif m.margin >= 0 %}text-blue{% else %}text-red{% endif %}">
+          {{ m.margin }}% Margin
+        </div>
+      </div>
+
+      <!-- Visual Bars -->
+      <div class="pm-card-visuals">
+        <!-- Revenue Bar -->
+        <div class="pm-visual-row">
+          <span class="pm-v-label">Rev</span>
+          <div class="pm-v-track">
+            <div class="pm-v-bar pm-v-bar-green" style="width: {{ m.rev_pct }}%;"></div>
+          </div>
+          <span class="pm-v-amount">KES {{ m.revenue|floatformat:0|intcomma }}</span>
+        </div>
+        <!-- Expense Bar -->
+        <div class="pm-visual-row">
+          <span class="pm-v-label">Exp</span>
+          <div class="pm-v-track">
+            <div class="pm-v-bar pm-v-bar-amber" style="width: {{ m.exp_pct }}%;"></div>
+          </div>
+          <span class="pm-v-amount">KES {{ m.expenses|floatformat:0|intcomma }}</span>
+        </div>
+      </div>
+
+      <!-- Card Footer (Profit) -->
+      <div class="pm-card-foot {% if m.positive %}is-profit{% else %}is-loss{% endif %}">
+        <div class="pm-cf-label">Net Profit</div>
+        <div class="pm-cf-value">
+          {% if m.profit >= 0 %}+{% endif %}KES {{ m.profit|floatformat:0|intcomma }}
+        </div>
+      </div>
+
+    </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<!-- Load Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  /* ============================================================ */
+  /*  HEADER                                                      */
+  /* ============================================================ */
+  .pm-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .pm-header h1 {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .pm-header p { font-size: 13.5px; max-width: 600px; line-height: 1.5; }
+  .pm-header-actions { display: flex; gap: 8px; }
+
+  /* ============================================================ */
+  /*  KPI CARDS (Modern with Icons)                               */
+  /* ============================================================ */
+  .pm-kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; margin-bottom: 24px;
+  }
+  @media (max-width: 1024px) { .pm-kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .pm-kpis { grid-template-columns: 1fr; } }
+
+  .pm-kpi {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px; background: #fff;
+    border: 1px solid var(--line-2); border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(15,23,42,0.03);
+    transition: transform 0.15s;
+  }
+  .pm-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  
+  .pm-kpi-icon {
+    flex: 0 0 48px; width: 48px; height: 48px;
+    border-radius: 14px; display: grid; place-items: center;
+  }
+  .pm-kpi-icon svg { width: 22px; height: 22px; }
+
+  .pm-kpi-rev .pm-kpi-icon { background: #ecfdf5; color: #10b981; }
+  .pm-kpi-exp .pm-kpi-icon { background: #fffbeb; color: #f59e0b; }
+  .pm-kpi-profit .pm-kpi-icon { background: #eff6ff; color: #3b82f6; }
+  .pm-kpi-profit.is-loss .pm-kpi-icon { background: #fef2f2; color: #ef4444; }
+  .pm-kpi-margin .pm-kpi-icon { background: #f5f3ff; color: #8b5cf6; }
+
+  .pm-kpi-body { flex: 1; min-width: 0; }
+  .pm-kpi-label {
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted-2); margin-bottom: 4px;
+  }
+  .pm-kpi-value {
+    font-size: 22px; font-weight: 900; color: var(--text);
+    letter-spacing: -0.5px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pm-kpi-profit.is-loss .pm-kpi-value { color: #b91c1c; }
+  .pm-pct { font-size: 14px; font-weight: 700; color: var(--muted); margin-left: 2px; }
+
+  /* ============================================================ */
+  /*  CHART SECTION                                               */
+  /* ============================================================ */
+  .pm-chart-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    margin-bottom: 32px; overflow: hidden;
+  }
+  .pm-chart-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--line-2);
+    background: #fafbfd;
+  }
+  .pm-chart-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; }
+  .pm-chart-sub { font-size: 12px; color: var(--muted-2); margin: 2px 0 0; }
+  
+  .pm-legend { display: flex; gap: 16px; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .pm-legend-item { display: flex; align-items: center; gap: 6px; }
+  .pm-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .pm-dot-rev { background: #10b981; }
+  .pm-dot-exp { background: #f59e0b; }
+
+  .pm-chart-wrap {
+    padding: 20px; height: 320px; width: 100%;
+  }
+
+  /* ============================================================ */
+  /*  MONTHLY GRID (The Cards)                                    */
+  /* ============================================================ */
+  .pm-section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .pm-section-head h2 { font-size: 18px; font-weight: 800; color: var(--text); margin: 0; }
+  .pm-highlights { display: flex; gap: 12px; flex-wrap: wrap; }
+  .pm-hl {
+    font-size: 11.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 6px;
+  }
+  .pm-hl-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .pm-hl-red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+  .pm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  /* Individual Card */
+  .pm-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .pm-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .pm-card-loss { border-color: #fecaca; }
+
+  .pm-card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; background: #fafbfd;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .pm-card-month { font-size: 13.5px; font-weight: 800; color: var(--text); }
+  .pm-card-margin {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 2px 8px; border-radius: 99px;
+  }
+  .text-green { color: #047857; background: #ecfdf5; }
+  .text-blue { color: #1e40af; background: #eff6ff; }
+  .text-red { color: #b91c1c; background: #fef2f2; }
+
+  /* Visual Bars */
+  .pm-card-visuals {
+    padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .pm-visual-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .pm-v-label {
+    width: 26px; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; color: var(--muted-2);
+  }
+  .pm-v-track {
+    flex: 1; height: 8px; background: #f1f5f9;
+    border-radius: 99px; overflow: hidden;
+  }
+  .pm-v-bar { height: 100%; border-radius: 99px; }
+  .pm-v-bar-green { background: #10b981; }
+  .pm-v-bar-amber { background: #f59e0b; }
+  
+  .pm-v-amount {
+    width: 70px; text-align: right;
+    font-size: 11.5px; font-weight: 700; color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Card Footer */
+  .pm-card-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; margin-top: auto;
+    border-top: 1px dashed var(--line-2);
+  }
+  .pm-cf-label { font-size: 11px; font-weight: 700; color: var(--muted-2); }
+  .pm-cf-value {
+    font-size: 14px; font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+  .pm-card-foot.is-profit { background: #f0fdf4; }
+  .pm-card-foot.is-profit .pm-cf-value { color: #15803d; }
+  
+  .pm-card-foot.is-loss { background: #fef2f2; }
+  .pm-card-foot.is-loss .pm-cf-value { color: #b91c1c; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var ctx = document.getElementById('pmChart').getContext('2d');
+    
+    var labels = {{ chart_labels|safe }};
+    var revData = {{ chart_revenue|safe }};
+    var expData = {{ chart_expenses|safe }};
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Revenue',
+            data: revData,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#10b981',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Expenses',
+            data: expData,
+            borderColor: '#f59e0b',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#f59e0b',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            titleFont: { size: 13, family: 'system-ui' },
+            bodyFont: { size: 13, family: 'system-ui' },
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(context.parsed.y);
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: '#f1f5f9', drawBorder: false },
+            ticks: {
+              callback: function(value) {
+                if (value >= 1000) {
+                  return 'KES ' + (value / 1000) + 'k';
+                }
+                return 'KES ' + value;
+              },
+              font: { size: 11, family: 'system-ui' },
+              color: '#64748b'
+            }
+          },
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: {
+              font: { size: 11, family: 'system-ui' },
+              color: '#64748b'
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

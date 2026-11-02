@@ -1,0 +1,273 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Reports — StayHub{% endblock %}
+{% block page_title %}Reports &amp; Analytics{% endblock %}
+{% block breadcrumb %}<span class="crumb">Reports</span>{% endblock %}
+
+{% block content %}
+
+<!-- Date range filter -->
+<form method="get" class="rp-filter">
+  <div class="rp-filter-left">
+    <div class="rp-field">
+      <label for="from">From</label>
+      <input type="date" id="from" name="from" value="{{ start|date:'Y-m-d' }}" class="input">
+    </div>
+    <div class="rp-field">
+      <label for="to">To</label>
+      <input type="date" id="to" name="to" value="{{ end|date:'Y-m-d' }}" class="input">
+    </div>
+    <button class="btn" type="submit">Apply</button>
+    <a href="{% url 'restaurant_reports' %}" class="btn secondary">Reset</a>
+  </div>
+  <div class="rp-filter-right">
+    <span class="tag blue" style="font-size:12px; padding:5px 12px;">
+      {{ start|date:"M j" }} – {{ end|date:"M j, Y" }}
+    </span>
+  </div>
+</form>
+
+<!-- KPI grid -->
+<div class="grid-4 mb">
+  <div class="rp-card kpi-green">
+    <div class="rp-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <h3>Revenue</h3>
+    <div class="rp-value">KES {{ revenue|floatformat:0 }}</div>
+    <div class="rp-sub">From {{ order_count }} order{{ order_count|pluralize }}</div>
+  </div>
+
+  <div class="rp-card kpi-rose">
+    <div class="rp-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h18v4H3z"/>
+        <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+      </svg>
+    </div>
+    <h3>Purchases</h3>
+    <div class="rp-value">KES {{ purchases|floatformat:0 }}</div>
+    <div class="rp-sub">Purchase orders created</div>
+  </div>
+
+  <div class="rp-card {% if gross_margin >= 0 %}kpi-blue{% else %}kpi-rose{% endif %}">
+    <div class="rp-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <h3>Gross Margin</h3>
+    <div class="rp-value">KES {{ gross_margin|floatformat:0 }}</div>
+    <div class="rp-sub">Revenue – Purchases</div>
+  </div>
+
+  <div class="rp-card kpi-purple">
+    <div class="rp-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <h3>Avg. Order</h3>
+    <div class="rp-value">KES {{ avg_order|floatformat:0 }}</div>
+    <div class="rp-sub">Average per order</div>
+  </div>
+</div>
+
+<!-- Top items table -->
+<div class="page-head">
+  <div>
+    <h3 class="section-title">Top-selling dishes</h3>
+    <p class="muted" style="margin-top:4px;">
+      {% if top_items %}
+        Best performers by quantity in this period.
+      {% else %}
+        No sales in this period yet.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="table-wrap mb">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px;">#</th>
+        <th>Dish</th>
+        <th class="right">Qty sold</th>
+        <th class="right">Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in top_items %}
+      <tr>
+        <td>
+          <span class="rp-rank 
+            {% if forloop.counter == 1 %}rp-rank-1
+            {% elif forloop.counter == 2 %}rp-rank-2
+            {% elif forloop.counter == 3 %}rp-rank-3{% endif %}">
+            {{ forloop.counter }}
+          </span>
+        </td>
+        <td><strong>{{ item.name_snapshot }}</strong></td>
+        <td class="right">{{ item.total_qty }}</td>
+        <td class="right rp-money">KES {{ item.total_revenue|floatformat:0 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">
+          <div class="empty">
+            <h4>No sales yet</h4>
+            <p>Once orders are marked delivered, top sellers appear here.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     REPORTS PAGE
+     ============================================================ */
+
+  /* Filter bar */
+  .rp-filter {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rp-filter-left {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .rp-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+  .rp-field .input {
+    margin-bottom: 0;
+    max-width: 180px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .rp-filter-right {
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- KPI grid ---- */
+  .grid-4 {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .rp-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--line-2);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .rp-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .rp-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    margin-bottom: 14px;
+  }
+  .rp-icon svg { width: 18px; height: 18px; }
+
+  .rp-card h3 {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .rp-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .rp-sub {
+    font-size: 12px;
+    color: var(--muted-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Card color variants */
+  .kpi-green .rp-icon  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .kpi-blue .rp-icon   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .kpi-rose .rp-icon   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .kpi-purple .rp-icon { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+  /* ---- Top items table ---- */
+  .rp-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 12px;
+  }
+  .rp-rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; }
+  .rp-rank-2 { background: linear-gradient(135deg, #e2e8f0, #cbd5e1); color: #334155; }
+  .rp-rank-3 { background: linear-gradient(135deg, #fde68a, #fbbf24); color: #78350f; }
+
+  .rp-money {
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .grid-4 { grid-template-columns: 1fr; }
+    .rp-filter { flex-direction: column; align-items: stretch; }
+    .rp-filter-left { flex-direction: column; align-items: stretch; }
+    .rp-field .input { max-width: 100%; }
+    .rp-value { font-size: 20px; }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,703 @@
+{% extends 'bnb/bookingssub_base.html' %}
+{% load humanize %}
+{% block title %}Booking calendar — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="bc-head">
+  <div class="bc-head-main">
+    <h1>Booking calendar</h1>
+    <p class="muted">
+      {{ month_bookings_count }} booking{{ month_bookings_count|pluralize }} in {{ month_name }}
+      {% if not is_current_month %}· {{ total_bookings_count }} total{% endif %}
+    </p>
+  </div>
+
+  <div class="bc-nav">
+    <a href="{{ prev_url }}" class="bc-nav-btn" aria-label="Previous month">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </a>
+    <a href="{{ this_url }}" class="bc-nav-label {% if is_current_month %}is-today{% endif %}">
+      {{ month_name }}
+    </a>
+    <a href="{{ next_url }}" class="bc-nav-btn" aria-label="Next month">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </a>
+    {% if not is_current_month %}
+      <a href="{{ this_url }}" class="bc-today-btn">Today</a>
+    {% endif %}
+  </div>
+</div>
+
+{# ==================== SUMMARY STRIP ==================== #}
+{% if property_summary or status_summary %}
+  <div class="bc-summary">
+    {% if property_summary %}
+      <div class="bc-summary-card">
+        <div class="bc-summary-head">By property</div>
+        <ul class="bc-summary-list">
+          {% for p in property_summary %}
+            <li>
+              <span class="bc-summary-dot" style="background: {{ p.color }};"></span>
+              <span class="bc-summary-name">{{ p.name|truncatechars:22 }}</span>
+              <span class="bc-summary-bar">
+                <span style="width: {% widthratio p.count month_bookings_count 100 %}%; background: {{ p.color }};"></span>
+              </span>
+              <span class="bc-summary-count">{{ p.count }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if status_summary %}
+      <div class="bc-summary-card">
+        <div class="bc-summary-head">By status</div>
+        <ul class="bc-summary-list">
+          {% for s in status_summary %}
+            <li>
+              <span class="bc-summary-dot bc-summary-dot-{{ s.key }}"></span>
+              <span class="bc-summary-name">{{ s.label }}</span>
+              <span class="bc-summary-bar">
+                <span style="width: {% widthratio s.count month_bookings_count 100 %}%;" class="bc-summary-bar-{{ s.key }}"></span>
+              </span>
+              <span class="bc-summary-count">{{ s.count }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{# ==================== CALENDAR GRID ==================== #}
+<div class="bc-calendar" role="grid" aria-label="Booking calendar for {{ month_name }}">
+  <div class="bc-calendar-head" role="row">
+    {% for wd in weekday_labels %}
+      <div class="bc-calendar-dow {% if forloop.counter > 5 %}is-weekend{% endif %}" role="columnheader">{{ wd }}</div>
+    {% endfor %}
+  </div>
+
+  {% for week in weeks %}
+    <div class="bc-calendar-week" role="row">
+      {% for day in week %}
+        <div class="bc-calendar-day
+                    {% if not day.in_month %}is-outside{% endif %}
+                    {% if day.is_today %}is-today{% endif %}
+                    {% if day.is_weekend %}is-weekend{% endif %}
+                    {% if day.bookings %}has-bookings{% endif %}"
+             role="gridcell"
+             data-date="{{ day.date|date:'Y-m-d' }}">
+
+          <div class="bc-day-top">
+            <span class="bc-day-number">{{ day.date|date:"j" }}</span>
+            {% if day.is_today %}
+              <span class="bc-day-today-chip">today</span>
+            {% endif %}
+          </div>
+
+          {% if day.bookings %}
+            <div class="bc-day-bookings">
+              {% for b in day.bookings|slice:":3" %}
+                <a href="{% url 'bnb_booking_detail' b.id %}"
+                   class="bc-day-booking bc-day-booking-{{ b.status }}"
+                   style="border-left-color: {{ color_map|default_if_none:''|default:'' }};"
+                   title="{{ b.guest_name }} · {{ b.property.name }} · {{ b.get_status_display }}"
+                   data-bid="{{ b.id }}">
+                  <span class="bc-day-booking-dot" style="background: {{ color_map|default_if_none:''|default:'' }};"></span>
+                  <span class="bc-day-booking-name">{{ b.guest_name|truncatechars:14 }}</span>
+                </a>
+              {% endfor %}
+              {% if day.bookings|length > 3 %}
+                <div class="bc-day-booking-more">+{{ day.bookings|length|add:"-3" }} more</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+
+{# ==================== LEGEND ==================== #}
+{% if properties_ordered %}
+  <div class="bc-legend">
+    <span class="bc-legend-label">Legend:</span>
+    {% for pid, pname in properties_ordered %}
+      <span class="bc-legend-item">
+        <span class="bc-legend-dot" style="background: {{ color_map|default_if_none:''|default:'' }};"></span>
+        {{ pname|truncatechars:24 }}
+      </span>
+    {% endfor %}
+    <span class="bc-legend-divider" aria-hidden="true"></span>
+    <span class="bc-legend-item"><span class="bc-legend-dot bc-legend-dot-pending"></span> Pending</span>
+    <span class="bc-legend-item"><span class="bc-legend-dot bc-legend-dot-confirmed"></span> Confirmed</span>
+    <span class="bc-legend-item"><span class="bc-legend-dot bc-legend-dot-checked_in"></span> Checked in</span>
+  </div>
+{% endif %}
+
+{# ==================== LIST VIEW ==================== #}
+{% if list_bookings %}
+  <div class="bc-list-wrap">
+    <div class="bc-list-head">
+      <h2>All bookings</h2>
+      <p class="muted">Sorted by check-in date.</p>
+    </div>
+
+    <div class="bc-list">
+      {% for b in list_bookings %}
+        <div class="bc-row bc-row-{{ b.status }}">
+          <div class="bc-row-date">
+            <span class="bc-row-day">{{ b.check_in|date:"d" }}</span>
+            <span class="bc-row-month">{{ b.check_in|date:"M Y" }}</span>
+          </div>
+          <div class="bc-row-body">
+            <div class="bc-row-name">{{ b.guest_name }}</div>
+            <div class="bc-row-meta">
+              {{ b.property.name }}
+              · {{ b.check_in|date:"d M" }} → {{ b.check_out|date:"d M" }}
+              · {{ b.nights }} night{{ b.nights|pluralize }}
+            </div>
+          </div>
+          <div class="bc-row-status">
+            <span class="bc-row-pill bc-row-pill-{{ b.status }}">
+              <span class="bc-row-pill-dot"></span>
+              {{ b.get_status_display }}
+            </span>
+          </div>
+          <a href="{% url 'bnb_booking_detail' b.id %}" class="bc-row-view">
+            View
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{# ==================== EMPTY STATE ==================== #}
+{% if not list_bookings %}
+  <div class="bc-empty">
+    <div class="bc-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <h4>No bookings to show</h4>
+    <p class="muted">Once you have bookings, they'll appear on the calendar and in the list.</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .bc-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .bc-head-main { min-width: 0; flex: 1 1 auto; }
+  .bc-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .bc-head p { font-size: 13px; }
+
+  .bc-nav {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .bc-nav-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .bc-nav-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .bc-nav-btn svg { width: 14px; height: 14px; }
+
+  .bc-nav-label {
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .bc-nav-label:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .bc-nav-label.is-today {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 16px -6px rgba(14,165,233,0.45);
+  }
+
+  .bc-today-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .bc-today-btn:hover { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+
+  /* ============================================================ */
+  /*  SUMMARY                                                     */
+  /* ============================================================ */
+  .bc-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 720px) {
+    .bc-summary { grid-template-columns: 1fr; }
+  }
+
+  .bc-summary-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .bc-summary-head {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .bc-summary-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .bc-summary-list li {
+    display: grid;
+    grid-template-columns: 10px 1fr 80px 32px;
+    gap: 10px;
+    align-items: center;
+    font-size: 12.5px;
+  }
+  @media (max-width: 480px) {
+    .bc-summary-list li { grid-template-columns: 10px 1fr 32px; }
+    .bc-summary-bar { display: none; }
+  }
+
+  .bc-summary-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #94a3b8;
+  }
+  .bc-summary-dot-pending     { background: #f59e0b; }
+  .bc-summary-dot-confirmed   { background: #3b82f6; }
+  .bc-summary-dot-checked_in  { background: #10b981; }
+  .bc-summary-dot-checked_out { background: #94a3b8; }
+  .bc-summary-dot-no_show     { background: #ef4444; }
+
+  .bc-summary-name {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bc-summary-bar {
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bc-summary-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #0ea5e9;
+    transition: width .4s ease;
+  }
+  .bc-summary-bar-pending     > span, .bc-summary-bar > span.bc-summary-bar-pending     { background: #f59e0b; }
+  .bc-summary-bar-confirmed   > span, .bc-summary-bar > span.bc-summary-bar-confirmed   { background: #3b82f6; }
+  .bc-summary-bar-checked_in  > span, .bc-summary-bar > span.bc-summary-bar-checked_in  { background: #10b981; }
+  .bc-summary-bar-checked_out > span, .bc-summary-bar > span.bc-summary-bar-checked_out { background: #94a3b8; }
+  .bc-summary-bar-no_show     > span, .bc-summary-bar > span.bc-summary-bar-no_show     { background: #ef4444; }
+
+  .bc-summary-count {
+    text-align: right;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================================================ */
+  /*  CALENDAR GRID                                               */
+  /* ============================================================ */
+  .bc-calendar {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+
+  .bc-calendar-head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #fafbfd;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bc-calendar-dow {
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+  }
+  .bc-calendar-dow.is-weekend { color: #b45309; }
+
+  .bc-calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bc-calendar-week:last-child { border-bottom: none; }
+
+  .bc-calendar-day {
+    position: relative;
+    min-height: 100px;
+    padding: 8px 8px 6px;
+    border-right: 1px solid var(--line-2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background .15s;
+  }
+  .bc-calendar-day:last-child { border-right: none; }
+  .bc-calendar-day:hover { background: #f8fafc; }
+  .bc-calendar-day.is-outside { background: #fafbfd; opacity: 0.5; }
+  .bc-calendar-day.is-weekend { background: #fffaf0; }
+  .bc-calendar-day.is-outside.is-weekend { background: #fafbfd; }
+  .bc-calendar-day.is-today {
+    background: #f0f9ff;
+    box-shadow: inset 0 0 0 2px #0ea5e9;
+  }
+  .bc-calendar-day.has-bookings { background: #fefeff; }
+  .bc-calendar-day.is-today.has-bookings { background: #f0f9ff; }
+
+  @media (max-width: 900px) {
+    .bc-calendar-day { min-height: 84px; padding: 6px 6px 4px; }
+  }
+  @media (max-width: 640px) {
+    .bc-calendar-day { min-height: 64px; padding: 4px 4px 3px; gap: 2px; }
+  }
+
+  .bc-day-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2px;
+  }
+  .bc-day-number {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .bc-calendar-day.is-outside .bc-day-number { color: var(--muted-2); }
+  .bc-calendar-day.is-today .bc-day-number {
+    background: #0ea5e9;
+    color: #fff;
+    padding: 1px 7px;
+    border-radius: 999px;
+  }
+
+  .bc-day-today-chip {
+    display: none;
+  }
+  @media (min-width: 900px) {
+    .bc-day-today-chip {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0ea5e9;
+      background: #eff6ff;
+      border: 1px solid #bae6fd;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+  }
+
+  .bc-day-bookings {
+    display: flex; flex-direction: column; gap: 2px;
+    overflow: hidden;
+  }
+
+  .bc-day-booking {
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: #f8fafc;
+    border-left: 3px solid #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background .15s;
+  }
+  .bc-day-booking:hover { background: #eef2ff; }
+  .bc-day-booking-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .bc-day-booking-name {
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .bc-day-booking-pending     { background: #fffbeb; border-left-color: #f59e0b; color: #92400e; }
+  .bc-day-booking-confirmed   { background: #eff6ff; border-left-color: #3b82f6; color: #1e40af; }
+  .bc-day-booking-checked_in  { background: #ecfdf5; border-left-color: #10b981; color: #065f46; }
+  .bc-day-booking-checked_out { background: #f1f5f9; border-left-color: #94a3b8; color: #334155; }
+  .bc-day-booking-no_show     { background: #fef2f2; border-left-color: #ef4444; color: #991b1b; }
+
+  .bc-day-booking-more {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--muted-2);
+    padding: 1px 5px;
+    text-align: left;
+  }
+
+  @media (max-width: 640px) {
+    .bc-day-booking { font-size: 9px; padding: 1px 3px; gap: 3px; }
+    .bc-day-booking-dot { width: 5px; height: 5px; }
+    .bc-day-booking-name { max-width: 60px; }
+  }
+
+  /* ============================================================ */
+  /*  LEGEND                                                      */
+  /* ============================================================ */
+  .bc-legend {
+    display: flex; flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .bc-legend-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    margin-right: 2px;
+  }
+  .bc-legend-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 600;
+  }
+  .bc-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .bc-legend-dot-pending     { background: #f59e0b; }
+  .bc-legend-dot-confirmed   { background: #3b82f6; }
+  .bc-legend-dot-checked_in  { background: #10b981; }
+  .bc-legend-divider {
+    width: 1px; height: 16px;
+    background: var(--line-2);
+    margin: 0 4px;
+  }
+
+  /* ============================================================ */
+  /*  LIST VIEW                                                   */
+  /* ============================================================ */
+  .bc-list-wrap {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .bc-list-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .bc-list-head h2 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.2px;
+    margin-bottom: 3px;
+  }
+  .bc-list-head p { font-size: 12.5px; }
+
+  .bc-list {
+    display: flex; flex-direction: column;
+  }
+
+  .bc-row {
+    display: grid;
+    grid-template-columns: 74px 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-2);
+    transition: background .15s;
+  }
+  .bc-row:last-child { border-bottom: none; }
+  .bc-row:hover { background: #f8fafc; }
+  .bc-row-checked_out { opacity: 0.7; }
+
+  @media (max-width: 640px) {
+    .bc-row {
+      grid-template-columns: 56px 1fr;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .bc-row-status,
+    .bc-row-view {
+      grid-column: 2 / -1;
+      justify-self: flex-start;
+      margin-top: 4px;
+    }
+    .bc-row-view { justify-self: flex-end; }
+  }
+
+  .bc-row-date {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    border: 1px solid #7dd3fc;
+  }
+  .bc-row-day {
+    font-size: 20px; font-weight: 800;
+    color: #075985;
+    line-height: 1;
+  }
+  .bc-row-month {
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #0369a1;
+  }
+
+  .bc-row-body { min-width: 0; }
+  .bc-row-name {
+    font-size: 14px; font-weight: 800;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bc-row-meta {
+    font-size: 12px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .bc-row-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .bc-row-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .bc-row-pill-pending     { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bc-row-pill-confirmed   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bc-row-pill-checked_in  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .bc-row-pill-checked_out { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .bc-row-pill-no_show     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  .bc-row-view {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    background: #fff;
+    color: var(--brand-1);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  .bc-row-view:hover { background: #f0f9ff; border-color: #bae6fd; }
+  .bc-row-view:active { transform: translateY(1px); }
+  .bc-row-view svg { width: 11px; height: 11px; }
+
+  /* ============================================================ */
+  /*  EMPTY                                                       */
+  /* ============================================================ */
+  .bc-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .bc-empty-ico {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .bc-empty-ico svg { width: 30px; height: 30px; }
+  .bc-empty h4 {
+    font-size: 16px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .bc-empty p { font-size: 13px; max-width: 380px; margin: 0 auto; }
+</style>
+{% endblock %}

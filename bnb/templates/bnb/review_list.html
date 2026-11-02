@@ -1,0 +1,463 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Revenue — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="rv-head">
+  <div>
+    <h1>Revenue</h1>
+    <p class="muted">
+      {% if pill_counts.all %}
+        {{ pill_counts.all }} entr{{ pill_counts.all|pluralize:"y,ies" }} · side revenue across your properties.
+      {% else %}
+        No revenue entries yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_revenue_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Record revenue
+  </a>
+</div>
+
+{# ==================== KPI ROW ==================== #}
+{% if pill_counts.all %}
+<div class="rv-kpis">
+  <div class="rv-kpi rv-kpi-all">
+    <div class="rv-kpi-label">Total</div>
+    <div class="rv-kpi-value">KES {{ total_all|floatformat:0|intcomma }}</div>
+    <div class="rv-kpi-sub">{{ pill_counts.all }} entr{{ pill_counts.all|pluralize:"y,ies" }}</div>
+  </div>
+  <div class="rv-kpi rv-kpi-month">
+    <div class="rv-kpi-label">This month</div>
+    <div class="rv-kpi-value">KES {{ total_month|floatformat:0|intcomma }}</div>
+    <div class="rv-kpi-sub">Since month start</div>
+  </div>
+  <div class="rv-kpi rv-kpi-avg">
+    <div class="rv-kpi-label">Average entry</div>
+    <div class="rv-kpi-value">
+      KES {% if pill_counts.all %}{{ total_all|floatformat:0|intcomma }}{% else %}0{% endif %}
+    </div>
+    <div class="rv-kpi-sub">Per revenue entry</div>
+  </div>
+</div>
+{% endif %}
+
+{# ==================== FILTER PILLS ==================== #}
+<div class="rv-pills" role="group" aria-label="Filter by source">
+  <a class="rv-pill {% if not source %}is-active{% endif %}"
+     href="?{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}">
+    All <span class="rv-pill-count">{{ pill_counts.all }}</span>
+  </a>
+  {% for key, label in source_choices %}
+    <a class="rv-pill {% if source == key %}is-active{% endif %}"
+       href="?source={{ key }}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+      {{ label }} <span class="rv-pill-count">{{ pill_counts|default_if_none:''|dictsort:key|first }}</span>
+    </a>
+  {% endfor %}
+</div>
+
+{# ==================== TOOLBAR (one row) ==================== #}
+<form method="get" class="rv-toolbar">
+  {% if source %}<input type="hidden" name="source" value="{{ source }}">{% endif %}
+
+  <div class="rv-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by title, notes, property, guest…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?{% if source %}source={{ source }}&{% endif %}sort={{ sort }}"
+         class="rv-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="sort" class="rv-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="newest"     {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+    <option value="oldest"     {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+    <option value="amount"     {% if sort == 'amount' %}selected{% endif %}>Highest amount</option>
+    <option value="amount_asc" {% if sort == 'amount_asc' %}selected{% endif %}>Lowest amount</option>
+    <option value="title"      {% if sort == 'title' %}selected{% endif %}>Title A → Z</option>
+  </select>
+</form>
+
+{# ==================== TABLE OR EMPTY ==================== #}
+{% if revenues %}
+
+  <div class="rv-count-row">
+    <span class="rv-count">
+      {{ filtered_count }} entr{{ filtered_count|pluralize:"y,ies" }} · KES {{ filtered_total|floatformat:0|intcomma }} total
+    </span>
+  </div>
+
+  <div class="table-wrap rv-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Title</th>
+          <th>Property</th>
+          <th>Source</th>
+          <th>Booking</th>
+          <th class="rv-num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in revenues %}
+          <tr>
+            <td data-label="Date" class="rv-date">{{ r.revenue_date|date:"d M Y" }}</td>
+            <td data-label="Title">
+              <div class="rv-title">{{ r.title }}</div>
+              {% if r.notes %}<div class="rv-sub">{{ r.notes|truncatechars:50 }}</div>{% endif %}
+            </td>
+            <td data-label="Property">{{ r.property.name|default:"—" }}</td>
+            <td data-label="Source">
+              <span class="rv-tag rv-tag-{{ r.source }}">{{ r.get_source_display }}</span>
+            </td>
+            <td data-label="Booking">
+              {% if r.booking %}
+                <span class="rv-sub">{{ r.booking.guest_name|truncatechars:20 }}</span>
+              {% else %}
+                <span class="rv-muted">—</span>
+              {% endif %}
+            </td>
+            <td data-label="Amount" class="rv-num">
+              <strong>KES {{ r.amount|floatformat:0|intcomma }}</strong>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% else %}
+
+  {# ==================== EMPTY ==================== #}
+  {% if source or q %}
+    <div class="rv-empty">
+      <div class="rv-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No revenue matches your filters</h4>
+      <p class="muted">Try clearing the search or switching to "All".</p>
+      <a href="{% url 'bnb_revenue_list' %}" class="btn secondary" style="margin-top:14px;">
+        Clear filters
+      </a>
+    </div>
+  {% else %}
+    <div class="rv-empty">
+      <div class="rv-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <h4>No revenue entries</h4>
+      <p class="muted">Record side revenue like late check-outs or minibar.</p>
+      <a href="{% url 'bnb_revenue_add' %}" class="btn" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Record revenue
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .rv-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .rv-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .rv-head p { font-size: 13px; }
+
+  /* ============================================================ */
+  /*  KPI ROW                                                     */
+  /* ============================================================ */
+  .rv-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 720px) { .rv-kpis { grid-template-columns: 1fr; } }
+
+  .rv-kpi {
+    position: relative;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .rv-kpi::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .rv-kpi-all::before   { background: #94a3b8; }
+  .rv-kpi-month::before { background: #10b981; }
+  .rv-kpi-avg::before   { background: #0ea5e9; }
+
+  .rv-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .rv-kpi-value {
+    font-size: 22px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .rv-kpi-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+
+  /* ============================================================ */
+  /*  FILTER PILLS                                                */
+  /* ============================================================ */
+  .rv-pills {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .rv-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12.5px; font-weight: 700;
+    background: #fff;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .rv-pill:hover { background: #f8fafc; color: var(--text-2); border-color: #cbd5e1; }
+  .rv-pill.is-active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .rv-pill-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 800;
+    background: #f1f5f9;
+    color: var(--muted);
+  }
+  .rv-pill.is-active .rv-pill-count {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+  }
+
+  /* ============================================================ */
+  /*  TOOLBAR — ONE ROW                                           */
+  /* ============================================================ */
+  .rv-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  .rv-search {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 180px;
+  }
+  .rv-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .rv-search input {
+    width: 100%;
+    padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rv-search input::placeholder { color: var(--muted-2); }
+  .rv-search input:hover { border-color: #cbd5e1; }
+  .rv-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .rv-search-reset {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    font-size: 14px; font-weight: 700;
+    line-height: 1;
+  }
+  .rv-search-reset:hover { background: #cbd5e1; }
+
+  .rv-select {
+    flex: 0 1 auto;
+    padding: 10px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+    max-width: 180px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rv-select:hover { border-color: #cbd5e1; }
+  .rv-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* ============================================================ */
+  /*  COUNT ROW                                                   */
+  /* ============================================================ */
+  .rv-count-row { margin-bottom: 10px; }
+  .rv-count {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted-2);
+  }
+
+  /* ============================================================ */
+  /*  TABLE                                                       */
+  /* ============================================================ */
+  .rv-table { margin-bottom: 20px; }
+  .rv-date {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+  .rv-title { font-weight: 700; color: var(--text); }
+  .rv-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .rv-muted { color: var(--muted-2); }
+  .rv-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .rv-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .rv-tag-booking       { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .rv-tag-late_checkout { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .rv-tag-minibar       { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .rv-tag-event         { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .rv-tag-cleaning      { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+  .rv-tag-other         { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  /* ============================================================ */
+  /*  EMPTY                                                       */
+  /* ============================================================ */
+  .rv-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+    margin-bottom: 24px;
+  }
+  .rv-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .rv-empty-ico svg { width: 26px; height: 26px; }
+  .rv-empty h4 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .rv-empty p {
+    font-size: 13px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 720px) {
+    .rv-toolbar { gap: 6px; }
+    .rv-search { min-width: 120px; }
+    .rv-select {
+      padding: 10px 8px;
+      font-size: 12.5px;
+      max-width: 140px;
+    }
+    .rv-search input {
+      padding: 10px 30px 10px 34px;
+      font-size: 12.5px;
+    }
+    .rv-pills { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+    .rv-pills::-webkit-scrollbar { height: 0; }
+  }
+
+  @media (max-width: 480px) {
+    .rv-search { min-width: 100px; }
+    .rv-search input::placeholder { color: transparent; }
+    .rv-select {
+      max-width: 120px;
+      font-size: 12px;
+      padding: 10px 6px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rv-pill { transition: none; }
+  }
+</style>
+{% endblock %}

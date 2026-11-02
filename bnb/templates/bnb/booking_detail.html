@@ -1,0 +1,755 @@
+{% extends 'bnb/bookingssub_base.html' %}
+{% load humanize %}
+{% block title %}Booking #{{ booking.id }} — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="bd-head">
+  <div class="bd-head-main">
+    <a href="{% url 'bnb_booking_list' %}" class="bd-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to bookings
+    </a>
+
+    <div class="bd-title-row">
+      <h1>Booking for {{ booking.guest_name }}</h1>
+      <span class="bd-ref">#{{ booking.id }}</span>
+    </div>
+
+    <p class="bd-sub">
+      <span class="bd-status bd-status-{{ booking.status }}">
+        <span class="bd-status-dot"></span>
+        {{ booking.get_status_display }}
+      </span>
+      <span class="bd-sub-sep" aria-hidden="true">·</span>
+      <span>{{ booking.property.name }}</span>
+      {% if booking.property.location_label %}
+        <span class="bd-sub-sep" aria-hidden="true">·</span>
+        <span>{{ booking.property.location_label }}</span>
+      {% endif %}
+    </p>
+  </div>
+
+  {# ---- Action bar — only valid actions per status ---- #}
+  <div class="bd-actions">
+    {% if can_confirm %}
+      <a href="{% url 'bnb_booking_status' booking.id 'confirmed' %}"
+         class="bd-btn bd-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Confirm
+      </a>
+    {% endif %}
+
+    {% if can_check_in %}
+      <a href="{% url 'bnb_booking_status' booking.id 'checked_in' %}"
+         class="bd-btn bd-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        Check in
+      </a>
+    {% endif %}
+
+    {% if can_check_out %}
+      <a href="{% url 'bnb_booking_status' booking.id 'checked_out' %}"
+         class="bd-btn bd-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Check out
+      </a>
+    {% endif %}
+
+    {% if can_cancel %}
+      <a href="{% url 'bnb_booking_status' booking.id 'cancelled' %}"
+         class="bd-btn bd-btn-danger"
+         onclick="return confirm('Cancel this booking?');">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Cancel
+      </a>
+    {% endif %}
+
+    {% if can_delete %}
+      <a href="{% url 'bnb_booking_delete' booking.id %}"
+         class="bd-btn bd-btn-ghost"
+         onclick="return confirm('Delete this booking permanently?');">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Delete
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{# ==================== STATUS TIMELINE ==================== #}
+<div class="bd-timeline">
+  {% with status=booking.status %}
+    <div class="bd-step {% if status == 'pending' %}is-current{% elif status == 'confirmed' or status == 'checked_in' or status == 'checked_out' %}is-done{% elif status == 'cancelled' or status == 'no_show' %}is-cancelled{% endif %}">
+      <span class="bd-step-dot"></span>
+      <span class="bd-step-label">Pending</span>
+    </div>
+    <div class="bd-step-line {% if status == 'confirmed' or status == 'checked_in' or status == 'checked_out' %}is-done{% endif %}"></div>
+
+    <div class="bd-step {% if status == 'confirmed' %}is-current{% elif status == 'checked_in' or status == 'checked_out' %}is-done{% endif %}">
+      <span class="bd-step-dot"></span>
+      <span class="bd-step-label">Confirmed</span>
+    </div>
+    <div class="bd-step-line {% if status == 'checked_in' or status == 'checked_out' %}is-done{% endif %}"></div>
+
+    <div class="bd-step {% if status == 'checked_in' %}is-current{% elif status == 'checked_out' %}is-done{% endif %}">
+      <span class="bd-step-dot"></span>
+      <span class="bd-step-label">Checked in</span>
+    </div>
+    <div class="bd-step-line {% if status == 'checked_out' %}is-done{% endif %}"></div>
+
+    <div class="bd-step {% if status == 'checked_out' %}is-current{% endif %}">
+      <span class="bd-step-dot"></span>
+      <span class="bd-step-label">Checked out</span>
+    </div>
+  {% endwith %}
+</div>
+
+{# ==================== DETAIL GRID ==================== #}
+<div class="bd-grid">
+
+  <!-- Stay -->
+  <div class="bd-panel">
+    <h3 class="bd-panel-title">Stay</h3>
+    <ul class="bd-kv">
+      <li>
+        <span>Property</span>
+        <strong>
+          <a href="{% url 'bnb_property_detail' booking.property.id %}" class="bd-inline-link">
+            {{ booking.property.name }}
+          </a>
+        </strong>
+      </li>
+      <li>
+        <span>Check-in</span>
+        <strong>
+          {{ booking.check_in|date:"D, d M Y" }}
+          {% if nights_until_checkin != None %}
+            {% if nights_until_checkin == 0 %}
+              <span class="bd-chip bd-chip-now">today</span>
+            {% elif nights_until_checkin > 0 and nights_until_checkin <= 30 %}
+              <span class="bd-chip">in {{ nights_until_checkin }} day{{ nights_until_checkin|pluralize }}</span>
+            {% elif nights_until_checkin < 0 %}
+              <span class="bd-chip bd-chip-muted">{{ nights_until_checkin|cut:"-" }} day{{ nights_until_checkin|cut:"-"|pluralize }} ago</span>
+            {% endif %}
+          {% endif %}
+        </strong>
+      </li>
+      <li><span>Check-out</span><strong>{{ booking.check_out|date:"D, d M Y" }}</strong></li>
+      <li><span>Nights</span><strong>{{ booking.nights }}</strong></li>
+      <li><span>Adults</span><strong>{{ booking.adults }}</strong></li>
+      <li><span>Children</span><strong>{{ booking.children }}</strong></li>
+      <li><span>Source</span><strong>{{ booking.get_source_display }}</strong></li>
+    </ul>
+  </div>
+
+  <!-- Guest -->
+  <div class="bd-panel">
+    <h3 class="bd-panel-title">Guest</h3>
+    <div class="bd-guest">
+      <span class="bd-guest-avatar">{{ booking.guest_name|slice:":1"|upper }}</span>
+      <div class="bd-guest-meta">
+        <strong>{{ booking.guest_name }}</strong>
+        {% if booking.guest %}<span>Profile linked</span>{% else %}<span>No linked profile</span>{% endif %}
+      </div>
+    </div>
+    <ul class="bd-kv">
+      {% if booking.guest_email %}
+        <li><span>Email</span><strong><a href="mailto:{{ booking.guest_email }}" class="bd-inline-link">{{ booking.guest_email }}</a></strong></li>
+      {% endif %}
+      {% if booking.guest_phone %}
+        <li><span>Phone</span><strong><a href="tel:{{ booking.guest_phone }}" class="bd-inline-link">{{ booking.guest_phone }}</a></strong></li>
+      {% endif %}
+      {% if booking.guest %}
+        <li><span>Profile name</span><strong>{{ booking.guest.full_name }}</strong></li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <!-- Payment -->
+  <div class="bd-panel">
+    <h3 class="bd-panel-title">Payment</h3>
+    <ul class="bd-kv">
+      <li><span>Total</span><strong>KES {{ booking.total_amount|floatformat:0|intcomma }}</strong></li>
+      <li><span>Paid</span><strong>KES {{ booking.amount_paid|floatformat:0|intcomma }}</strong></li>
+      <li>
+        <span>Balance</span>
+        <strong class="{% if booking.balance > 0 %}bd-danger{% else %}bd-success{% endif %}">
+          KES {{ booking.balance|floatformat:0|intcomma }}
+        </strong>
+      </li>
+      {% if nightly_rate %}
+        <li><span>Nightly rate</span><strong>KES {{ nightly_rate|floatformat:0|intcomma }}</strong></li>
+      {% endif %}
+      <li><span>Payment status</span><strong>{{ booking.get_payment_status_display }}</strong></li>
+      <li><span>Cleaning fee</span><strong>KES {{ booking.cleaning_fee|floatformat:0|intcomma }}</strong></li>
+      <li><span>Tax</span><strong>KES {{ booking.tax_amount|floatformat:0|intcomma }}</strong></li>
+    </ul>
+  </div>
+
+  <!-- Marketplace -->
+  {% if booking.guest_booking %}
+    <div class="bd-panel">
+      <h3 class="bd-panel-title">Marketplace</h3>
+      <ul class="bd-kv">
+        <li><span>Reference</span><strong>#{{ booking.guest_booking.id }}</strong></li>
+        <li><span>Status</span><strong>{{ booking.guest_booking.get_status_display }}</strong></li>
+        <li><span>Payment policy</span><strong>{{ booking.guest_booking.get_payment_policy_display }}</strong></li>
+      </ul>
+      {% if payment_attempts or receipts %}
+        <div class="bd-chips">
+          {% if payment_attempts %}
+            <span class="bd-chip bd-chip-green">{{ payment_attempts|length }} payment attempt{{ payment_attempts|length|pluralize }}</span>
+          {% endif %}
+          {% if receipts %}
+            <span class="bd-chip">{{ receipts|length }} receipt{{ receipts|length|pluralize }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Notes -->
+  {% if booking.notes or booking.special_requests %}
+    <div class="bd-panel bd-panel-full">
+      <h3 class="bd-panel-title">Notes</h3>
+      {% if booking.notes %}
+        <div class="bd-desc">{{ booking.notes|linebreaks }}</div>
+      {% endif %}
+      {% if booking.special_requests %}
+        <div class="bd-desc bd-desc-spaced">
+          <strong>Special requests:</strong>
+          {{ booking.special_requests|linebreaks }}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+{# ==================== PAYMENTS ==================== #}
+{% if payments %}
+  <div class="bd-panel bd-panel-full bd-panel-table">
+    <div class="bd-panel-head">
+      <h3 class="bd-panel-title" style="margin:0;">Payments</h3>
+      <span class="bd-panel-count">{{ payments|length }} entr{{ payments|length|pluralize:"y,ies" }}</span>
+    </div>
+    <div class="bd-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Method</th>
+            <th>Reference</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td data-label="Date">{{ p.payment_date|date:"d M Y" }}</td>
+              <td data-label="Method">{{ p.get_method_display }}</td>
+              <td data-label="Reference">{{ p.reference|default:"—" }}</td>
+              <td data-label="Amount"><strong>KES {{ p.amount|floatformat:0|intcomma }}</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{# ==================== INVOICES ==================== #}
+{% if invoices %}
+  <div class="bd-panel bd-panel-full bd-panel-table">
+    <div class="bd-panel-head">
+      <h3 class="bd-panel-title" style="margin:0;">Invoices</h3>
+      <span class="bd-panel-count">{{ invoices|length }}</span>
+    </div>
+    <div class="bd-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Number</th>
+            <th>Issued</th>
+            <th>Total</th>
+            <th>Balance</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+            <tr>
+              <td data-label="Number">{{ inv.invoice_number }}</td>
+              <td data-label="Issued">{{ inv.issue_date|date:"d M Y" }}</td>
+              <td data-label="Total">KES {{ inv.total|floatformat:0|intcomma }}</td>
+              <td data-label="Balance">KES {{ inv.balance|floatformat:0|intcomma }}</td>
+              <td data-label="Status">
+                <span class="bd-inv-status bd-inv-status-{{ inv.status }}">
+                  {{ inv.get_status_display }}
+                </span>
+              </td>
+              <td data-label="">
+                <a href="{% url 'bnb_invoice_detail' inv.id %}" class="bd-view-btn">
+                  View
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================ */
+  /*  BOOKING DETAIL                                                  */
+  /* ================================================================ */
+
+  /* ---------- Head ---------- */
+  .bd-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .bd-head-main { min-width: 0; flex: 1 1 auto; }
+
+  .bd-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    margin-left: -8px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+  }
+  .bd-back:hover { color: var(--brand-1); background: rgba(14,165,233,0.06); }
+  .bd-back svg { width: 13px; height: 13px; }
+
+  .bd-title-row {
+    display: flex; align-items: baseline; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 6px;
+  }
+  .bd-title-row h1 {
+    font-size: 24px; font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .bd-ref {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .bd-sub {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .bd-sub-sep { color: var(--muted-2); }
+
+  /* ---------- Status pill ---------- */
+  .bd-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .bd-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .bd-status-pending     { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bd-status-confirmed   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bd-status-checked_in  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .bd-status-checked_out { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .bd-status-cancelled   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .bd-status-no_show     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---------- Action bar ---------- */
+  .bd-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    align-items: center;
+  }
+  .bd-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: filter .15s, background .15s, border-color .15s, transform .05s;
+  }
+  .bd-btn svg { width: 14px; height: 14px; }
+  .bd-btn:active { transform: translateY(1px); }
+
+  .bd-btn-primary {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    box-shadow: 0 8px 18px -6px rgba(16,185,129,0.55);
+  }
+  .bd-btn-primary:hover { filter: brightness(1.06); }
+
+  .bd-btn-danger {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fecaca;
+    box-shadow: var(--shadow-sm);
+  }
+  .bd-btn-danger:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+    color: #7f1d1d;
+  }
+
+  .bd-btn-ghost {
+    background: #fff;
+    color: var(--text-2);
+    border-color: var(--line-2);
+    box-shadow: var(--shadow-sm);
+  }
+  .bd-btn-ghost:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text);
+  }
+
+  /* ---------- Timeline ---------- */
+  .bd-timeline {
+    display: flex; align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px 22px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bd-timeline::-webkit-scrollbar { display: none; }
+  @media (max-width: 640px) {
+    .bd-timeline { padding: 14px 16px; gap: 4px; }
+  }
+
+  .bd-step {
+    flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted-2);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .bd-step-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    border: 2px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  .bd-step.is-done     .bd-step-dot { background: #10b981; border-color: #10b981; }
+  .bd-step.is-done     .bd-step-label { color: var(--text); }
+  .bd-step.is-current  .bd-step-dot {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
+  }
+  .bd-step.is-current  .bd-step-label { color: #1e40af; }
+  .bd-step.is-cancelled .bd-step-dot {
+    background: #ef4444;
+    border-color: #ef4444;
+  }
+  .bd-step.is-cancelled .bd-step-label { color: #991b1b; }
+
+  .bd-step-line {
+    flex: 1 1 24px;
+    height: 2px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    min-width: 16px;
+  }
+  .bd-step-line.is-done { background: #10b981; }
+
+  /* ---------- Grid ---------- */
+  .bd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 720px) {
+    .bd-grid { grid-template-columns: 1fr; }
+  }
+
+  .bd-panel {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .bd-panel-full { grid-column: 1 / -1; }
+  .bd-panel-table { padding: 0; overflow: hidden; }
+
+  .bd-panel-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* ---------- Key/value rows ---------- */
+  .bd-kv {
+    list-style: none; padding: 0; margin: 0;
+  }
+  .bd-kv li {
+    display: flex; justify-content: space-between;
+    gap: 12px; padding: 8px 0;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 13px;
+    align-items: baseline;
+  }
+  .bd-kv li:last-child { border-bottom: none; }
+  .bd-kv span {
+    color: var(--muted);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .bd-kv strong {
+    color: var(--text);
+    font-weight: 700;
+    text-align: right;
+    word-break: break-word;
+  }
+  .bd-kv strong.bd-danger  { color: #b91c1c; }
+  .bd-kv strong.bd-success { color: #047857; }
+
+  .bd-inline-link {
+    color: var(--brand-1);
+    text-decoration: none;
+    font-weight: 700;
+    word-break: break-all;
+  }
+  .bd-inline-link:hover { text-decoration: underline; }
+
+  /* ---------- Chips ---------- */
+  .bd-chip {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .bd-chip-now  { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bd-chip-muted{ background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+  .bd-chip-green{ background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+  .bd-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 12px;
+  }
+  .bd-chips .bd-chip { margin-left: 0; }
+
+  /* ---------- Guest block ---------- */
+  .bd-guest {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bd-guest-avatar {
+    flex: 0 0 44px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff;
+    font-size: 16px; font-weight: 800;
+  }
+  .bd-guest-meta { min-width: 0; }
+  .bd-guest-meta strong {
+    display: block;
+    font-size: 14px; font-weight: 800;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .bd-guest-meta span {
+    font-size: 12px;
+    color: var(--muted-2);
+  }
+
+  /* ---------- Description ---------- */
+  .bd-desc {
+    font-size: 13.5px;
+    color: var(--text-2);
+    line-height: 1.65;
+  }
+  .bd-desc-spaced { margin-top: 12px; }
+  .bd-desc strong { color: var(--text); }
+
+  /* ---------- Table panel head ---------- */
+  .bd-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .bd-panel-count {
+    font-size: 12px;
+    color: var(--muted-2);
+    font-weight: 600;
+  }
+
+  /* ---------- Tables ---------- */
+  .bd-table { overflow-x: auto; }
+  .bd-table table { width: 100%; border-collapse: collapse; }
+  .bd-table th {
+    text-align: left;
+    padding: 12px 20px;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    background: #fafbfd;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .bd-table td {
+    padding: 12px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--text);
+  }
+  .bd-table tr:last-child td { border-bottom: none; }
+  .bd-table tr:hover { background: #f8fafc; }
+  .bd-table td strong { font-variant-numeric: tabular-nums; }
+
+  /* Invoice status pill */
+  .bd-inv-status {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .bd-inv-status-paid    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .bd-inv-status-overdue { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .bd-inv-status-sent    { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bd-inv-status-draft   { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .bd-inv-status-void    { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+
+  .bd-view-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    background: #fff;
+    color: var(--brand-1);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  .bd-view-btn:hover { background: #f0f9ff; border-color: #bae6fd; }
+  .bd-view-btn:active { transform: translateY(1px); }
+  .bd-view-btn svg { width: 11px; height: 11px; }
+
+  /* ---------- Mobile card mode ---------- */
+  @media (max-width: 720px) {
+    .bd-title-row h1 { font-size: 20px; }
+    .bd-panel { padding: 16px; }
+
+    .bd-table thead { display: none; }
+    .bd-table tr {
+      display: block;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line-2);
+    }
+    .bd-table tr:last-child { border-bottom: none; }
+    .bd-table td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0;
+      border: none;
+      text-align: right;
+      font-size: 13px;
+    }
+    .bd-table td::before {
+      content: attr(data-label);
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      text-align: left;
+    }
+    .bd-table td[data-label=""] {
+      justify-content: flex-end;
+      padding-top: 10px;
+      border-top: 1px solid var(--line-2);
+      margin-top: 6px;
+    }
+    .bd-table td[data-label=""]::before { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .bd-actions { width: 100%; }
+    .bd-actions .bd-btn { flex: 1 1 45%; justify-content: center; }
+  }
+</style>
+{% endblock %}

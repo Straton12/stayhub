@@ -1,0 +1,405 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Invoices — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="iv-head">
+  <div>
+    <h1>Invoices</h1>
+    <p class="muted">
+      {% if pill_counts.all %}
+        {{ pill_counts.all }} invoice{{ pill_counts.all|pluralize }}
+        {% if overdue_count %}· {{ overdue_count }} overdue{% endif %}
+      {% else %}
+        No invoices yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_invoice_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New invoice
+  </a>
+</div>
+
+{# ==================== KPI ROW ==================== #}
+{% if pill_counts.all %}
+<div class="iv-kpis">
+  <div class="iv-kpi iv-kpi-all">
+    <div class="iv-kpi-label">Invoiced</div>
+    <div class="iv-kpi-value">KES {{ total_invoiced|floatformat:0|intcomma }}</div>
+    <div class="iv-kpi-sub">{{ pill_counts.all }} invoice{{ pill_counts.all|pluralize }}</div>
+  </div>
+  <div class="iv-kpi iv-kpi-paid">
+    <div class="iv-kpi-label">Collected</div>
+    <div class="iv-kpi-value">KES {{ total_paid_all|floatformat:0|intcomma }}</div>
+    <div class="iv-kpi-sub">{{ pill_counts.paid }} paid</div>
+  </div>
+  <div class="iv-kpi iv-kpi-out">
+    <div class="iv-kpi-label">Outstanding</div>
+    <div class="iv-kpi-value">KES {{ total_outstanding|floatformat:0|intcomma }}</div>
+    <div class="iv-kpi-sub">{{ overdue_count }} overdue</div>
+  </div>
+</div>
+{% endif %}
+
+{# ==================== FILTER PILLS ==================== #}
+<div class="iv-pills" role="group" aria-label="Filter by status">
+  <a class="iv-pill {% if not status_filter %}is-active{% endif %}"
+     href="?{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}">
+    All <span class="iv-pill-count">{{ pill_counts.all }}</span>
+  </a>
+  <a class="iv-pill {% if status_filter == 'draft' %}is-active{% endif %}"
+     href="?status=draft{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Draft <span class="iv-pill-count">{{ pill_counts.draft }}</span>
+  </a>
+  <a class="iv-pill {% if status_filter == 'sent' %}is-active{% endif %}"
+     href="?status=sent{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Sent <span class="iv-pill-count">{{ pill_counts.sent }}</span>
+  </a>
+  <a class="iv-pill {% if status_filter == 'paid' %}is-active{% endif %}"
+     href="?status=paid{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Paid <span class="iv-pill-count">{{ pill_counts.paid }}</span>
+  </a>
+  <a class="iv-pill iv-pill-red {% if status_filter == 'overdue' %}is-active{% endif %}"
+     href="?status=overdue{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Overdue <span class="iv-pill-count">{{ overdue_count }}</span>
+  </a>
+  <a class="iv-pill {% if status_filter == 'void' %}is-active{% endif %}"
+     href="?status=void{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Void <span class="iv-pill-count">{{ pill_counts.void }}</span>
+  </a>
+</div>
+
+{# ==================== TOOLBAR ==================== #}
+<form method="get" class="iv-toolbar">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+
+  <div class="iv-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by number, guest, email…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}sort={{ sort }}"
+         class="iv-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="sort" class="iv-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="newest"   {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+    <option value="oldest"   {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+    <option value="total"    {% if sort == 'total' %}selected{% endif %}>Highest total</option>
+    <option value="balance"  {% if sort == 'balance' %}selected{% endif %}>Highest balance</option>
+    <option value="due_soon" {% if sort == 'due_soon' %}selected{% endif %}>Due soonest</option>
+  </select>
+</form>
+
+{# ==================== TABLE OR EMPTY ==================== #}
+{% if invoices %}
+
+  <div class="iv-count-row">
+    <span class="iv-count">
+      {{ filtered_count }} invoice{{ filtered_count|pluralize }} · KES {{ filtered_total|floatformat:0|intcomma }} total
+    </span>
+  </div>
+
+  <div class="table-wrap iv-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>Guest</th>
+          <th>Issued</th>
+          <th>Due</th>
+          <th class="iv-num">Total</th>
+          <th class="iv-num">Paid</th>
+          <th class="iv-num">Balance</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+          <tr>
+            <td data-label="Number"><strong class="iv-num-cell">{{ inv.invoice_number }}</strong></td>
+            <td data-label="Guest">{{ inv.guest_name }}</td>
+            <td data-label="Issued" class="iv-date">{{ inv.issue_date|date:"d M Y" }}</td>
+            <td data-label="Due" class="iv-date">
+              {% if inv.due_date %}{{ inv.due_date|date:"d M Y" }}{% else %}—{% endif %}
+            </td>
+            <td data-label="Total" class="iv-num">KES {{ inv.total|floatformat:0|intcomma }}</td>
+            <td data-label="Paid" class="iv-num">KES {{ inv.amount_paid|floatformat:0|intcomma }}</td>
+            <td data-label="Balance" class="iv-num">
+              <strong class="{% if inv.balance > 0 %}iv-balance-out{% else %}iv-balance-ok{% endif %}">
+                KES {{ inv.balance|floatformat:0|intcomma }}
+              </strong>
+            </td>
+            <td data-label="Status">
+              {% if inv.is_overdue %}
+                <span class="iv-tag iv-tag-red">Overdue</span>
+              {% else %}
+                <span class="iv-tag iv-tag-{{ inv.status }}">{{ inv.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="iv-actions">
+                <a href="{% url 'bnb_invoice_detail' inv.id %}" class="btn sm secondary">View</a>
+                <a href="{% url 'bnb_invoice_print' inv.id %}" target="_blank" class="btn sm secondary" title="Print">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                    <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                  </svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% else %}
+
+  {# ==================== EMPTY ==================== #}
+  {% if status_filter or q %}
+    <div class="iv-empty">
+      <div class="iv-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No invoices match your filters</h4>
+      <p class="muted">Try clearing the search or switching to "All".</p>
+      <a href="{% url 'bnb_invoice_list' %}" class="btn secondary" style="margin-top:14px;">
+        Clear filters
+      </a>
+    </div>
+  {% else %}
+    <div class="iv-empty">
+      <div class="iv-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <h4>No invoices yet</h4>
+      <p class="muted">Create your first invoice for a guest.</p>
+      <a href="{% url 'bnb_invoice_add' %}" class="btn" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New invoice
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* HEAD */
+  .iv-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .iv-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .iv-head p { font-size: 13px; }
+
+  /* KPI ROW */
+  .iv-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 18px;
+  }
+  @media (max-width: 720px) { .iv-kpis { grid-template-columns: 1fr; } }
+
+  .iv-kpi {
+    position: relative; padding: 14px 18px;
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .iv-kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .iv-kpi-all::before  { background: #94a3b8; }
+  .iv-kpi-paid::before { background: #10b981; }
+  .iv-kpi-out::before  { background: #f59e0b; }
+
+  .iv-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .iv-kpi-value {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.5px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .iv-kpi-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 4px; }
+
+  /* FILTER PILLS */
+  .iv-pills {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .iv-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 700;
+    background: #fff; color: var(--muted);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .iv-pill:hover { background: #f8fafc; color: var(--text-2); border-color: #cbd5e1; }
+  .iv-pill.is-active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .iv-pill-red.is-active {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: 0 6px 14px -4px rgba(239,68,68,0.5);
+  }
+  .iv-pill-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 6px;
+    border-radius: 999px; font-size: 10.5px; font-weight: 800;
+    background: #f1f5f9; color: var(--muted);
+  }
+  .iv-pill.is-active .iv-pill-count {
+    background: rgba(255,255,255,0.25); color: #fff;
+  }
+
+  /* TOOLBAR */
+  .iv-toolbar {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 16px; flex-wrap: nowrap; width: 100%;
+  }
+  .iv-search { position: relative; flex: 1 1 auto; min-width: 180px; }
+  .iv-search svg {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); width: 15px; height: 15px;
+    color: var(--muted-2); pointer-events: none;
+  }
+  .iv-search input {
+    width: 100%; padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2); border-radius: 10px;
+    font-size: 13.5px; background: #fff; color: var(--text);
+    outline: none; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .iv-search input::placeholder { color: var(--muted-2); }
+  .iv-search input:hover { border-color: #cbd5e1; }
+  .iv-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .iv-search-reset {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%); width: 22px; height: 22px;
+    display: grid; place-items: center; border-radius: 50%;
+    background: #e2e8f0; color: #475569;
+    text-decoration: none; font-size: 14px; font-weight: 700; line-height: 1;
+  }
+  .iv-search-reset:hover { background: #cbd5e1; }
+
+  .iv-select {
+    flex: 0 1 auto; padding: 10px 12px;
+    border: 1px solid var(--line-2); border-radius: 10px;
+    font-size: 13px; background: #fff; color: var(--text);
+    cursor: pointer; font-family: inherit; outline: none;
+    min-width: 0; max-width: 180px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .iv-select:hover { border-color: #cbd5e1; }
+  .iv-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* COUNT ROW */
+  .iv-count-row { margin-bottom: 10px; }
+  .iv-count {
+    font-size: 12.5px; font-weight: 700; color: var(--muted-2);
+  }
+
+  /* TABLE */
+  .iv-table { margin-bottom: 20px; }
+  .iv-num-cell {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px; font-weight: 700; color: var(--text);
+  }
+  .iv-date {
+    font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text-2);
+  }
+  .iv-num {
+    text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .iv-balance-out { color: #b91c1c; }
+  .iv-balance-ok  { color: #047857; }
+  .iv-actions {
+    display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap;
+  }
+
+  .iv-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .iv-tag-draft   { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .iv-tag-sent    { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .iv-tag-paid    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .iv-tag-overdue { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .iv-tag-void    { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+  .iv-tag-red     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* EMPTY */
+  .iv-empty {
+    text-align: center; padding: 56px 24px;
+    background: #fff; border: 1px dashed var(--line-2);
+    border-radius: 18px; margin-bottom: 24px;
+  }
+  .iv-empty-ico {
+    width: 56px; height: 56px; margin: 0 auto 14px;
+    border-radius: 14px; display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;
+  }
+  .iv-empty-ico svg { width: 26px; height: 26px; }
+  .iv-empty h4 {
+    font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px;
+  }
+  .iv-empty p { font-size: 13px; max-width: 320px; margin: 0 auto; }
+
+  /* RESPONSIVE */
+  @media (max-width: 720px) {
+    .iv-toolbar { gap: 6px; }
+    .iv-search { min-width: 120px; }
+    .iv-select { padding: 10px 8px; font-size: 12.5px; max-width: 140px; }
+    .iv-search input { padding: 10px 30px 10px 34px; font-size: 12.5px; }
+    .iv-pills { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+    .iv-pills::-webkit-scrollbar { height: 0; }
+  }
+  @media (max-width: 480px) {
+    .iv-search { min-width: 100px; }
+    .iv-search input::placeholder { color: transparent; }
+    .iv-select { max-width: 120px; font-size: 12px; padding: 10px 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .iv-pill { transition: none; }
+  }
+</style>
+{% endblock %}

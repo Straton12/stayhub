@@ -1,0 +1,389 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Purchase Orders — Restaurant{% endblock %}
+{% block page_title %}Purchase Orders{% endblock %}
+{% block breadcrumb %}<span class="crumb">Procurement › POs</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="po-header">
+  <div>
+    <h1>Purchase Orders</h1>
+    <p>
+      {% if orders %}
+        {{ orders|length }} order{{ orders|length|pluralize }} found.
+        {% if status %}
+          <a href="{% url 'restaurant_po_list' %}" style="color:var(--brand-2); font-weight:600; margin-left:6px;">Clear filter</a>
+        {% endif %}
+      {% else %}
+        No purchase orders yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px; flex-wrap:wrap;">
+    <a href="{% url 'restaurant_supplier_list' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h18v4H3z"/>
+        <path d="M5 7v13a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7"/>
+        <path d="M10 11h4"/>
+      </svg>
+      Suppliers
+    </a>
+    <a href="{% url 'restaurant_po_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New PO
+    </a>
+  </div>
+</div>
+
+{% if orders %}
+
+<!-- ============ KPIs ============ -->
+<div class="po-kpis">
+  <div class="po-kpi">
+    <div class="po-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+    </div>
+    <div>
+      <div class="po-kpi-value" id="kpiTotal">0</div>
+      <div class="po-kpi-label">Total POs</div>
+    </div>
+  </div>
+
+  <div class="po-kpi">
+    <div class="po-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="po-kpi-value" id="kpiOpen">0</div>
+      <div class="po-kpi-label">Open POs</div>
+    </div>
+  </div>
+
+  <div class="po-kpi">
+    <div class="po-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <div class="po-kpi-value" id="kpiReceived">0</div>
+      <div class="po-kpi-label">Received</div>
+    </div>
+  </div>
+
+  <div class="po-kpi">
+    <div class="po-kpi-icon k-rose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="po-kpi-value" id="kpiBalance">KES 0</div>
+      <div class="po-kpi-label">Total Unpaid</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Status Tabs ============ -->
+<div class="po-tabs">
+  <a href="{% url 'restaurant_po_list' %}" class="po-tab {% if not status %}active{% endif %}">
+    All
+  </a>
+  {% for value, label in status_choices %}
+    <a href="{% url 'restaurant_po_list' %}?status={{ value }}" 
+       class="po-tab {% if status == value %}active{% endif %}">
+      {{ label }}
+    </a>
+  {% endfor %}
+</div>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>PO #</th>
+        <th>Supplier</th>
+        <th>Status</th>
+        <th>Order Date</th>
+        <th>Expected</th>
+        <th class="right">Total</th>
+        <th class="right">Balance</th>
+        <th style="width:100px; text-align:center;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for po in orders %}
+      <tr onclick="window.location='{% url 'restaurant_po_detail' po.id %}';" style="cursor: pointer;">
+        
+        <td>
+          <span class="po-ref">{{ po.reference|default:po.id }}</span>
+          {% if po.is_fully_received %}
+            <div class="po-sub">Fully received</div>
+          {% endif %}
+        </td>
+
+        <td>
+          <div class="po-supplier">
+            <div class="po-avatar">{{ po.supplier.name|slice:":1"|upper }}</div>
+            <div class="po-supplier-meta">
+              <div class="po-supplier-name">{{ po.supplier.name }}</div>
+              {% if po.supplier.phone %}
+                <div class="po-supplier-sub">{{ po.supplier.phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <td>
+          <span class="po-status status-{{ po.status }}">
+            {% if po.status == 'draft' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            {% elif po.status == 'sent' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            {% elif po.status == 'partial' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {% elif po.status == 'received' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            {% elif po.status == 'cancelled' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            {% endif %}
+            {{ po.get_status_display }}
+          </span>
+        </td>
+
+        <td>
+          <div class="po-date">{{ po.order_date|date:"M j, Y" }}</div>
+        </td>
+
+        <td>
+          {% if po.expected_date %}
+            <div class="po-date">{{ po.expected_date|date:"M j, Y" }}</div>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+
+        <td class="right">
+          <div class="po-total">KES {{ po.total_amount|floatformat:2 }}</div>
+        </td>
+
+        <td class="right">
+          {% if po.balance > 0 %}
+            <div class="po-balance-due">KES {{ po.balance|floatformat:2 }}</div>
+          {% else %}
+            <span class="po-paid">Paid</span>
+          {% endif %}
+        </td>
+
+        <td class="center" onclick="event.stopPropagation();">
+          <div class="flex" style="gap:6px; justify-content:center;">
+            {% if po.status == 'draft' %}
+              <a href="{% url 'restaurant_po_send' po.id %}" class="btn sm" title="Send to supplier">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </a>
+            {% elif po.status == 'sent' or po.status == 'partial' %}
+              <a href="{% url 'restaurant_grn_add' po.id %}" class="btn success sm" title="Receive goods">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                  <polyline points="20 6 9 17 4 5"/>
+                </svg>
+              </a>
+            {% else %}
+              <a href="{% url 'restaurant_po_detail' po.id %}" class="btn secondary sm" title="View details">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="po-empty">
+  <div class="po-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="8" y1="13" x2="16" y2="13"/>
+      <line x1="8" y1="17" x2="16" y2="17"/>
+    </svg>
+  </div>
+  <h4>No purchase orders {% if status %}matching "{{ status }}"{% endif %}</h4>
+  <p class="muted">
+    {% if status %}
+      No POs with this status. <a href="{% url 'restaurant_po_list' %}" style="color:var(--brand-2);">Show all</a>
+    {% else %}
+      Create your first purchase order to start tracking supplier deliveries.
+    {% endif %}
+  </p>
+  {% if not status %}
+    <a href="{% url 'restaurant_po_add' %}" class="btn" style="margin-top:14px;">New Purchase Order</a>
+  {% endif %}
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Purchase Orders ================= */
+  
+  .po-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .po-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .po-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .po-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .po-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .po-kpi-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .po-kpi-icon svg { width: 20px; height: 20px; }
+  .po-kpi-icon.k-amber { background: #fef3c7; color: #b45309; }
+  .po-kpi-icon.k-blue  { background: #eff6ff; color: #1d4ed8; }
+  .po-kpi-icon.k-green { background: #ecfdf5; color: #047857; }
+  .po-kpi-icon.k-rose  { background: #fef2f2; color: #b91c1c; }
+  
+  .po-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .po-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Status Tabs ---- */
+  .po-tabs {
+    display: flex; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: var(--shadow-sm); overflow-x: auto; margin-bottom: 16px;
+  }
+  .po-tab {
+    padding: 8px 14px; font-size: 12.5px; font-weight: 600; border-radius: 7px;
+    color: var(--muted); text-decoration: none; white-space: nowrap; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .po-tab:hover { background: #fef3c7; color: #b45309; }
+  .po-tab.active { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; box-shadow: 0 4px 10px rgba(245,158,11,0.30); }
+
+  /* ---- Table cells ---- */
+  .po-ref {
+    display: inline-block; padding: 3px 9px; border-radius: 6px;
+    background: #f1f5f9; border: 1px solid var(--line); color: var(--text-2);
+    font-size: 11.5px; font-weight: 800; letter-spacing: 0.4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .po-sub { font-size: 10.5px; color: #047857; font-weight: 700; margin-top: 4px; }
+
+  .po-supplier { display: flex; align-items: center; gap: 10px; }
+  .po-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 8px;
+    display: grid; place-items: center; background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .po-supplier-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .po-supplier-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+
+  /* Status pills */
+  .po-status {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  .po-status svg { width: 12px; height: 12px; }
+  .po-status.status-draft     { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .po-status.status-sent      { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .po-status.status-partial   { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .po-status.status-received  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .po-status.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  .po-date { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+
+  .po-total { font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .po-balance-due { font-size: 13px; font-weight: 800; color: #b91c1c; font-variant-numeric: tabular-nums; }
+  .po-paid { font-size: 11px; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ---- Empty state ---- */
+  .po-empty {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .po-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .po-empty-ico svg { width: 30px; height: 30px; }
+  .po-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .po-header h1 { font-size: 20px; }
+    .po-header { flex-direction: column; align-items: stretch; }
+    th:nth-child(2), td:nth-child(2),
+    th:nth-child(4), td:nth-child(4) { display: none; }
+    .po-tabs { width: 100%; }
+    .po-tab { flex: 0 0 auto; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // --- KPI counters computed client-side ---
+    var rows = document.querySelectorAll('tbody tr');
+    var open = 0;
+    var received = 0;
+    var balance = 0;
+
+    rows.forEach(function (r) {
+      var statusEl = r.querySelector('.po-status');
+      var statusClasses = statusEl ? statusEl.className : '';
+
+      if (statusClasses.indexOf('status-received') !== -1) received++;
+      if (statusClasses.indexOf('status-draft') !== -1 ||
+          statusClasses.indexOf('status-sent') !== -1 ||
+          statusClasses.indexOf('status-partial') !== -1) open++;
+
+      var balEl = r.querySelector('.po-balance-due');
+      if (balEl) {
+        var val = parseFloat((balEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(val)) balance += val;
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiTotal', rows.length);
+    setText('kpiOpen', open);
+    setText('kpiReceived', received);
+    setText('kpiBalance', 'KES ' + balance.toLocaleString(undefined, { maximumFractionDigits: 0 }));
+  })();
+</script>
+{% endblock %}

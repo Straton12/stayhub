@@ -1,0 +1,493 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Order #{{ order.id }} — Restaurant{% endblock %}
+{% block page_title %}Order #{{ order.id }}{% endblock %}
+{% block breadcrumb %}<span class="crumb">{{ order.reference }}</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="od-header">
+  <a href="{% url 'restaurant_order_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to orders
+  </a>
+  
+  <div class="od-title-row">
+    <div>
+      <h1>Order {{ order.reference }}</h1>
+      <div class="od-meta-line">
+        Created {{ order.created_at|date:"M j, Y · H:i" }}
+        {% if order.source == 'marketplace' %}
+          <span class="tag blue" style="margin-left:8px;">Marketplace</span>
+        {% endif %}
+        <span class="status-pill status-{{ order.status }}" style="margin-left:8px;">
+          <span class="dot"></span>
+          {{ order.get_status_display }}
+        </span>
+      </div>
+    </div>
+    <div class="od-header-actions">
+      <a href="{% url 'restaurant_order_edit' order.id %}" class="btn secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Edit Order
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Status Flow ============ -->
+<div class="od-status-flow">
+  {% with order.status as st %}
+    <a href="{% url 'restaurant_order_status' order.id 'new' %}" 
+       class="od-step {% if st == 'new' %}active{% endif %}">
+      <span class="od-step-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </span>
+      <span class="od-step-label">New</span>
+    </a>
+    <div class="od-step-line"></div>
+
+    <a href="{% url 'restaurant_order_status' order.id 'preparing' %}" 
+       class="od-step {% if st == 'preparing' %}active{% endif %}">
+      <span class="od-step-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </span>
+      <span class="od-step-label">Preparing</span>
+    </a>
+    <div class="od-step-line"></div>
+
+    <a href="{% url 'restaurant_order_status' order.id 'ready' %}" 
+       class="od-step {% if st == 'ready' %}active{% endif %}">
+      <span class="od-step-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </span>
+      <span class="od-step-label">Ready</span>
+    </a>
+    <div class="od-step-line"></div>
+
+    <a href="{% url 'restaurant_order_status' order.id 'delivered' %}" 
+       class="od-step {% if st == 'delivered' %}active{% endif %}">
+      <span class="od-step-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </span>
+      <span class="od-step-label">Delivered</span>
+    </a>
+  {% endwith %}
+</div>
+
+<!-- ============ Main Grid ============ -->
+<div class="od-layout">
+
+  <!-- LEFT: Items and Details -->
+  <div class="od-main">
+
+    <!-- Order Items -->
+    <div class="od-card">
+      <div class="od-card-head">
+        <h2>Order Items</h2>
+        <span class="muted">{{ items|length }} item{{ items|length|pluralize }}</span>
+      </div>
+      <table class="od-items-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="right">Price</th>
+            <th class="center">Qty</th>
+            <th class="right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>
+              <div class="od-item-name">{{ item.name_snapshot }}</div>
+              {% if item.menu_item %}
+                <div class="od-item-category">{{ item.menu_item.get_category_display }}</div>
+              {% endif %}
+              {% if item.notes %}
+                <div class="od-item-notes"><strong>Notes:</strong> {{ item.notes }}</div>
+              {% endif %}
+            </td>
+            <td class="right muted">KES {{ item.unit_price|floatformat:2 }}</td>
+            <td class="center"><span class="od-qty">{{ item.quantity }}</span></td>
+            <td class="right"><strong>KES {{ item.line_total|floatformat:2 }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      
+      <!-- Totals -->
+      <div class="od-totals">
+        <div class="od-total-row">
+          <span>Subtotal</span>
+          <span>KES {{ order.subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="od-total-row">
+          <span>Delivery fee</span>
+          <span>KES {{ order.delivery_fee|floatformat:2 }}</span>
+        </div>
+        <div class="od-total-row od-total-grand">
+          <span>Total</span>
+          <span>KES {{ order.total_amount|floatformat:2 }}</span>
+        </div>
+        <div class="od-total-row">
+          <span>Amount paid</span>
+          <span class="{% if order.amount_paid > 0 %}text-green{% endif %}">KES {{ order.amount_paid|floatformat:2 }}</span>
+        </div>
+        {% if order.balance > 0 %}
+        <div class="od-total-row od-total-balance">
+          <span>Balance due</span>
+          <span>KES {{ order.balance|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Customer & Delivery Info -->
+    <div class="od-card">
+      <div class="od-card-head"><h2>Customer & Delivery</h2></div>
+      <div class="od-info-grid">
+        <div>
+          <label>Customer Name</label>
+          <div class="od-info-value">{{ order.customer_name }}</div>
+        </div>
+        <div>
+          <label>Phone</label>
+          <div class="od-info-value">
+            {% if order.customer_phone %}
+              <a href="tel:{{ order.customer_phone }}">{{ order.customer_phone }}</a>
+            {% else %}—{% endif %}
+          </div>
+        </div>
+        <div>
+          <label>Order Type</label>
+          <div class="od-info-value">{{ order.get_order_type_display }}</div>
+        </div>
+        <div>
+          <label>Payment Policy</label>
+          <div class="od-info-value">{{ order.get_payment_policy_display }}</div>
+        </div>
+        {% if order.customer_address %}
+        <div class="od-info-full">
+          <label>Delivery Address</label>
+          <div class="od-info-value">{{ order.customer_address }}</div>
+        </div>
+        {% endif %}
+        {% if order.special_instructions %}
+        <div class="od-info-full">
+          <label>Special Instructions</label>
+          <div class="od-info-value od-info-notes">{{ order.special_instructions }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if stock_consumed %}
+    <!-- Stock Consumed -->
+    <div class="od-card">
+      <div class="od-card-head">
+        <h2>Stock Consumed</h2>
+        <span class="muted">Auto-depleted on delivery</span>
+      </div>
+      <table class="od-items-table">
+        <thead>
+          <tr>
+            <th>Ingredient</th>
+            <th class="right">Quantity</th>
+            <th class="right">Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mv in stock_consumed %}
+          <tr>
+            <td>{{ mv.stock_item.name }}</td>
+            <td class="right">{{ mv.quantity }} {{ mv.stock_item.unit }}</td>
+            <td class="right muted">KES {{ mv.total_cost|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- RIGHT: Actions Sidebar -->
+  <aside class="od-aside">
+
+    <!-- Payment Card -->
+    <div class="od-card od-payment-card">
+      <div class="od-card-head">
+        <h2>Payment</h2>
+        {% if order.payment_status == 'paid' %}
+          <span class="tag green">Paid</span>
+        {% elif order.payment_status == 'partial' %}
+          <span class="tag yellow">Partial</span>
+        {% else %}
+          <span class="tag red">Unpaid</span>
+        {% endif %}
+      </div>
+      
+      <div class="od-payment-summary">
+        <div class="od-payment-amount">KES {{ order.total_amount|floatformat:2 }}</div>
+        <div class="muted">Total</div>
+      </div>
+
+      {% if order.balance > 0 and order.status != 'cancelled' %}
+        <form method="post" action="{% url 'restaurant_order_payment_add' order.id %}" class="od-payment-form">
+          {% csrf_token %}
+          <label for="amount">Amount to record</label>
+          <div class="od-input-prefix">
+            <span>KES</span>
+            <input type="number" id="amount" name="amount" step="0.01" min="0.01" max="{{ order.balance }}" value="{{ order.balance }}" required>
+          </div>
+          
+          <label for="method">Payment Method</label>
+          <select id="method" name="method" required>
+            <option value="cash">Cash</option>
+            <option value="mpesa">M-Pesa</option>
+            <option value="card">Card</option>
+            <option value="bank">Bank Transfer</option>
+            <option value="other">Other</option>
+          </select>
+
+          <label for="reference">Reference (optional)</label>
+          <input type="text" id="reference" name="reference" placeholder="e.g. M-Pesa code">
+
+          <button type="submit" class="btn success" style="width:100%; margin-top:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            Record Payment
+          </button>
+        </form>
+      {% elif order.payment_status == 'paid' %}
+        <div class="od-paid-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          This order is fully paid
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Receipts -->
+    {% if local_receipts %}
+    <div class="od-card">
+      <div class="od-card-head">
+        <h2>Receipts</h2>
+        <span class="muted">{{ local_receipts|length }}</span>
+      </div>
+      <div class="od-receipt-list">
+        {% for r in local_receipts %}
+        <a href="{% url 'restaurant_receipt_detail' r.id %}" class="od-receipt-item">
+          <div>
+            <div class="od-receipt-num">{{ r.number }}</div>
+            <div class="od-receipt-date">{{ r.issued_at|date:"M j, Y" }} · {{ r.get_method_display }}</div>
+          </div>
+          <div class="od-receipt-amount">KES {{ r.amount|floatformat:2 }}</div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Danger Zone -->
+    {% if order.status != 'cancelled' and order.status != 'delivered' %}
+    <div class="od-card od-danger-zone">
+      <div class="od-card-head"><h2>Danger Zone</h2></div>
+      <a href="{% url 'restaurant_order_status' order.id 'cancelled' %}" 
+         class="btn danger" style="width:100%; justify-content:center;"
+         onclick="return confirm('Are you sure you want to cancel this order? Stock will be restored if already delivered.');">
+        Cancel Order
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Guest Booking Info -->
+    {% if guest_booking %}
+    <div class="od-card">
+      <div class="od-card-head"><h2>Marketplace Booking</h2></div>
+      <div class="od-info-grid" style="grid-template-columns:1fr;">
+        <div>
+          <label>Reference</label>
+          <div class="od-info-value">{{ guest_booking.reference }}</div>
+        </div>
+        <div>
+          <label>Status</label>
+          <div class="od-info-value">{{ guest_booking.get_status_display }}</div>
+        </div>
+        <div>
+          <label>Payment Policy</label>
+          <div class="od-info-value">{{ guest_booking.get_payment_policy_display }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </aside>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Order Detail ================= */
+  
+  .od-header { margin-bottom: 20px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+    color: var(--muted); font-weight: 700; margin-bottom: 12px; padding: 4px 8px 4px 4px;
+    border-radius: 8px; text-decoration: none;
+  }
+  .back-link:hover { color: var(--brand-1); background: rgba(245,158,11,0.06); }
+  .back-link svg { width: 14px; height: 14px; }
+  
+  .od-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .od-title-row h1 { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 6px; }
+  .od-meta-line { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .od-header-actions { display: flex; gap: 8px; }
+
+  /* Status Flow */
+  .od-status-flow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px; background: #fff; border-radius: 16px;
+    border: 1px solid var(--line-2); box-shadow: var(--shadow-sm);
+    margin-bottom: 20px; overflow-x: auto;
+  }
+  .od-step {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    text-decoration: none; color: var(--muted); min-width: 80px; transition: all 0.2s;
+  }
+  .od-step:hover { color: var(--brand-1); }
+  .od-step-icon {
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+    background: #f1f5f9; border: 2px solid transparent; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .od-step-icon svg { width: 18px; height: 18px; }
+  .od-step-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .od-step.active .od-step-icon {
+    background: linear-gradient(135deg, #fbbf24, #f97316); border-color: #fde68a;
+    color: #fff; box-shadow: 0 6px 14px rgba(245,158,11,0.35);
+  }
+  .od-step.active .od-step-label { color: var(--brand-2); }
+  
+  .od-step-line { flex: 1; height: 2px; background: var(--line-2); margin: 0 8px; margin-bottom: 24px; }
+
+  /* Layout */
+  .od-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .od-layout { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .od-card {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 16px;
+    box-shadow: var(--shadow-sm); padding: 20px; margin-bottom: 16px;
+  }
+  .od-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .od-card-head h2 { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+
+  /* Items Table */
+  .od-items-table { width: 100%; border-collapse: collapse; }
+  .od-items-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted-2); font-weight: 700; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .od-items-table td { padding: 14px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+  .od-items-table tr:last-child td { border-bottom: none; }
+  .od-items-table .right { text-align: right; }
+  .od-items-table .center { text-align: center; }
+  
+  .od-item-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .od-item-category { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
+  .od-item-notes { font-size: 11.5px; color: #b45309; background: #fffbeb; padding: 4px 8px; border-radius: 6px; margin-top: 6px; display: inline-block; }
+  .od-qty { display: inline-block; background: #f1f5f9; padding: 2px 10px; border-radius: 6px; font-weight: 700; font-size: 12.5px; }
+
+  /* Totals */
+  .od-totals { margin-top: 16px; padding-top: 16px; border-top: 2px dashed var(--line); }
+  .od-total-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); padding: 6px 0; }
+  .od-total-grand { font-size: 18px; font-weight: 800; color: var(--text); padding: 12px 0; border-top: 1px solid var(--line-2); margin-top: 6px; }
+  .od-total-balance { color: #ef4444; font-weight: 700; border-top: 1px solid var(--line-2); margin-top: 6px; padding-top: 12px; }
+  .text-green { color: #047857; font-weight: 700; }
+
+  /* Info Grid */
+  .od-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .od-info-grid label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--muted-2); margin-bottom: 4px; }
+  .od-info-value { font-size: 13.5px; color: var(--text); font-weight: 500; }
+  .od-info-value a { color: var(--brand-2); font-weight: 600; }
+  .od-info-full { grid-column: 1 / -1; }
+  .od-info-notes { background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--line-2); color: var(--text-2); line-height: 1.5; }
+
+  /* Payment Form */
+  .od-payment-summary { text-align: center; padding: 16px 0; }
+  .od-payment-amount { font-size: 32px; font-weight: 800; color: var(--brand-2); letter-spacing: -1px; }
+  .od-payment-form label { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; margin-top: 12px; }
+  .od-input-prefix { position: relative; display: flex; align-items: center; }
+  .od-input-prefix span { position: absolute; left: 12px; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .od-input-prefix input { width: 100%; padding: 10px 12px 10px 44px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+  .od-payment-form select, .od-payment-form input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .od-payment-form input:focus, .od-payment-form select:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+  
+  .od-paid-badge { 
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #ecfdf5; color: #065f46; padding: 14px; border-radius: 10px;
+    border: 1px solid #a7f3d0; font-weight: 700; font-size: 13px;
+  }
+  .od-paid-badge svg { width: 18px; height: 18px; }
+
+  /* Receipts */
+  .od-receipt-list { display: flex; flex-direction: column; gap: 8px; }
+  .od-receipt-item {
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
+    background: #f8fafc; border: 1px solid var(--line-2); border-radius: 8px;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .od-receipt-item:hover { border-color: var(--brand-1); background: #fffaf0; }
+  .od-receipt-num { font-size: 12.5px; font-weight: 700; color: var(--text); }
+  .od-receipt-date { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
+  .od-receipt-amount { font-size: 13px; font-weight: 800; color: var(--brand-2); }
+
+  /* Danger Zone */
+  .od-danger-zone { border-color: #fecaca; }
+  .od-danger-zone h2 { color: #b91c1c; }
+
+  /* Status Pills */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-new       { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-preparing { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .status-pill.status-ready     { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .status-pill.status-delivered { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .od-info-grid { grid-template-columns: 1fr; }
+    .od-step-line { min-width: 20px; }
+    .od-step-label { font-size: 10px; }
+  }
+  @media (max-width: 600px) {
+    .od-title-row { flex-direction: column; }
+    .od-status-flow { padding: 16px 8px; }
+    .od-step { min-width: 60px; }
+    .od-step-icon { width: 34px; height: 34px; }
+  }
+</style>
+{% endblock %}

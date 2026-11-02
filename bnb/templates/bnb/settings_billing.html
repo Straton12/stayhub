@@ -1,0 +1,19 @@
+{% extends 'bnb/settingssub_base.html' %}
+{% block title %}Billing — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.4px;">Billing</h1>
+  <p class="muted" style="margin-top:4px;">Usage and subscription.</p>
+</div>
+
+<div class="grid mb">
+  <div class="card kpi"><h3>Properties</h3><div class="value">{{ properties_count }}</div></div>
+  <div class="card kpi green"><h3>Staff</h3><div class="value">{{ staff_count }}</div></div>
+  <div class="card kpi purple"><h3>Bookings this month</h3><div class="value">{{ bookings_month }}</div></div>
+</div>
+
+<div class="card" style="padding:24px;">
+  <p class="muted">Billing details will appear here once your subscription is configured.</p>
+</div>
+{% endblock %}

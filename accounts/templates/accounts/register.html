@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create your StayHub account</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --indigo:   #4f46e5;
+    --indigo-2: #6366f1;
+    --violet:   #8b5cf6;
+    --cyan:     #22d3ee;
+    --emerald:  #10b981;
+    --amber:    #f59e0b;
+    --rose:     #f43f5e;
+
+    --ink:      #0f172a;
+    --ink-2:    #1e293b;
+    --muted:    #64748b;
+    --muted-2:  #94a3b8;
+    --line:     #e2e8f0;
+    --line-2:   #eef2f7;
+    --paper:    #ffffff;
+    --paper-2:  #f8fafc;
+
+    --danger:   #dc2626;
+    --danger-bg:#fef2f2;
+    --danger-bd:#fecaca;
+    --success:  #059669;
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background: #f4f5fb;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.55;
+  }
+
+  /* ============ SHELL ============ */
+  .shell {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    min-height: 100vh;
+  }
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ============ LEFT / MARKETING ============ */
+  .promo {
+    position: relative;
+    overflow: hidden;
+    padding: 48px 44px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(600px 400px at 0% 0%, rgba(139,92,246,0.55), transparent 60%),
+      radial-gradient(500px 400px at 100% 100%, rgba(34,211,238,0.35), transparent 55%),
+      linear-gradient(155deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);
+  }
+  .promo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(400px 260px at 90% -10%, rgba(244,63,94,0.35), transparent 60%),
+      radial-gradient(400px 260px at -10% 110%, rgba(34,211,238,0.30), transparent 60%);
+    pointer-events: none;
+  }
+  @media (max-width: 960px) {
+    .promo { display: none; }
+  }
+
+  .promo > * { position: relative; z-index: 1; }
+
+  .promo-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .promo-mark {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #22d3ee 100%);
+    box-shadow: 0 12px 30px rgba(139,92,246,0.55);
+    position: relative;
+  }
+  .promo-mark::before {
+    content: "";
+    position: absolute; inset: 1.5px; border-radius: 10.5px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  .promo-mark svg { width: 22px; height: 22px; color: #fff; }
+  .promo-brand-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+  .promo-brand-tag { font-size: 11.5px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+
+  .promo-hero { margin: 32px 0 26px; }
+  .promo-hero h1 {
+    font-size: 32px;
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    margin-bottom: 14px;
+  }
+  .promo-hero h1 span {
+    background: linear-gradient(90deg, #a5b4fc, #67e8f9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .promo-hero p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.65;
+    max-width: 360px;
+  }
+
+  .promo-stats {
+    display: flex;
+    gap: 22px;
+    padding: 18px 0;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    margin-bottom: 24px;
+  }
+  .promo-stat { display: flex; flex-direction: column; }
+  .promo-stat strong {
+    font-size: 20px; font-weight: 800;
+    letter-spacing: -0.4px;
+  }
+  .promo-stat span {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+
+  .promo-features { display: grid; gap: 14px; }
+  .promo-feature {
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.88);
+    line-height: 1.5;
+  }
+  .promo-feature .badge {
+    flex: 0 0 26px;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: #c7d2fe;
+  }
+  .promo-feature .badge svg { width: 13px; height: 13px; }
+  .promo-feature strong { color: #fff; font-weight: 700; display: block; }
+  .promo-feature small {
+    display: block;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+  }
+
+  .promo-footer {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 32px;
+  }
+
+  /* ============ RIGHT / FORM ============ */
+  .form-panel {
+    background: var(--paper);
+    display: flex;
+    justify-content: center;
+    padding: 40px 24px;
+    overflow-y: auto;
+  }
+  .form-inner {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* Top tabs */
+  .seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    margin-bottom: 30px;
+  }
+  .seg a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 9px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  .seg a:hover { color: var(--ink); }
+  .seg a.active {
+    background: #fff;
+    color: var(--indigo);
+    box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+  }
+  .seg a svg { width: 14px; height: 14px; }
+
+  .head { margin-bottom: 24px; }
+  .head h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.7px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .head p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Progress bar for "3 quick steps" feel */
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .progress span {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+  }
+  .progress span.on {
+    background: linear-gradient(90deg, var(--indigo-2), var(--violet));
+  }
+
+  /* Alerts */
+  .alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    line-height: 1.5;
+  }
+  .alert svg { width: 16px; height: 16px; flex: 0 0 16px; margin-top: 1px; }
+  .alert.error { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-bd); }
+
+  /* Form */
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink-2);
+    letter-spacing: 0.2px;
+    margin-bottom: 7px;
+  }
+  .field label .opt {
+    color: var(--muted-2);
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  .field label .req { color: var(--rose); margin-left: 2px; }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap .ico {
+    position: absolute;
+    left: 14px;
+    display: grid; place-items: center;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    pointer-events: none;
+    transition: color 0.15s;
+  }
+  .input-wrap .ico svg { width: 16px; height: 16px; }
+
+  .input-wrap input {
+    width: 100%;
+    padding: 13px 14px 13px 42px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--paper-2);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .input-wrap input::placeholder { color: var(--muted-2); }
+  .input-wrap input:hover { background: #fff; }
+  .input-wrap input:focus {
+    border-color: var(--indigo-2);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.14);
+  }
+  .input-wrap:focus-within .ico { color: var(--indigo-2); }
+
+  .input-wrap .peek {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--muted-2);
+    display: grid; place-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .input-wrap .peek:hover { color: var(--indigo-2); background: #f1f5f9; }
+  .input-wrap .peek svg { width: 16px; height: 16px; }
+
+  .field .err {
+    display: flex; align-items: center; gap: 5px;
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--danger);
+    font-weight: 500;
+  }
+  .field .err::before {
+    content: "!";
+    display: inline-grid; place-items: center;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--danger-bg);
+    color: var(--danger);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  /* Password strength */
+  .strength {
+    display: flex; gap: 4px;
+    margin-top: 8px;
+  }
+  .strength i {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    transition: background 0.15s;
+  }
+  .strength.s1 i:nth-child(-n+1) { background: #ef4444; }
+  .strength.s2 i:nth-child(-n+2) { background: #f59e0b; }
+  .strength.s3 i:nth-child(-n+3) { background: #10b981; }
+  .strength.s4 i:nth-child(-n+4) { background: #059669; }
+  .strength-text {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+  .strength-text.s1 { color: #ef4444; }
+  .strength-text.s2 { color: #d97706; }
+  .strength-text.s3 { color: #059669; }
+  .strength-text.s4 { color: #047857; }
+
+  /* Terms */
+  .terms {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 16px;
+    background: var(--paper-2);
+    border: 1.5px solid var(--line-2);
+    border-radius: 12px;
+    margin: 6px 0 18px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .terms:hover { border-color: var(--line); }
+  .terms input[type="checkbox"] {
+    appearance: none;
+    width: 18px; height: 18px; flex: 0 0 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    margin-top: 1px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .terms input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    border-color: transparent;
+  }
+  .terms input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 6px; height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .terms a { color: var(--indigo); font-weight: 700; text-decoration: none; }
+  .terms a:hover { text-decoration: underline; }
+
+  /* Submit */
+  .btn {
+    width: 100%;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+    box-shadow: 0 12px 26px rgba(79,70,229,0.30);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: filter 0.15s, box-shadow 0.2s, transform 0.05s;
+  }
+  .btn:hover { filter: brightness(1.05); box-shadow: 0 16px 34px rgba(79,70,229,0.40); }
+  .btn:active { transform: translateY(1px); }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* Footer note */
+  .fine-print {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--muted-2);
+  }
+  .fine-print svg { width: 12px; height: 12px; }
+
+  .signin-link {
+    text-align: center;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line-2);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .signin-link a {
+    color: var(--indigo);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .signin-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ==================== LEFT: PROMO ==================== -->
+  <aside class="promo">
+    <div>
+      <div class="promo-brand">
+        <div class="promo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5"/>
+            <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/>
+            <path d="M10 21v-6h4v6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="promo-brand-name">StayHub</div>
+          <div class="promo-brand-tag">One account. Everything.</div>
+        </div>
+      </div>
+
+      <div class="promo-hero">
+        <h1>Book anything.<br><span>Own your travel.</span></h1>
+        <p>Stays, safaris, restaurants, laundry and transport — book direct from verified local businesses and pay in seconds.</p>
+      </div>
+
+      <div class="promo-stats">
+        <div class="promo-stat">
+          <strong>100%</strong>
+          <span>Local</span>
+        </div>
+        <div class="promo-stat">
+          <strong>M-Pesa</strong>
+          <span>Ready</span>
+        </div>
+        <div class="promo-stat">
+          <strong>Instant</strong>
+          <span>Receipts</span>
+        </div>
+      </div>
+
+      <div class="promo-features">
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>Skip the middleman</strong>
+            <small>Book directly — no hidden fees, no surprise markups.</small>
+          </div>
+        </div>
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>Secure payments</strong>
+            <small>Pay with M-Pesa or card. Your receipt is issued instantly.</small>
+          </div>
+        </div>
+        <div class="promo-feature">
+          <span class="badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div>
+            <strong>All in one place</strong>
+            <small>Every booking, every receipt, every favourite — under one account.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="promo-footer">
+      © <span id="year"></span> StayHub · Built for East Africa
+    </div>
+  </aside>
+
+  <!-- ==================== RIGHT: FORM ==================== -->
+  <main class="form-panel">
+    <div class="form-inner">
+
+      <!-- Tabs -->
+      <div class="seg" role="tablist">
+        <a href="{% url 'login' %}{% if next %}?next={{ next }}{% endif %}" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Sign in
+        </a>
+        <a href="{% url 'guest_register' %}{% if next %}?next={{ next }}{% endif %}" class="active" role="tab" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="20" y1="8" x2="20" y2="14"/>
+            <line x1="23" y1="11" x2="17" y2="11"/>
+          </svg>
+          Create account
+        </a>
+      </div>
+
+      <!-- Heading -->
+      <div class="head">
+        <h2>Create your account</h2>
+        <p>Book in under a minute. Free forever — no card needed.</p>
+      </div>
+
+      <div class="progress" aria-hidden="true">
+        <span class="on"></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert error" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>{{ form.non_field_errors|striptags }}</div>
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate autocomplete="on" id="signupForm">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <!-- Full name -->
+        <div class="field">
+          <label for="{{ form.full_name.id_for_label }}">Full name <span class="req">*</span></label>
+          <div class="input-wrap">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            {{ form.full_name }}
+          </div>
+          {% if form.full_name.errors %}<div class="err">{{ form.full_name.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <!-- Email -->
+        <div class="field">
+          <label for="{{ form.email.id_for_label }}">Email address <span class="req">*</span></label>
+          <div class="input-wrap">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            {{ form.email }}
+          </div>
+          {% if form.email.errors %}<div class="err">{{ form.email.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <!-- Phone -->
+        <div class="field">
+          <label for="{{ form.phone.id_for_label }}">Phone <span class="opt">(optional)</span></label>
+          <div class="input-wrap">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            {{ form.phone }}
+          </div>
+          {% if form.phone.errors %}<div class="err">{{ form.phone.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <!-- Passwords side by side -->
+        <div class="row">
+          <div class="field">
+            <label for="{{ form.password1.id_for_label }}">Password <span class="req">*</span></label>
+            <div class="input-wrap">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="11" width="16" height="10" rx="2"/>
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                </svg>
+              </span>
+              {{ form.password1 }}
+              <button type="button" class="peek" data-target="{{ form.password1.id_for_label }}" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Strength -->
+            <div class="strength" id="strength" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <div class="strength-text" id="strengthText">Use 8+ characters</div>
+
+            {% if form.password1.errors %}<div class="err">{{ form.password1.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.password2.id_for_label }}">Confirm <span class="req">*</span></label>
+            <div class="input-wrap">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="11" width="16" height="10" rx="2"/>
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                  <polyline points="9 16 11 18 15 14" stroke-width="2"/>
+                </svg>
+              </span>
+              {{ form.password2 }}
+            </div>
+            {% if form.password2.errors %}<div class="err">{{ form.password2.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- Terms -->
+        <label class="terms" for="id_accept_terms">
+          <input type="checkbox" name="accept_terms" id="id_accept_terms" required>
+          <span>I agree to StayHub's <a href="#" onclick="return false;">Terms of Service</a> and <a href="#" onclick="return false;">Privacy Policy</a>, and I'm happy to receive booking updates.</span>
+        </label>
+
+        <!-- Submit -->
+        <button type="submit" class="btn">
+          <span>Create my account</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+
+        <div class="fine-print">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Your data stays private. We never sell your information.
+        </div>
+      </form>
+
+      <div class="signin-link">
+        Already have an account? <a href="{% url 'login' %}{% if next %}?next={{ next }}{% endif %}">Sign in</a>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Password show/hide
+  document.querySelectorAll('.peek').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      var hidden = input.type === 'password';
+      input.type = hidden ? 'text' : 'password';
+      btn.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+      btn.style.color = hidden ? 'var(--indigo-2)' : '';
+    });
+  });
+
+  // Password strength meter
+  (function () {
+    var input = document.getElementById('{{ form.password1.id_for_label }}');
+    var bar = document.getElementById('strength');
+    var label = document.getElementById('strengthText');
+    if (!input || !bar || !label) return;
+
+    function score(v) {
+      var s = 0;
+      if (!v) return 0;
+      if (v.length >= 8) s++;
+      if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+      if (/\d/.test(v)) s++;
+      if (/[^A-Za-z0-9]/.test(v)) s++;
+      return s;
+    }
+    var words = ['Use 8+ characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
+
+    input.addEventListener('input', function () {
+      var s = score(input.value);
+      bar.className = 'strength' + (s ? ' s' + s : '');
+      label.className = 'strength-text' + (s ? ' s' + s : '');
+      label.textContent = input.value ? words[s] : 'Use 8+ characters';
+    });
+  })();
+
+  // Prevent empty submissions with subtle shake
+  (function () {
+    var form = document.getElementById('signupForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      var required = ['id_full_name', 'id_email', 'id_password1', 'id_password2', 'id_accept_terms'];
+      var bad = [];
+      required.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox' && !el.checked) bad.push(el);
+        else if (el.type !== 'checkbox' && !el.value.trim()) bad.push(el);
+      });
+      if (bad.length) {
+        e.preventDefault();
+        bad.forEach(function (el) {
+          el.style.borderColor = '#ef4444';
+          el.style.boxShadow = '0 0 0 4px rgba(239,68,68,0.15)';
+          setTimeout(function () {
+            el.style.borderColor = '';
+            el.style.boxShadow = '';
+          }, 1500);
+        });
+      }
+    });
+  })();
+</script>
+</body>
+</html>

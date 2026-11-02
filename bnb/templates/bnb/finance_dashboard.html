@@ -1,0 +1,763 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Finance dashboard — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD + FILTER ==================== #}
+<div class="fd-header">
+  <div>
+    <h1>Finance dashboard</h1>
+    <p class="muted">
+      Revenue, expenses and margin — {{ window_label|lower }}.
+      <a href="{% url 'bnb_finance_ledger' %}?range=month" class="fd-header-link">Open ledger →</a>
+    </p>
+  </div>
+
+  <form method="get" class="fd-filter">
+    <label for="window" class="fd-filter-label">Range</label>
+    <div class="fd-filter-wrap">
+      <select name="window" id="window" onchange="this.form.submit()">
+        {% for w in available_windows %}
+          <option value="{{ w.key }}" {% if w.key == window_key %}selected{% endif %}>
+            {{ w.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <svg class="fd-filter-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  </form>
+</div>
+
+{# ==================== KPI CARDS ==================== #}
+<div class="fd-kpis">
+  <div class="fd-kpi fd-kpi-green">
+    <div class="fd-kpi-top">
+      <span class="fd-kpi-label">Revenue</span>
+      <svg class="fd-kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+      </svg>
+    </div>
+    <div class="fd-kpi-value">KES {{ window_revenue|floatformat:0|intcomma }}</div>
+    <div class="fd-kpi-sub">
+      {% if window_refunds %}
+        −{{ window_refunds|floatformat:0|intcomma }} refunds
+      {% else %}
+        {{ window_label }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="fd-kpi fd-kpi-amber">
+    <div class="fd-kpi-top">
+      <span class="fd-kpi-label">Expenses</span>
+      <svg class="fd-kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+        <polyline points="17 18 23 18 23 12"/>
+      </svg>
+    </div>
+    <div class="fd-kpi-value">KES {{ window_expenses|floatformat:0|intcomma }}</div>
+    <div class="fd-kpi-sub">{{ window_label }}</div>
+  </div>
+
+  <div class="fd-kpi fd-kpi-violet">
+    <div class="fd-kpi-top">
+      <span class="fd-kpi-label">Profit</span>
+      <svg class="fd-kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div class="fd-kpi-value {% if window_profit < 0 %}fd-kpi-negative{% endif %}">
+      KES {{ window_profit|floatformat:0|intcomma }}
+    </div>
+    <div class="fd-kpi-sub">
+      {% if window_profit >= 0 %}Profit{% else %}Loss{% endif %} · {{ window_label }}
+    </div>
+  </div>
+
+  <div class="fd-kpi fd-kpi-sky">
+    <div class="fd-kpi-top">
+      <span class="fd-kpi-label">Margin</span>
+      <svg class="fd-kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 12h8"/>
+        <path d="M12 8v8"/>
+      </svg>
+    </div>
+    <div class="fd-kpi-value">{{ window_margin }}<span class="fd-kpi-unit">%</span></div>
+    <div class="fd-kpi-sub">
+      {% if window_margin >= 20 %}Healthy
+      {% elif window_margin >= 0 %}Positive
+      {% else %}Loss{% endif %}
+    </div>
+  </div>
+</div>
+
+{# ==================== LINE CHART ==================== #}
+<div class="fd-chart-card">
+  <div class="fd-chart-head">
+    <div>
+      <h3 class="fd-card-title">Revenue vs expenses</h3>
+      <p class="fd-card-sub">
+        Grouped by {{ window_bucket }}
+        {% if chart_data %} · {{ chart_data|length }} point{{ chart_data|length|pluralize }}{% endif %}
+      </p>
+    </div>
+    <div class="fd-legend">
+      <span class="fd-legend-item"><span class="fd-legend-swatch fd-swatch-rev"></span>Revenue</span>
+      <span class="fd-legend-item"><span class="fd-legend-swatch fd-swatch-exp"></span>Expenses</span>
+    </div>
+  </div>
+
+  {% if has_chart_data %}
+    <div class="fd-chart-real" id="fd-chart-real" data-points='[
+      {% for p in chart_data %}{"label":"{{ p.label|escapejs }}","revenue":{{ p.revenue|floatformat:2 }},"expenses":{{ p.expenses|floatformat:2 }}}{% if not forloop.last %},{% endif %}{% endfor %}
+    ]'></div>
+
+    <div class="fd-chart-xaxis">
+      {% for p in chart_data %}
+        <span class="fd-chart-xlabel">{{ p.label }}</span>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fd-chart-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+      </svg>
+      <h4>No data in this range</h4>
+      <p class="muted">Try a longer range or add expenses / bookings.</p>
+    </div>
+  {% endif %}
+</div>
+
+{# ==================== VERTICAL BARS + DONUT ==================== #}
+<div class="fd-two-col">
+
+  {# ---- Vertical bars: period comparison ---- #}
+  <div class="fd-card">
+    <div class="fd-card-head">
+      <div>
+        <h3 class="fd-card-title">Period comparison</h3>
+        <p class="fd-card-sub">Rolling windows from today</p>
+      </div>
+      <div class="fd-legend">
+        <span class="fd-legend-item"><span class="fd-legend-swatch fd-swatch-rev"></span>Rev</span>
+        <span class="fd-legend-item"><span class="fd-legend-swatch fd-swatch-exp"></span>Exp</span>
+      </div>
+    </div>
+
+    <div class="fd-vbars">
+      {% for row in period_rows %}
+        <div class="fd-vbar-col">
+          <!-- The Bars -->
+          <div class="fd-vbar-track">
+            <div class="fd-vbar-stack">
+              <div class="fd-vbar fd-vbar-rev"
+                   style="height: {{ row.rev_height }}%;"
+                   title="Revenue: KES {{ row.revenue|floatformat:0|intcomma }}"></div>
+              <div class="fd-vbar fd-vbar-exp"
+                   style="height: {{ row.exp_height }}%;"
+                   title="Expenses: KES {{ row.expenses|floatformat:0|intcomma }}"></div>
+            </div>
+            
+            <!-- The Overlay Labels inside the track -->
+            <div class="fd-vbar-labels-inside">
+               <div class="fd-lbl-in fd-lbl-rev">{% if row.revenue %}KES {{ row.revenue|floatformat:0|intcomma }}{% endif %}</div>
+               <div class="fd-lbl-in fd-lbl-exp">{% if row.expenses %}KES {{ row.expenses|floatformat:0|intcomma }}{% endif %}</div>
+            </div>
+          </div>
+          
+          <!-- The Bottom Label -->
+          <div class="fd-vbar-label">{{ row.label }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ---- Donut: expense breakdown ---- #}
+  <div class="fd-card">
+    <div class="fd-card-head">
+      <div>
+        <h3 class="fd-card-title">Expense breakdown</h3>
+        <p class="fd-card-sub">Where money went</p>
+      </div>
+      <a href="{% url 'bnb_expense_list' %}" class="fd-card-link">All →</a>
+    </div>
+
+    {% if has_donut %}
+      <div class="fd-donut-body">
+        <div class="fd-donut-svg-wrap">
+          <svg class="fd-donut-svg" viewBox="0 0 42 42" aria-label="Expense breakdown">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="#eef2f7" stroke-width="5"></circle>
+            {% for slice in donut_slices %}
+              <circle cx="21" cy="21" r="15.915"
+                      fill="none"
+                      stroke="{{ slice.color }}"
+                      stroke-width="5"
+                      stroke-dasharray="{{ slice.pct }} 100"
+                      stroke-dashoffset="-{{ slice.offset }}"
+                      class="fd-donut-slice">
+                <title>{{ slice.label }} — KES {{ slice.amount|floatformat:0|intcomma }} ({{ slice.pct }}%)</title>
+              </circle>
+            {% endfor %}
+            <text x="21" y="20" text-anchor="middle" class="fd-donut-center-label">Total</text>
+            <text x="21" y="25" text-anchor="middle" class="fd-donut-center-value">KES</text>
+          </svg>
+        </div>
+
+        <ul class="fd-donut-legend">
+          {% for slice in donut_slices|slice:":6" %}
+            <li class="fd-donut-legend-row">
+              <span class="fd-donut-swatch" style="background: {{ slice.color }};"></span>
+              <span class="fd-donut-label">{{ slice.label }}</span>
+              <span class="fd-donut-pct">{{ slice.pct }}%</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="fd-donut-total">
+        <span class="fd-donut-total-label">Total spend</span>
+        <span class="fd-donut-total-value">KES {{ total_cat|floatformat:0|intcomma }}</span>
+      </div>
+    {% else %}
+      <div class="fd-mini-empty">
+        <p class="muted">No expenses in this range.</p>
+        <a href="{% url 'bnb_expense_add' %}" class="btn secondary sm">Log one</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ==================== RECENT ACTIVITY ==================== #}
+<div class="fd-activity-grid">
+
+  <div class="fd-card">
+    <div class="fd-card-head">
+      <div>
+        <h3 class="fd-card-title">Recent revenue</h3>
+        <p class="fd-card-sub">Money in — from the ledger</p>
+      </div>
+      <a href="{% url 'bnb_finance_ledger' %}" class="fd-card-link">Ledger →</a>
+    </div>
+    {% if recent_revenues %}
+      <ul class="fd-tx-list">
+        {% for r in recent_revenues %}
+          <li class="fd-tx-item">
+            <span class="fd-tx-dot fd-tx-dot-in"></span>
+            <div class="fd-tx-body">
+              <div class="fd-tx-title">{{ r.reason|truncatechars:40 }}</div>
+              <div class="fd-tx-meta">
+                {{ r.get_source_display }}
+                {% if r.property %} · {{ r.property.name|truncatechars:18 }}{% endif %}
+                · {{ r.occurred_at|date:"d M, H:i" }}
+              </div>
+            </div>
+            <span class="fd-tx-amount fd-tx-amount-in">+{{ r.amount|floatformat:0|intcomma }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fd-mini-empty">
+        <p class="muted">No revenue in this range.</p>
+        <a href="{% url 'bnb_revenue_add' %}" class="btn secondary sm">Add revenue</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="fd-card">
+    <div class="fd-card-head">
+      <div>
+        <h3 class="fd-card-title">Recent expenses</h3>
+        <p class="fd-card-sub">Money out — from the ledger</p>
+      </div>
+      <a href="{% url 'bnb_finance_ledger' %}" class="fd-card-link">Ledger →</a>
+    </div>
+    {% if recent_expenses %}
+      <ul class="fd-tx-list">
+        {% for e in recent_expenses %}
+          <li class="fd-tx-item">
+            <span class="fd-tx-dot fd-tx-dot-out"></span>
+            <div class="fd-tx-body">
+              <div class="fd-tx-title">{{ e.reason|truncatechars:40 }}</div>
+              <div class="fd-tx-meta">
+                {{ e.get_source_display }}
+                {% if e.property %} · {{ e.property.name|truncatechars:18 }}{% endif %}
+                · {{ e.occurred_at|date:"d M, H:i" }}
+              </div>
+            </div>
+            <span class="fd-tx-amount fd-tx-amount-out">-{{ e.amount|floatformat:0|intcomma }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fd-mini-empty">
+        <p class="muted">No expenses in this range.</p>
+        <a href="{% url 'bnb_expense_add' %}" class="btn secondary sm">Log one</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ---------- HEAD ---------- */
+  .fd-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .fd-header h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .fd-header p { font-size: 13px; }
+  .fd-header-link {
+    font-weight: 700;
+    color: var(--brand-1);
+    margin-left: 6px;
+    text-decoration: none;
+  }
+  .fd-header-link:hover { text-decoration: underline; }
+
+  .fd-filter { display: flex; align-items: center; gap: 8px; }
+  .fd-filter-label {
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2);
+  }
+  .fd-filter-wrap { position: relative; display: inline-block; }
+  .fd-filter-wrap select {
+    appearance: none;
+    padding: 9px 34px 9px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line-2);
+    background: #fff; color: var(--text);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fd-filter-wrap select:hover { border-color: #cbd5e1; }
+  .fd-filter-wrap select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .fd-filter-chev {
+    position: absolute; right: 11px; top: 50%;
+    transform: translateY(-50%);
+    width: 13px; height: 13px;
+    color: var(--muted-2); pointer-events: none;
+  }
+
+  /* ---------- KPI CARDS ---------- */
+  .fd-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .fd-kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .fd-kpis { grid-template-columns: 1fr; } }
+
+  .fd-kpi {
+    position: relative;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .fd-kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .fd-kpi-green::before  { background: #10b981; }
+  .fd-kpi-amber::before  { background: #f59e0b; }
+  .fd-kpi-violet::before { background: #8b5cf6; }
+  .fd-kpi-sky::before    { background: #0ea5e9; }
+
+  .fd-kpi-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .fd-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2);
+  }
+  .fd-kpi-icon {
+    width: 16px; height: 16px;
+    color: var(--muted-2); opacity: 0.65;
+  }
+  .fd-kpi-value {
+    font-size: 22px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .fd-kpi-negative { color: #b91c1c; }
+  .fd-kpi-unit { font-size: 14px; font-weight: 700; color: var(--muted); margin-left: 1px; }
+  .fd-kpi-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 5px; }
+
+  /* ---------- CARD BASE ---------- */
+  .fd-chart-card, .fd-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .fd-chart-head, .fd-card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .fd-card-title {
+    font-size: 13.5px; font-weight: 800;
+    color: var(--text); margin: 0; letter-spacing: -0.1px;
+  }
+  .fd-card-sub {
+    font-size: 11.5px; color: var(--muted-2); margin: 2px 0 0;
+  }
+  .fd-card-link {
+    font-size: 12px; font-weight: 700;
+    color: var(--brand-1);
+    padding: 5px 9px; border-radius: 7px;
+    white-space: nowrap; text-decoration: none;
+  }
+  .fd-card-link:hover { background: rgba(14,165,233,0.08); }
+
+  .fd-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+  .fd-legend-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+  }
+  .fd-legend-swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .fd-swatch-rev { background: #10b981; }
+  .fd-swatch-exp { background: #f59e0b; }
+
+  /* ---------- LINE CHART ---------- */
+  .fd-chart-real { padding: 12px 18px 0; }
+  .fd-chart-real svg { width: 100%; height: auto; display: block; }
+  .fd-chart-xaxis {
+    display: flex; justify-content: space-around;
+    padding: 8px 18px 14px;
+    gap: 4px; overflow: hidden;
+  }
+  .fd-chart-xlabel {
+    flex: 1; text-align: center;
+    font-size: 10px; font-weight: 700; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .fd-chart-empty { padding: 52px 24px; text-align: center; }
+  .fd-chart-empty svg {
+    width: 36px; height: 36px; color: var(--muted-2); margin-bottom: 12px;
+  }
+  .fd-chart-empty h4 { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .fd-chart-empty p { font-size: 12.5px; }
+
+  /* ---------- VERTICAL BARS ---------- */
+  .fd-vbars {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 12px; align-items: end;
+    padding: 22px 18px 16px;
+    min-height: 220px;
+  }
+  @media (max-width: 480px) {
+    .fd-vbars { gap: 6px; padding: 18px 10px 12px; }
+  }
+  .fd-vbar-col {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px; min-width: 0;
+  }
+  .fd-vbar-track {
+    position: relative; width: 100%; height: 140px;
+    background: #f8fafc;
+    border-radius: 8px 8px 4px 4px;
+    display: flex; align-items: flex-end;
+    padding: 3px; overflow: hidden;
+  }
+  .fd-vbar-stack {
+    width: 100%; height: 100%;
+    display: flex; align-items: flex-end; gap: 3px;
+  }
+  .fd-vbar {
+    flex: 1;
+    border-radius: 4px 4px 2px 2px;
+    transition: height .4s ease-out;
+    min-height: 8px;  /* Forces visibility of tiny bars */
+    cursor: pointer;
+  }
+  .fd-vbar:hover { filter: brightness(1.08); }
+  .fd-vbar-rev { background: linear-gradient(180deg, #34d399, #10b981); }
+  .fd-vbar-exp { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+  
+  .fd-vbar-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted-2); text-align: center; white-space: nowrap;
+  }
+
+  /* Floating labels inside the bars */
+  .fd-vbar-labels-inside {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .fd-lbl-in {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    white-space: nowrap;
+  }
+  .fd-lbl-rev { color: #047857; border: 1px solid #a7f3d0; }
+  .fd-lbl-exp { color: #b45309; border: 1px solid #fde68a; }
+
+  /* ---------- TWO COLUMN ---------- */
+  .fd-two-col {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .fd-two-col { grid-template-columns: 1fr; } }
+
+  /* ---------- DONUT ---------- */
+  .fd-donut-body {
+    display: grid; grid-template-columns: 180px 1fr;
+    gap: 16px; align-items: center; padding: 18px;
+  }
+  @media (max-width: 640px) { .fd-donut-body { grid-template-columns: 1fr; } }
+
+  .fd-donut-svg-wrap { display: flex; justify-content: center; }
+  .fd-donut-svg {
+    width: 180px; height: 180px;
+    transform: rotate(-90deg);
+  }
+  .fd-donut-slice { transition: stroke-dasharray .4s; }
+  .fd-donut-center-label {
+    font-size: 2.2px; font-weight: 700;
+    fill: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    transform: rotate(90deg); transform-origin: 21px 21px;
+  }
+  .fd-donut-center-value {
+    font-size: 2.8px; font-weight: 800;
+    fill: var(--text);
+    transform: rotate(90deg); transform-origin: 21px 21px;
+  }
+  .fd-donut-legend {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    gap: 8px; font-size: 12.5px;
+  }
+  .fd-donut-legend-row {
+    display: grid; grid-template-columns: 10px 1fr auto;
+    gap: 8px; align-items: center;
+  }
+  .fd-donut-swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .fd-donut-label {
+    color: var(--text-2); font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fd-donut-pct {
+    font-weight: 800; color: var(--text);
+    font-variant-numeric: tabular-nums; font-size: 11.5px;
+  }
+  .fd-donut-total {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 1px solid var(--line-2);
+    background: #fafbfd;
+  }
+  .fd-donut-total-label {
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted-2);
+  }
+  .fd-donut-total-value {
+    font-size: 14px; font-weight: 800;
+    color: var(--text); font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- ACTIVITY ---------- */
+  .fd-activity-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 900px) { .fd-activity-grid { grid-template-columns: 1fr; } }
+
+  .fd-tx-list { list-style: none; margin: 0; padding: 0; }
+  .fd-tx-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fd-tx-item:last-child { border-bottom: none; }
+  .fd-tx-item:hover { background: #fafbff; }
+  .fd-tx-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .fd-tx-dot-in  { background: #10b981; }
+  .fd-tx-dot-out { background: #f59e0b; }
+  .fd-tx-body { flex: 1; min-width: 0; }
+  .fd-tx-title {
+    font-size: 12.5px; font-weight: 700;
+    color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fd-tx-meta {
+    font-size: 11px; color: var(--muted-2); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .fd-tx-amount {
+    font-size: 12.5px; font-weight: 800;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .fd-tx-amount-in  { color: #047857; }
+  .fd-tx-amount-out { color: #b45309; }
+
+  /* ---------- EMPTY ---------- */
+  .fd-mini-empty {
+    padding: 28px 18px; text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px; font-size: 12.5px;
+  }
+
+  /* ---------- RESPONSIVE / MOTION ---------- */
+  @media (max-width: 640px) {
+    .fd-chart-xaxis { font-size: 9px; padding: 6px 10px 12px; }
+    .fd-donut-svg { width: 150px; height: 150px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fd-vbar, .fd-donut-slice { transition: none; }
+  }
+</style>
+
+{# Line chart drawn by vanilla JS — no CDN, no Chart.js #}
+<script>
+  (function () {
+    var container = document.getElementById('fd-chart-real');
+    if (!container) return;
+
+    var raw = container.getAttribute('data-points');
+    if (!raw) return;
+
+    var points;
+    try { points = JSON.parse(raw); } catch (e) { return; }
+    if (!points.length) return;
+
+    var W = 700, H = 220;
+    var pad = { top: 20, right: 20, bottom: 20, left: 50 };
+    var innerW = W - pad.left - pad.right;
+    var innerH = H - pad.top - pad.bottom;
+
+    var max = Math.max.apply(null, points.map(function (p) {
+      return Math.max(p.revenue, p.expenses);
+    })) || 1;
+
+    var mag = Math.pow(10, Math.floor(Math.log10(max || 1)));
+    max = Math.ceil(max / mag) * mag;
+
+    function xFor(i) {
+      if (points.length === 1) return pad.left + innerW / 2;
+      return pad.left + (i / (points.length - 1)) * innerW;
+    }
+    function yFor(v) {
+      return pad.top + innerH - (v / max) * innerH;
+    }
+
+    var revPts = points.map(function (p, i) { return xFor(i) + ',' + yFor(p.revenue); }).join(' ');
+    var expPts = points.map(function (p, i) { return xFor(i) + ',' + yFor(p.expenses); }).join(' ');
+
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    function el(name, attrs) {
+      var e = document.createElementNS(svgNS, name);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+
+    for (var i = 0; i <= 4; i++) {
+      var y = pad.top + (innerH * i / 4);
+      svg.appendChild(el('line', {
+        x1: pad.left, y1: y, x2: W - pad.right, y2: y,
+        stroke: '#eef2f7', 'stroke-width': 1
+      }));
+      var val = max - (max * i / 4);
+      var txt = el('text', {
+        x: pad.left - 8, y: y + 3,
+        'text-anchor': 'end',
+        'font-size': 9, 'font-weight': 700, fill: '#94a3b8'
+      });
+      txt.textContent = 'KES ' + Math.round(val).toLocaleString();
+      svg.appendChild(txt);
+    }
+
+    if (points.length >= 1) { /* Changed from > 1 to >= 1 */
+      var revAreaD = 'M ' + xFor(0) + ',' + (pad.top + innerH) + ' '
+        + points.map(function (p, i) { return 'L ' + xFor(i) + ',' + yFor(p.revenue); }).join(' ')
+        + ' L ' + xFor(points.length - 1) + ',' + (pad.top + innerH) + ' Z';
+      svg.appendChild(el('path', {
+        d: revAreaD,
+        fill: 'rgba(16, 185, 129, 0.12)'
+      }));
+    }
+
+    svg.appendChild(el('polyline', {
+      points: revPts, fill: 'none',
+      stroke: '#10b981', 'stroke-width': 2.5,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    }));
+    svg.appendChild(el('polyline', {
+      points: expPts, fill: 'none',
+      stroke: '#f59e0b', 'stroke-width': 2.5,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+      'stroke-dasharray': '4 3'
+    }));
+
+    points.forEach(function (p, i) {
+      ['revenue', 'expenses'].forEach(function (key) {
+        var isRev = key === 'revenue';
+        var dot = el('circle', {
+          cx: xFor(i),
+          cy: yFor(p[key]),
+          r: 4,
+          fill: '#fff',
+          stroke: isRev ? '#10b981' : '#f59e0b',
+          'stroke-width': 2.2
+        });
+        var title = document.createElementNS(svgNS, 'title');
+        title.textContent = p.label + ' — ' + (isRev ? 'Revenue' : 'Expenses') +
+          ': KES ' + Math.round(p[key]).toLocaleString();
+        dot.appendChild(title);
+        svg.appendChild(dot);
+      });
+    });
+
+    container.innerHTML = '';
+    container.appendChild(svg);
+  })();
+</script>
+{% endblock %}

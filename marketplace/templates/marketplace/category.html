@@ -1,0 +1,879 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{{ category.name }} — StayHub{% endblock %}
+
+{% block content %}
+
+<div class="mkt-container">
+
+  <!-- ============ BREADCRUMB ============ -->
+  <nav class="cat-crumb" aria-label="Breadcrumb">
+    <a href="{% url 'marketplace:home' %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12l9-9 9 9"/>
+        <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
+      </svg>
+      Home
+    </a>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>{{ category.name }}</span>
+  </nav>
+
+  <!-- ============ CATEGORY HERO ============ -->
+  {% with total=paginator.count|default:listings|length %}
+  <header class="cat-hero cat-hero-{{ category.accent }}">
+    <div class="cat-hero-bg" aria-hidden="true"></div>
+
+    <div class="cat-hero-inner">
+      <div class="cat-hero-icon">
+        {% if category.icon == 'bed' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+        {% elif category.icon == 'globe' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        {% elif category.icon == 'utensils' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+        {% elif category.icon == 'shirt' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+        {% elif category.icon == 'car' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+        {% else %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        {% endif %}
+      </div>
+
+      <div class="cat-hero-meta">
+        <span class="cat-hero-kicker">Category</span>
+        <h1>{{ category.name }}</h1>
+        <p>
+          {% if category.description %}{{ category.description }} · {% endif %}
+          <strong>{{ total }}</strong> listing{{ total|pluralize }} available
+          {% if q or location or max_price %} (filtered){% endif %}
+        </p>
+      </div>
+
+      <div class="cat-hero-stat">
+        <span class="cat-hero-stat-num">{{ total }}</span>
+        <span class="cat-hero-stat-label">Results</span>
+      </div>
+    </div>
+  </header>
+  {% endwith %}
+
+  <!-- ============ LAYOUT: filters + grid ============ -->
+  <div class="cat-layout">
+
+    <!-- ============ FILTERS ============ -->
+    <aside class="cat-filters" id="catFilters">
+      <div class="cat-filters-head">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
+          </svg>
+          Refine
+        </h3>
+        <button type="button" class="cat-filters-close" id="catFiltersClose" aria-label="Close filters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <form method="get" class="cat-filters-form">
+
+        <div class="cat-filter-block">
+          <label for="f-q">
+            <span class="cat-filter-label">Keyword</span>
+            <span class="cat-filter-hint">Search inside this category</span>
+          </label>
+          <div class="cat-filter-input">
+            <span class="cat-filter-input-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+            <input type="text" id="f-q" name="q" value="{{ q }}" placeholder="e.g. pool, garden, safari">
+          </div>
+        </div>
+
+        <div class="cat-filter-block">
+          <label for="f-loc">
+            <span class="cat-filter-label">Location</span>
+            <span class="cat-filter-hint">City, area or landmark</span>
+          </label>
+          <div class="cat-filter-input">
+            <span class="cat-filter-input-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </span>
+            <input type="text" id="f-loc" name="location" value="{{ location }}" placeholder="e.g. Westlands">
+          </div>
+        </div>
+
+        <div class="cat-filter-block">
+          <label for="f-max">
+            <span class="cat-filter-label">Max price</span>
+            <span class="cat-filter-hint">In KES</span>
+          </label>
+          <div class="cat-filter-input">
+            <span class="cat-filter-input-icon cat-filter-prefix">KES</span>
+            <input type="number" id="f-max" name="max_price" value="{{ max_price }}" placeholder="Any" min="0" step="100">
+          </div>
+        </div>
+
+        <div class="cat-filter-actions">
+          <button type="submit" class="cat-btn cat-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
+            </svg>
+            Apply filters
+          </button>
+          <a href="{% url 'marketplace:category' category.slug %}" class="cat-btn cat-btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+              <polyline points="3 3 3 8 8 8"/>
+            </svg>
+            Reset
+          </a>
+        </div>
+      </form>
+
+      <!-- Active filter chips -->
+      {% if q or location or max_price %}
+      <div class="cat-filters-active">
+        <span class="cat-filters-active-label">Active</span>
+        <div class="cat-chips">
+          {% if q %}
+            <a href="?{% if location %}location={{ location|urlencode }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}" class="cat-chip">
+              "{{ q }}"
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </a>
+          {% endif %}
+          {% if location %}
+            <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}" class="cat-chip">
+              {{ location }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </a>
+          {% endif %}
+          {% if max_price %}
+            <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if location %}location={{ location|urlencode }}&{% endif %}" class="cat-chip">
+              ≤ KES {{ max_price }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </aside>
+
+    <!-- ============ GRID ============ -->
+    <section class="cat-main">
+
+      <!-- Toolbar (mobile filter toggle + result count) -->
+      <div class="cat-toolbar">
+        <button type="button" class="cat-filters-toggle" id="catFiltersOpen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
+          </svg>
+          Filters
+          {% if q or location or max_price %}
+            <span class="cat-toolbar-dot"></span>
+          {% endif %}
+        </button>
+        <span class="cat-toolbar-count">
+          {% with total=paginator.count|default:listings|length %}
+            <strong>{{ total }}</strong>
+            result{{ total|pluralize }}
+          {% endwith %}
+        </span>
+      </div>
+
+      {% if listings %}
+        <div class="cat-card-grid">
+          {% for listing in listings %}
+            {% include 'marketplace/_listing_card.html' with listing=listing user_wishlist_ids=user_wishlist_ids %}
+          {% endfor %}
+        </div>
+
+        {# ----- Pagination ----- #}
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+          <nav class="cat-pager" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+              <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if location %}location={{ location|urlencode }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}page={{ page_obj.previous_page_number }}" class="cat-pager-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Prev
+              </a>
+            {% else %}
+              <span class="cat-pager-btn is-disabled">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Prev
+              </span>
+            {% endif %}
+
+            <span class="cat-pager-info">
+              Page <strong>{{ page_obj.number }}</strong> of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+              <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if location %}location={{ location|urlencode }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}page={{ page_obj.next_page_number }}" class="cat-pager-btn">
+                Next
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+            {% else %}
+              <span class="cat-pager-btn is-disabled">
+                Next
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </span>
+            {% endif %}
+          </nav>
+        {% endif %}
+
+      {% else %}
+        <div class="cat-empty">
+          <div class="cat-empty-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <h4>No listings match your filters</h4>
+          <p>Try widening your search or removing a filter.</p>
+          <a href="{% url 'marketplace:category' category.slug %}" class="cat-btn cat-btn-outline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+              <polyline points="3 3 3 8 8 8"/>
+            </svg>
+            Reset filters
+          </a>
+        </div>
+      {% endif %}
+
+    </section>
+  </div>
+</div>
+
+<!-- Mobile filter overlay -->
+<div class="cat-filters-overlay" id="catFiltersOverlay"></div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================
+     CATEGORY PAGE — accent hero + sticky filters + card grid
+     ================================================================ */
+
+  /* ----------------------------------------------------------------
+     BREADCRUMB
+     ---------------------------------------------------------------- */
+  .cat-crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 18px 0 6px;
+  }
+  .cat-crumb a {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .cat-crumb a:hover { color: var(--brand-1); background: rgba(99,102,241,0.06); }
+  .cat-crumb a svg { width: 12px; height: 12px; }
+  .cat-crumb > svg { width: 12px; height: 12px; color: var(--muted-2); }
+  .cat-crumb span { color: var(--text); font-weight: 700; }
+
+  /* ----------------------------------------------------------------
+     CATEGORY HERO
+     ---------------------------------------------------------------- */
+  .cat-hero {
+    --ch-accent: #6366f1;
+    --ch-accent-soft: #eef2ff;
+    --ch-accent-border: #e0e7ff;
+
+    position: relative;
+    margin: 12px 0 22px;
+    padding: 26px 26px;
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 24px rgba(15,23,42,0.05);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .cat-hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(600px 240px at 0% 0%, rgba(99,102,241,0.16), transparent 65%),
+      radial-gradient(500px 220px at 100% 100%, rgba(99,102,241,0.08), transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .cat-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .cat-hero-icon {
+    flex: 0 0 60px;
+    width: 60px; height: 60px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: var(--ch-accent-soft);
+    color: var(--ch-accent);
+    border: 1px solid var(--ch-accent-border);
+    box-shadow: 0 6px 18px rgba(99,102,241,0.15);
+  }
+  .cat-hero-icon svg { width: 28px; height: 28px; }
+
+  .cat-hero-meta { flex: 1; min-width: 200px; }
+  .cat-hero-kicker {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--ch-accent);
+    margin-bottom: 6px;
+  }
+  .cat-hero-meta h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.7px;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.15;
+  }
+  .cat-hero-meta p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 620px;
+  }
+  .cat-hero-meta p strong {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .cat-hero-stat {
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding-left: 20px;
+    border-left: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .cat-hero-stat-num {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.6px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .cat-hero-stat-label {
+    font-size: 10.5px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+  }
+  @media (min-width: 720px) {
+    .cat-hero-stat { display: flex; }
+  }
+
+  /* Accent variants */
+  .cat-hero-sky {
+    --ch-accent: #0369a1;
+    --ch-accent-soft: #eff6ff;
+    --ch-accent-border: #bae6fd;
+  }
+  .cat-hero-emerald {
+    --ch-accent: #047857;
+    --ch-accent-soft: #ecfdf5;
+    --ch-accent-border: #a7f3d0;
+  }
+  .cat-hero-amber {
+    --ch-accent: #b45309;
+    --ch-accent-soft: #fffbeb;
+    --ch-accent-border: #fde68a;
+  }
+  .cat-hero-violet {
+    --ch-accent: #6d28d9;
+    --ch-accent-soft: #f5f3ff;
+    --ch-accent-border: #ddd6fe;
+  }
+  .cat-hero-indigo {
+    --ch-accent: #4338ca;
+    --ch-accent-soft: #eef2ff;
+    --ch-accent-border: #c7d2fe;
+  }
+  .cat-hero-rose {
+    --ch-accent: #be123c;
+    --ch-accent-soft: #fff1f2;
+    --ch-accent-border: #fecdd3;
+  }
+
+  @media (max-width: 640px) {
+    .cat-hero { padding: 20px; border-radius: 18px; }
+    .cat-hero-icon { flex-basis: 52px; width: 52px; height: 52px; border-radius: 14px; }
+    .cat-hero-icon svg { width: 24px; height: 24px; }
+    .cat-hero-meta h1 { font-size: 22px; letter-spacing: -0.5px; }
+    .cat-hero-meta p { font-size: 13px; }
+  }
+
+  /* ----------------------------------------------------------------
+     LAYOUT
+     ---------------------------------------------------------------- */
+  .cat-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 26px;
+    padding: 6px 0 40px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .cat-layout { grid-template-columns: 1fr; }
+  }
+
+  /* ----------------------------------------------------------------
+     FILTERS PANEL (desktop sidebar / mobile drawer)
+     ---------------------------------------------------------------- */
+  .cat-filters {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(15,23,42,0.04);
+    position: sticky;
+    top: 130px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    align-self: start;
+  }
+  @media (max-width: 900px) {
+    .cat-filters {
+      position: fixed;
+      top: 0; left: 0;
+      width: 300px;
+      max-width: 86vw;
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      border-right: 1px solid var(--line);
+      border-top: none;
+      border-bottom: none;
+      border-left: none;
+      z-index: 90;
+      padding: 18px;
+      transform: translateX(-100%);
+      transition: transform 0.28s ease;
+      box-shadow: 4px 0 30px rgba(15,23,42,0.15);
+      overflow-y: auto;
+    }
+    .cat-filters.open { transform: translateX(0); }
+  }
+
+  .cat-filters-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .cat-filters-head h3 {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text);
+    font-weight: 800;
+  }
+  .cat-filters-head h3 svg { width: 14px; height: 14px; color: var(--brand-1); }
+  .cat-filters-close {
+    display: none;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text-2);
+    place-items: center;
+    cursor: pointer;
+  }
+  .cat-filters-close:hover { background: #f1f5f9; }
+  .cat-filters-close svg { width: 15px; height: 15px; }
+  @media (max-width: 900px) {
+    .cat-filters-close { display: grid; }
+  }
+
+  .cat-filter-block { margin-bottom: 16px; }
+  .cat-filter-block label {
+    display: flex; flex-direction: column; gap: 2px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .cat-filter-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    letter-spacing: 0.1px;
+  }
+  .cat-filter-hint {
+    font-size: 11px;
+    color: var(--muted-2);
+    font-weight: 500;
+  }
+  .cat-filter-input {
+    position: relative;
+    display: flex; align-items: center;
+  }
+  .cat-filter-input-icon {
+    position: absolute;
+    left: 12px;
+    width: 16px; height: 16px;
+    display: grid; place-items: center;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .cat-filter-input-icon svg { width: 14px; height: 14px; }
+  .cat-filter-input-icon.cat-filter-prefix {
+    width: auto;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+  }
+  .cat-filter-input input {
+    width: 100%;
+    padding: 11px 14px 11px 38px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    font-size: 13.5px;
+    outline: none;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .cat-filter-input input::placeholder { color: var(--muted-2); }
+  .cat-filter-input input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
+  }
+
+  /* Buttons */
+  .cat-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 16px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.2px;
+    transition: filter 0.15s, transform 0.05s, background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .cat-btn svg { width: 14px; height: 14px; }
+  .cat-btn:active { transform: translateY(1px); }
+
+  .cat-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(99,102,241,0.30);
+  }
+  .cat-btn-primary:hover { filter: brightness(1.06); }
+
+  .cat-btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+    border-color: var(--line);
+  }
+  .cat-btn-ghost:hover { background: #f1f5f9; color: var(--text); }
+
+  .cat-btn-outline {
+    background: #fff;
+    color: var(--text);
+    border-color: var(--line);
+    box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+  }
+  .cat-btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  .cat-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-2);
+  }
+  .cat-filter-actions .cat-btn-primary { grid-column: 1 / -1; }
+
+  /* Active chips */
+  .cat-filters-active {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-2);
+  }
+  .cat-filters-active-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    margin-bottom: 10px;
+  }
+  .cat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 8px 5px 11px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11.5px;
+    font-weight: 700;
+    border: 1px solid #c7d2fe;
+    transition: background 0.15s;
+  }
+  .cat-chip:hover { background: #e0e7ff; }
+  .cat-chip svg { width: 11px; height: 11px; }
+
+  /* Mobile overlay */
+  .cat-filters-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.45);
+    z-index: 85;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  @media (max-width: 900px) {
+    .cat-filters-overlay.show { display: block; opacity: 1; }
+  }
+
+  /* ----------------------------------------------------------------
+     MAIN AREA
+     ---------------------------------------------------------------- */
+  .cat-main { min-width: 0; }
+
+  .cat-toolbar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) {
+    .cat-toolbar { display: flex; }
+  }
+  .cat-filters-toggle {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    border-radius: 11px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+  }
+  .cat-filters-toggle:hover { border-color: #c7d2fe; color: var(--brand-1); }
+  .cat-filters-toggle svg { width: 14px; height: 14px; color: var(--brand-1); }
+  .cat-toolbar-dot {
+    position: absolute;
+    top: 8px; right: 10px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.20);
+  }
+  .cat-toolbar-count {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .cat-toolbar-count strong {
+    color: var(--text);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ----------------------------------------------------------------
+     CARD GRID
+     ---------------------------------------------------------------- */
+  .cat-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  @media (min-width: 641px) and (max-width: 900px) {
+    .cat-card-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  }
+  @media (max-width: 640px) {
+    .cat-card-grid { grid-template-columns: 1fr; gap: 16px; }
+  }
+
+  /* ----------------------------------------------------------------
+     PAGINATION
+     ---------------------------------------------------------------- */
+  .cat-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  .cat-pager-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px;
+    border-radius: 11px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+  }
+  .cat-pager-btn:hover:not(.is-disabled) {
+    border-color: #c7d2fe;
+    color: var(--brand-1);
+    background: #f8fafc;
+  }
+  .cat-pager-btn svg { width: 13px; height: 13px; }
+  .cat-pager-btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .cat-pager-info {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .cat-pager-info strong {
+    color: var(--text);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ----------------------------------------------------------------
+     EMPTY STATE
+     ---------------------------------------------------------------- */
+  .cat-empty {
+    text-align: center;
+    padding: 56px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(15,23,42,0.04);
+  }
+  .cat-empty-ico {
+    width: 64px; height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .cat-empty-ico svg { width: 28px; height: 28px; }
+  .cat-empty h4 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .cat-empty p {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.55;
+  }
+
+  /* ----------------------------------------------------------------
+     RESPONSIVE POLISH
+     ---------------------------------------------------------------- */
+  @media (max-width: 480px) {
+    .cat-crumb { font-size: 12px; padding: 14px 0 4px; }
+    .cat-hero { padding: 18px; margin: 10px 0 18px; }
+    .cat-hero-icon { flex-basis: 48px; width: 48px; height: 48px; }
+    .cat-hero-icon svg { width: 22px; height: 22px; }
+    .cat-hero-meta h1 { font-size: 20px; }
+    .cat-hero-meta p { font-size: 12.5px; }
+    .cat-empty { padding: 40px 18px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var filters = document.getElementById('catFilters');
+    var overlay = document.getElementById('catFiltersOverlay');
+    var openBtn = document.getElementById('catFiltersOpen');
+    var closeBtn = document.getElementById('catFiltersClose');
+    if (!filters || !overlay) return;
+
+    function openPanel() {
+      filters.classList.add('open');
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePanel() {
+      filters.classList.remove('open');
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    if (openBtn)  openBtn.addEventListener('click', openPanel);
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+
+    // Close on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    // Auto-close on nav to a filter result (mobile: submitting form)
+    var form = filters.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function () {
+        if (window.innerWidth <= 900) closePanel();
+      });
+    }
+  })();
+</script>
+{% endblock %}

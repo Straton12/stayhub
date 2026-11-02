@@ -1,0 +1,478 @@
+{% extends 'marketplace/manage/base.html' %}
+{% block title %}Categories — Marketplace{% endblock %}
+{% block page_title %}Listing categories{% endblock %}
+
+{% block content %}
+
+<div class="cat-header">
+  <div class="cat-header-text">
+    <h1>Listing categories</h1>
+    <p>
+      Categories group your listings on the marketplace — Stays, Tours, Food, Laundry,
+      Transport, or anything else you offer. Categories with listings can't be deleted.
+    </p>
+  </div>
+  <a href="{% url 'marketplace:manage_category_create' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add category
+  </a>
+</div>
+
+{% if categories %}
+  <div class="cat-grid" role="list">
+    {% for cat in categories %}
+      <div class="cat-card accent-{{ cat.accent }}" role="listitem">
+
+        <!-- Order badge (top-right corner) -->
+        <span class="cat-order-badge" title="Display order">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="6" y1="12" x2="18" y2="12"/>
+            <line x1="9" y1="18" x2="15" y2="18"/>
+          </svg>
+          {{ cat.display_order }}
+        </span>
+
+        <div class="cat-card-head">
+          <div class="cat-icon" aria-hidden="true">
+            {% if cat.icon == 'bed' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+            {% elif cat.icon == 'globe' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            {% elif cat.icon == 'utensils' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+            {% elif cat.icon == 'shirt' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+            {% elif cat.icon == 'car' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            {% endif %}
+          </div>
+
+          <div class="cat-meta">
+            <h3>{{ cat.name }}</h3>
+            <code class="cat-slug">{{ cat.slug }}</code>
+          </div>
+        </div>
+
+        {% if cat.description %}
+          <p class="cat-desc">{{ cat.description }}</p>
+        {% else %}
+          <p class="cat-desc cat-desc-muted">No description yet.</p>
+        {% endif %}
+
+        <div class="cat-stats">
+          {% with count=cat.listings.count %}
+            {% if count %}
+              <span class="cat-stat-pill cat-stat-active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                <strong>{{ count }}</strong>
+                listing{{ count|pluralize }}
+              </span>
+            {% else %}
+              <span class="cat-stat-pill cat-stat-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Empty
+              </span>
+            {% endif %}
+          {% endwith %}
+        </div>
+
+        <div class="cat-actions">
+          <a href="{% url 'marketplace:manage_category_edit' cat.id %}" class="btn sm secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+            </svg>
+            Edit
+          </a>
+          <a href="{% url 'marketplace:manage_category_delete' cat.id %}"
+             class="btn sm danger-outline"
+             onclick="return confirm('Delete “{{ cat.name|escapejs }}”? This cannot be undone.');">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+
+  <div class="cat-empty">
+    <div class="cat-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="2"/>
+        <rect x="14" y="3" width="7" height="7" rx="2"/>
+        <rect x="3" y="14" width="7" height="7" rx="2"/>
+        <rect x="14" y="14" width="7" height="7" rx="2"/>
+      </svg>
+    </div>
+
+    <h4>No categories yet</h4>
+    <p>Add your first category to start publishing listings. Each listing belongs to one category.</p>
+
+    <a href="{% url 'marketplace:manage_category_create' %}" class="btn cat-empty-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add your first category
+    </a>
+
+    <div class="cat-empty-hints">
+      <div class="cat-empty-hint">
+        <span class="cat-empty-hint-num">1</span>
+        <strong>Name your category</strong>
+        <span>e.g. "Stays", "Tours", "Food &amp; Drink"</span>
+      </div>
+      <div class="cat-empty-hint">
+        <span class="cat-empty-hint-num">2</span>
+        <strong>Pick an icon &amp; accent</strong>
+        <span>Choose how it appears on the marketplace</span>
+      </div>
+      <div class="cat-empty-hint">
+        <span class="cat-empty-hint-num">3</span>
+        <strong>Assign listings</strong>
+        <span>Every listing shows under its category</span>
+      </div>
+    </div>
+  </div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     CATEGORIES LIST — accent-aware cards + stats + actions
+     ============================================================ */
+
+  /* Header */
+  .cat-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .cat-header-text { min-width: 0; flex: 1; }
+  .cat-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .cat-header p {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 640px;
+    line-height: 1.55;
+  }
+
+  /* Grid */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* Card */
+  .cat-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+    isolation: isolate;
+  }
+  .cat-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-1), var(--brand-3));
+    opacity: 0;
+    transition: opacity 0.22s;
+  }
+  .cat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 44px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+  .cat-card:hover::before { opacity: 1; }
+
+  /* Accent gradients for top border */
+  .cat-card.accent-sky::before     { background: linear-gradient(90deg, #0ea5e9, #22d3ee); }
+  .cat-card.accent-emerald::before { background: linear-gradient(90deg, #10b981, #22d3ee); }
+  .cat-card.accent-amber::before   { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+  .cat-card.accent-violet::before  { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+  .cat-card.accent-indigo::before  { background: linear-gradient(90deg, #6366f1, #22d3ee); }
+  .cat-card.accent-rose::before    { background: linear-gradient(90deg, #f43f5e, #8b5cf6); }
+
+  /* Order badge */
+  .cat-order-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    border: 1px solid var(--line);
+    z-index: 1;
+  }
+  .cat-order-badge svg { width: 10px; height: 10px; color: var(--muted-2); }
+
+  /* Head */
+  .cat-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-right: 60px; /* leave space for the order badge */
+  }
+  .cat-icon {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    transition: transform 0.2s;
+  }
+  .cat-card:hover .cat-icon { transform: scale(1.06) rotate(-3deg); }
+  .cat-icon svg { width: 20px; height: 20px; }
+
+  .cat-card.accent-sky     .cat-icon { background: #eff6ff; color: #0369a1; border-color: #bae6fd; }
+  .cat-card.accent-emerald .cat-icon { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .cat-card.accent-amber   .cat-icon { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .cat-card.accent-violet  .cat-icon { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .cat-card.accent-rose    .cat-icon { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+
+  .cat-meta { min-width: 0; flex: 1; }
+  .cat-meta h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cat-slug {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    padding: 2px 6px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+  }
+
+  /* Description */
+  .cat-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.6em;
+  }
+  .cat-desc-muted { color: var(--muted-2); font-style: italic; }
+
+  /* Stats */
+  .cat-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-2);
+    margin-bottom: 12px;
+  }
+  .cat-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .cat-stat-pill svg { width: 12px; height: 12px; }
+  .cat-stat-pill strong {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    margin-right: 1px;
+  }
+  .cat-stat-active {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .cat-stat-empty {
+    background: #f8fafc;
+    color: var(--muted-2);
+    border: 1px solid var(--line);
+  }
+
+  /* Actions */
+  .cat-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .cat-actions .btn { flex: 1; justify-content: center; }
+
+  /* Red-outline delete — safer-looking than solid red */
+  .btn.danger-outline {
+    background: #fff;
+    color: #b91c1c;
+    border-color: #fecaca;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.danger-outline:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+
+  /* Empty state */
+  .cat-empty {
+    text-align: center;
+    padding: 56px 24px 48px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cat-empty-ico {
+    width: 72px; height: 72px;
+    margin: 0 auto 16px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: #eef2ff;
+    color: var(--brand-2);
+    border: 1px solid #e0e7ff;
+    box-shadow: 0 8px 20px rgba(99,102,241,0.12);
+  }
+  .cat-empty-ico svg { width: 32px; height: 32px; }
+  .cat-empty h4 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .cat-empty p {
+    font-size: 13.5px;
+    color: var(--muted);
+    max-width: 420px;
+    margin: 0 auto 18px;
+    line-height: 1.55;
+  }
+  .cat-empty-btn { margin-bottom: 32px; }
+
+  .cat-empty-hints {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: 28px;
+    border-top: 1px solid var(--line-2);
+    text-align: left;
+  }
+  .cat-empty-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .cat-empty-hint:hover { background: #fff; border-color: #c7d2fe; }
+  .cat-empty-hint-num {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    border: 1px solid #e0e7ff;
+  }
+  .cat-empty-hint strong {
+    font-size: 13.5px;
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: -0.1px;
+  }
+  .cat-empty-hint span:last-child {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .cat-header { flex-direction: column; align-items: stretch; }
+    .cat-header h1 { font-size: 19px; }
+    .cat-header .btn { justify-content: center; width: 100%; }
+    .cat-grid { grid-template-columns: 1fr; gap: 12px; }
+    .cat-card { padding: 16px; }
+    .cat-empty { padding: 40px 18px 32px; border-radius: 16px; }
+    .cat-empty-ico { width: 60px; height: 60px; border-radius: 16px; }
+    .cat-empty-ico svg { width: 26px; height: 26px; }
+    .cat-empty h4 { font-size: 15.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cat-card,
+    .cat-card:hover,
+    .cat-icon,
+    .cat-card:hover .cat-icon {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+</style>
+{% endblock %}

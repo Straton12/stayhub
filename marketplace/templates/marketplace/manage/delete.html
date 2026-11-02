@@ -1,0 +1,556 @@
+{% extends 'marketplace/manage/base.html' %}
+{% block title %}Delete listing — Marketplace{% endblock %}
+{% block page_title %}Delete listing{% endblock %}
+
+{% block content %}
+
+<div class="md-wrap">
+  <div class="md-card">
+
+    <!-- ============ ICON ============ -->
+    <div class="md-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+
+    <h1>Delete this listing?</h1>
+    <p class="md-lead">
+      You are about to permanently delete this listing from the marketplace.
+      This action cannot be undone.
+    </p>
+
+    <!-- ============ LISTING PREVIEW ============ -->
+    <div class="md-preview">
+      <div class="md-preview-thumb">
+        {% if listing.cover_image %}
+          <img src="{{ listing.cover_image.url }}" alt="{{ listing.title }}">
+        {% elif listing.cover_image_url %}
+          <img src="{{ listing.cover_image_url }}" alt="{{ listing.title }}">
+        {% else %}
+          <div class="md-preview-fallback" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="2"/>
+              <rect x="14" y="3" width="7" height="7" rx="2"/>
+              <rect x="3" y="14" width="7" height="7" rx="2"/>
+              <rect x="14" y="14" width="7" height="7" rx="2"/>
+            </svg>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="md-preview-body">
+        <div class="md-preview-title">{{ listing.title }}</div>
+        <div class="md-preview-meta">
+          <span class="md-pill md-pill-cat">{{ listing.category.name }}</span>
+          <span class="md-pill md-pill-status md-pill-{{ listing.status }}">
+            <span class="dot"></span>
+            {{ listing.get_status_display }}
+          </span>
+        </div>
+        {% if listing.location %}
+          <div class="md-preview-loc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {{ listing.location }}
+          </div>
+        {% endif %}
+        <div class="md-preview-price">
+          <strong>KES {{ listing.price|floatformat:0 }}</strong>
+          <span>{{ listing.price_unit }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ IMPACT ============ -->
+    <div class="md-impact">
+      <div class="md-impact-head">You will lose</div>
+      <div class="md-impact-grid">
+        <div class="md-impact-item">
+          <span class="md-impact-num">{{ listing.view_count|default:0|floatformat:"0g" }}</span>
+          <span class="md-impact-lbl">Views</span>
+        </div>
+        <div class="md-impact-item">
+          <span class="md-impact-num">{{ listing.booking_count|default:0|floatformat:"0g" }}</span>
+          <span class="md-impact-lbl">Bookings</span>
+        </div>
+        <div class="md-impact-item">
+          <span class="md-impact-num">{{ listing.review_count|default:0|floatformat:"0g" }}</span>
+          <span class="md-impact-lbl">Reviews</span>
+        </div>
+        <div class="md-impact-item">
+          <span class="md-impact-num">{{ listing.wishlist_count|default:0|floatformat:"0g" }}</span>
+          <span class="md-impact-lbl">Saves</span>
+        </div>
+      </div>
+      {% if listing.review_count %}
+        <p class="md-impact-note">
+          All {{ listing.review_count }} guest review{{ listing.review_count|pluralize }} on this listing will also be removed.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- ============ ACTIVE BOOKINGS WARNING ============ -->
+    {% if listing.is_blocked_now %}
+      <div class="md-warn" role="alert">
+        <span class="md-warn-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </span>
+        <div>
+          <strong>This listing has an active booking right now.</strong>
+          <span>Deleting it will not cancel existing bookings, but the guest will no longer be able to see the listing.</span>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- ============ CONFIRMATION ============ -->
+    <form method="post" class="md-form" id="mdForm">
+      {% csrf_token %}
+
+      <div class="md-confirm">
+        <label for="mdConfirmInput">
+          Type <code>delete</code> to confirm
+        </label>
+        <input type="text" id="mdConfirmInput" name="confirm"
+               autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="delete"
+               aria-describedby="mdConfirmHint">
+        <p class="md-confirm-hint" id="mdConfirmHint">
+          Extra safety check for irreversible actions.
+        </p>
+      </div>
+
+      <div class="md-actions">
+        <a href="{% url 'marketplace:manage_home' %}" class="btn secondary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Cancel
+        </a>
+
+        {% if listing.status == 'approved' and listing.is_active %}
+          <a href="{% url 'marketplace:listing_detail' listing.slug %}" target="_blank" rel="noopener" class="btn ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            View live
+          </a>
+        {% endif %}
+
+        <button type="submit" class="btn danger" id="mdSubmitBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          </svg>
+          Yes, delete this listing
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     Delete listing confirmation
+     ============================================================ */
+
+  .md-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 32px 20px 40px;
+  }
+
+  .md-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-top: 4px solid #ef4444;
+    border-radius: 20px;
+    padding: 32px 28px;
+    max-width: 560px;
+    width: 100%;
+    box-shadow: 0 12px 40px rgba(15,23,42,0.08);
+    text-align: center;
+  }
+
+  /* Icon */
+  .md-icon {
+    width: 68px; height: 68px;
+    margin: 0 auto 18px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+  .md-icon svg { width: 30px; height: 30px; }
+
+  /* Headline */
+  .md-card h1 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .md-lead {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+  .md-lead strong { color: var(--text); font-weight: 700; }
+
+  /* ============================================================
+     Listing preview card
+     ============================================================ */
+  .md-preview {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .md-preview-thumb {
+    flex: 0 0 68px;
+    width: 68px; height: 68px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    display: grid; place-items: center;
+  }
+  .md-preview-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .md-preview-fallback {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    color: rgba(99,102,241,0.6);
+  }
+  .md-preview-fallback svg { width: 26px; height: 26px; }
+
+  .md-preview-body { flex: 1; min-width: 0; }
+  .md-preview-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .md-preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .md-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .md-pill-cat {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+  }
+  .md-pill-status {
+    background: #f1f5f9;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+  }
+  .md-pill-status .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor;
+  }
+  .md-pill-approved    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .md-pill-pending     { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .md-pill-rejected    { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .md-pill-draft       { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .md-pill-unpublished { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  .md-preview-loc {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .md-preview-loc svg { width: 11px; height: 11px; color: var(--muted-2); flex-shrink: 0; }
+
+  .md-preview-price {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .md-preview-price strong {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--brand-1);
+    font-variant-numeric: tabular-nums;
+  }
+  .md-preview-price span {
+    font-size: 11px;
+    color: var(--muted-2);
+    font-weight: 600;
+  }
+
+  /* ============================================================
+     Impact stats
+     ============================================================ */
+  .md-impact {
+    padding: 16px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .md-impact-head {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #991b1b;
+    margin-bottom: 12px;
+  }
+  .md-impact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .md-impact-item {
+    text-align: center;
+    padding: 10px 6px;
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+  }
+  .md-impact-num {
+    display: block;
+    font-size: 17px;
+    font-weight: 800;
+    color: #7f1d1d;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .md-impact-lbl {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #b91c1c;
+    opacity: 0.85;
+    margin-top: 3px;
+  }
+  .md-impact-note {
+    font-size: 12px;
+    color: #991b1b;
+    line-height: 1.5;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #fecaca;
+  }
+
+  /* ============================================================
+     Active bookings warning
+     ============================================================ */
+  .md-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .md-warn-badge {
+    flex: 0 0 32px;
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #fde68a;
+    color: #92400e;
+  }
+  .md-warn-badge svg { width: 16px; height: 16px; }
+  .md-warn strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #78350f;
+    margin-bottom: 3px;
+  }
+  .md-warn span {
+    display: block;
+    font-size: 12.5px;
+    color: #92400e;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     Confirmation input
+     ============================================================ */
+  .md-confirm {
+    text-align: left;
+    padding: 16px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+  .md-confirm label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #991b1b;
+    margin-bottom: 8px;
+  }
+  .md-confirm label code {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #fee2e2;
+    color: #7f1d1d;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+  .md-confirm input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #fecaca;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .md-confirm input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.13);
+  }
+  .md-confirm-hint {
+    font-size: 11.5px;
+    color: #b91c1c;
+    margin-top: 6px;
+    opacity: 0.85;
+  }
+
+  /* ============================================================
+     Actions
+     ============================================================ */
+  .md-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .md-actions .btn { min-width: 120px; justify-content: center; }
+
+  /* Disabled delete button */
+  .md-actions .btn:disabled,
+  .md-actions .btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: none;
+  }
+  .md-actions .btn:disabled:hover,
+  .md-actions .btn[disabled]:hover {
+    filter: none;
+    box-shadow: none;
+  }
+
+  /* ============================================================
+     Responsive
+     ============================================================ */
+  @media (max-width: 560px) {
+    .md-wrap { padding: 20px 12px 32px; }
+    .md-card { padding: 26px 20px; border-radius: 16px; }
+    .md-icon { width: 56px; height: 56px; border-radius: 16px; }
+    .md-icon svg { width: 26px; height: 26px; }
+    .md-card h1 { font-size: 18px; }
+    .md-lead { font-size: 13px; }
+    .md-preview { padding: 12px; }
+    .md-preview-thumb { flex-basis: 56px; width: 56px; height: 56px; }
+    .md-impact-grid { grid-template-columns: repeat(2, 1fr); }
+    .md-actions { flex-direction: column-reverse; }
+    .md-actions .btn { width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // Enable the delete button only when the user types "delete".
+  (function () {
+    var input = document.getElementById('mdConfirmInput');
+    var button = document.getElementById('mdSubmitBtn');
+    if (!input || !button) return;
+
+    function check() {
+      var ok = input.value.trim().toLowerCase() === 'delete';
+      button.disabled = !ok;
+    }
+
+    input.addEventListener('input', check);
+    check();
+
+    // Pressing Enter inside the confirm field shouldn't submit prematurely.
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && button.disabled) {
+        e.preventDefault();
+      }
+    });
+  })();
+</script>
+{% endblock %}

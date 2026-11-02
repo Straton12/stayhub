@@ -1,0 +1,648 @@
+{% extends 'bnb/base.html' %}
+{% load humanize %}
+{% block page_title %}Operations{% endblock %}
+
+{% block subtabs %}
+<nav class="subtabs">
+  <div class="subtabs-inner">
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_operations_home' %}active{% endif %}"
+       href="{% url 'bnb_operations_home' %}">Overview</a>
+    <a class="subtab {% if 'housekeeping' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_housekeeping' %}">Housekeeping</a>
+    <a class="subtab {% if 'maintenance' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_maintenance' %}">Maintenance</a>
+    <a class="subtab {% if 'staff' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_staff_list' %}">Staff</a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="op-head">
+  <div>
+    <h1>Operations</h1>
+    <p class="muted">
+      {% if open_tasks_count or open_maintenance_count %}
+        {{ open_tasks_count }} housekeeping task{{ open_tasks_count|pluralize }} and
+        {{ open_maintenance_count }} maintenance request{{ open_maintenance_count|pluralize }}
+        need attention.
+      {% else %}
+        Everything is under control — no open tasks or requests.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+{# ==================== STATS ==================== #}
+<div class="op-stats">
+  <a href="{% url 'bnb_housekeeping' %}?status=open" class="op-stat">
+    <div class="op-stat-label">Open tasks</div>
+    <div class="op-stat-value">{{ open_tasks_count }}</div>
+    <div class="op-stat-sub">Housekeeping</div>
+  </a>
+  <a href="{% url 'bnb_housekeeping' %}?status=in_progress" class="op-stat op-stat-sky">
+    <div class="op-stat-label">In progress</div>
+    <div class="op-stat-value">{{ in_progress_tasks_count }}</div>
+    <div class="op-stat-sub">Housekeeping</div>
+  </a>
+  <div class="op-stat op-stat-green">
+    <div class="op-stat-label">Done today</div>
+    <div class="op-stat-value">{{ done_today_count }}</div>
+    <div class="op-stat-sub">Housekeeping</div>
+  </div>
+  <a href="{% url 'bnb_maintenance' %}?status=open" class="op-stat op-stat-amber">
+    <div class="op-stat-label">Open maintenance</div>
+    <div class="op-stat-value">{{ open_maintenance_count }}</div>
+    <div class="op-stat-sub">{{ urgent_maintenance_count }} urgent</div>
+  </a>
+  <a href="{% url 'bnb_staff_list' %}" class="op-stat">
+    <div class="op-stat-label">Active staff</div>
+    <div class="op-stat-value">{{ active_staff_count }}</div>
+    <div class="op-stat-sub">Currently employed</div>
+  </a>
+  <a href="{% url 'bnb_maintenance' %}?status=in_progress" class="op-stat op-stat-sky">
+    <div class="op-stat-label">In progress</div>
+    <div class="op-stat-value">{{ in_progress_maintenance_count }}</div>
+    <div class="op-stat-sub">Maintenance</div>
+  </a>
+</div>
+
+{# ==================== QUICK ACTIONS ==================== #}
+<div class="op-actions">
+  <a href="{% url 'bnb_housekeeping' %}" class="op-action op-action-sky">
+    <span class="op-action-ico op-action-ico-sky">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    </span>
+    <span class="op-action-body">
+      <strong>Housekeeping</strong>
+      <span>Cleaning, laundry, inspections</span>
+    </span>
+    <svg class="op-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+
+  <a href="{% url 'bnb_maintenance' %}" class="op-action op-action-amber">
+    <span class="op-action-ico op-action-ico-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
+    </span>
+    <span class="op-action-body">
+      <strong>Maintenance</strong>
+      <span>Repairs, issues, upkeep</span>
+    </span>
+    <svg class="op-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+
+  <!-- NEW: Bookings Quick Action -->
+  <a href="{% url 'bnb_booking_list' %}" class="op-action op-action-indigo">
+    <span class="op-action-ico op-action-ico-indigo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </span>
+    <span class="op-action-body">
+      <strong>Bookings</strong>
+      <span>Check-ins, check-outs, guests</span>
+    </span>
+    <svg class="op-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+</div>
+
+{# ==================== RECENT PANELS ==================== #}
+<div class="op-grid">
+
+  <!-- Recent housekeeping -->
+  <div class="op-panel">
+    <div class="op-panel-head">
+      <div>
+        <h2>Recent housekeeping</h2>
+        <p class="muted">Latest tasks</p>
+      </div>
+      <a href="{% url 'bnb_housekeeping' %}" class="op-panel-link">
+        View all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+
+    {% if recent_tasks %}
+      <ul class="op-list">
+        {% for t in recent_tasks %}
+          <li>
+            <a href="{% url 'bnb_housekeeping' %}" class="op-row">
+              <span class="op-row-ico op-row-ico-{{ t.status }}">
+                {% if t.status == 'done' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% elif t.status == 'in_progress' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {% else %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg>
+                {% endif %}
+              </span>
+
+              <span class="op-row-body">
+                <span class="op-row-title">{{ t.description|truncatechars:44 }}</span>
+                <span class="op-row-meta">
+                  {{ t.get_task_type_display }}
+                  {% if t.property %} · {{ t.property.name|truncatechars:22 }}{% endif %}
+                </span>
+              </span>
+
+              <span class="op-row-right">
+                <span class="op-pill op-pill-{{ t.status }}">
+                  <span class="op-pill-dot"></span>
+                  {{ t.get_status_display }}
+                </span>
+                <span class="op-row-priority op-row-priority-{{ t.priority }}">
+                  {{ t.get_priority_display }}
+                </span>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="op-empty">
+        <div class="op-empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <p class="muted">No housekeeping tasks yet.</p>
+        <a href="{% url 'bnb_housekeeping_add' %}" class="btn secondary sm" style="margin-top:12px;">
+          Create the first task
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent maintenance -->
+  <div class="op-panel">
+    <div class="op-panel-head">
+      <div>
+        <h2>Recent maintenance</h2>
+        <p class="muted">Latest requests</p>
+      </div>
+      <a href="{% url 'bnb_maintenance' %}" class="op-panel-link">
+        View all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+
+    {% if recent_maintenance %}
+      <ul class="op-list">
+        {% for m in recent_maintenance %}
+          <li>
+            <a href="{% url 'bnb_maintenance' %}" class="op-row">
+              <span class="op-row-ico op-row-ico-{{ m.status }}">
+                {% if m.status == 'resolved' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {% elif m.status == 'in_progress' %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {% else %}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                {% endif %}
+              </span>
+
+              <span class="op-row-body">
+                <span class="op-row-title">{{ m.issue|truncatechars:44 }}</span>
+                <span class="op-row-meta">
+                  {{ m.get_category_display }}
+                  {% if m.property %} · {{ m.property.name|truncatechars:22 }}{% endif %}
+                </span>
+              </span>
+
+              <span class="op-row-right">
+                <span class="op-pill op-pill-{{ m.status }}">
+                  <span class="op-pill-dot"></span>
+                  {{ m.get_status_display }}
+                </span>
+                <span class="op-row-priority op-row-priority-{{ m.priority }}">
+                  {{ m.get_priority_display }}
+                </span>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="op-empty">
+        <div class="op-empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <p class="muted">No maintenance requests yet.</p>
+        <a href="{% url 'bnb_maintenance_add' %}" class="btn secondary sm" style="margin-top:12px;">
+          Add a request
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ==================== STAFF BY ROLE ==================== #}
+{% if staff_by_role %}
+  <div class="op-staff">
+    <div class="op-staff-head">
+      <div>
+        <h2>Staff by role</h2>
+        <p class="muted">Active members across your properties.</p>
+      </div>
+      <a href="{% url 'bnb_staff_list' %}" class="op-panel-link">
+        View all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+
+    <ul class="op-staff-list">
+      {% for r in staff_by_role %}
+        <li class="op-staff-item">
+          <span class="op-staff-label">{{ r.label }}</span>
+          <span class="op-staff-count">{{ r.count }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .op-head {
+    margin-bottom: 20px;
+  }
+  .op-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .op-head p { font-size: 13px; }
+
+  /* ============================================================ */
+  /*  STATS                                                       */
+  /* ============================================================ */
+  .op-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px; margin-bottom: 20px;
+  }
+  @media (max-width: 1100px) { .op-stats { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 640px)  { .op-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+
+  .op-stat {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  a.op-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .op-stat-label {
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .op-stat-value {
+    font-size: 24px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .op-stat-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+  .op-stat-sky   .op-stat-value { color: #0369a1; }
+  .op-stat-green .op-stat-value { color: #047857; }
+  .op-stat-amber .op-stat-value { color: #b45309; }
+  @media (max-width: 480px) {
+    .op-stat-value { font-size: 21px; }
+  }
+
+  /* ============================================================ */
+  /*  QUICK ACTIONS                                               */
+  /* ============================================================ */
+  .op-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr; /* 3 columns now */
+    gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 900px) { .op-actions { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .op-actions { grid-template-columns: 1fr; } }
+
+  .op-action {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  .op-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .op-action-sky    { background: linear-gradient(135deg, #ecfeff, #e0f2fe); border-color: #bae6fd; }
+  .op-action-amber  { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a; }
+  .op-action-indigo { background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-color: #c7d2fe; }
+
+  .op-action-ico {
+    flex: 0 0 44px;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    color: #fff;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .op-action-ico svg { width: 20px; height: 20px; }
+  .op-action-ico-sky    { background: linear-gradient(135deg, #0ea5e9, #22d3ee); }
+  .op-action-ico-amber  { background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 6px 14px -4px rgba(245,158,11,0.45); }
+  .op-action-ico-indigo { background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 6px 14px -4px rgba(99,102,241,0.45); }
+
+  .op-action-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .op-action-body strong {
+    font-size: 14px; font-weight: 800; color: var(--text);
+  }
+  .op-action-body span {
+    font-size: 12px; color: var(--muted);
+  }
+  .op-action-arrow {
+    flex: 0 0 18px;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    transition: color .15s, transform .15s;
+  }
+  .op-action:hover .op-action-arrow {
+    color: var(--brand-1);
+    transform: translateX(3px);
+  }
+
+  /* ============================================================ */
+  /*  TWO-COLUMN GRID (Recent panels)                             */
+  /* ============================================================ */
+  .op-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 22px;
+  }
+  @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+
+  .op-panel {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .op-panel-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .op-panel-head h2 {
+    font-size: 14px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+  .op-panel-head p { font-size: 12px; }
+
+  .op-panel-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--brand-1);
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .op-panel-link:hover { background: rgba(14,165,233,0.08); }
+  .op-panel-link svg { width: 12px; height: 12px; }
+
+  /* ============================================================ */
+  /*  LIST                                                        */
+  /* ============================================================ */
+  .op-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+  }
+  .op-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line-2);
+    color: inherit;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .op-row:last-child { border-bottom: none; }
+  .op-row:hover { background: #f8fafc; }
+
+  .op-row-ico {
+    flex: 0 0 32px;
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    background: #f1f5f9;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+  }
+  .op-row-ico svg { width: 15px; height: 15px; }
+  .op-row-ico-open        { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .op-row-ico-in_progress { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .op-row-ico-done        { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .op-row-ico-resolved    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+  .op-row-body { flex: 1; min-width: 0; }
+  .op-row-title {
+    display: block;
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .op-row-meta {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .op-row-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Status pill */
+  .op-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .op-pill-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .op-pill-open        { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .op-pill-in_progress { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .op-pill-done        { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .op-pill-resolved    { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+
+  /* Priority */
+  .op-row-priority {
+    font-size: 9.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-2);
+  }
+  .op-row-priority-urgent { color: #b91c1c; }
+  .op-row-priority-high   { color: #c2410c; }
+  .op-row-priority-normal { color: var(--muted-2); }
+  .op-row-priority-low    { color: var(--muted-2); }
+
+  /* Empty per-panel */
+  .op-empty {
+    padding: 32px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .op-empty-ico {
+    width: 52px; height: 52px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: #f1f5f9;
+    color: var(--muted-2);
+    border: 1px solid var(--line-2);
+  }
+  .op-empty-ico svg { width: 24px; height: 24px; }
+  .op-empty p { font-size: 13px; margin: 0; }
+
+  /* ============================================================ */
+  /*  STAFF BY ROLE                                               */
+  /* ============================================================ */
+  .op-staff {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .op-staff-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .op-staff-head h2 {
+    font-size: 14px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+  .op-staff-head p { font-size: 12px; }
+
+  .op-staff-list {
+    list-style: none; padding: 0; margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    padding: 16px 20px;
+  }
+  .op-staff-item {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+  }
+  .op-staff-label {
+    font-size: 12.5px; font-weight: 600;
+    color: var(--text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .op-staff-count {
+    font-size: 14px; font-weight: 800;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--line-2);
+    padding: 1px 9px;
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 640px) {
+    .op-head h1 { font-size: 19px; }
+    .op-row { padding: 12px 16px; gap: 10px; }
+    .op-panel-head, .op-staff-head { padding: 14px 16px; }
+    .op-row-title { font-size: 12.5px; }
+    .op-row-ico { width: 28px; height: 28px; flex-basis: 28px; }
+    .op-row-ico svg { width: 13px; height: 13px; }
+    .op-row-right { flex-direction: row; gap: 6px; align-items: center; }
+    .op-staff-list { grid-template-columns: 1fr 1fr; gap: 6px; padding: 14px 16px; }
+    .op-staff-item { padding: 8px 10px; }
+  }
+  @media (max-width: 380px) {
+    .op-staff-list { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}

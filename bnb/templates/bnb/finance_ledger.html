@@ -1,0 +1,799 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block page_title %}Financial Ledger{% endblock %}
+
+{% block content %}
+
+{# ==================== FILTER BAR ==================== #}
+<form method="get" class="fl-filterbar" id="flFilterForm">
+  <div class="fl-filter-group">
+    <label class="fl-filter-label" for="flRange">Period</label>
+    <select name="range" id="flRange" class="fl-select">
+      {% for key, label in range_presets.items %}
+        <option value="{{ key }}" {% if key == range_key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="fl-filter-group fl-custom-dates"
+       {% if range_key != 'custom' %}style="display:none;"{% endif %}
+       id="flCustomDates">
+    <label class="fl-filter-label" for="flStart">From</label>
+    <input type="date" name="start" id="flStart" class="fl-input"
+           value="{{ start_dt|date:'Y-m-d' }}">
+  </div>
+
+  <div class="fl-filter-group fl-custom-dates"
+       {% if range_key != 'custom' %}style="display:none;"{% endif %}
+       id="flCustomDatesEnd">
+    <label class="fl-filter-label" for="flEnd">To</label>
+    <input type="date" name="end" id="flEnd" class="fl-input"
+           value="{{ end_dt|date:'Y-m-d' }}">
+  </div>
+
+  <div class="fl-filter-actions">
+    <button type="submit" class="fl-btn fl-btn-primary">Apply</button>
+    <a href="{% url 'bnb_finance_ledger' %}" class="fl-btn fl-btn-ghost">Reset</a>
+  </div>
+
+  <div class="fl-filter-meta">
+    Showing <strong>{{ range_label }}</strong>
+    {% if start_dt and end_dt %}
+      <span class="fl-meta-sep">·</span>
+      {{ start_dt|date:"d M Y" }} → {{ end_dt|date:"d M Y" }}
+    {% endif %}
+  </div>
+</form>
+
+{# ==================== KPI CARDS ==================== #}
+<div class="fl-kpis">
+  <div class="fl-kpi fl-kpi-rev">
+    <div class="fl-kpi-label">Revenue</div>
+    <div class="fl-kpi-value">KES {{ revenue|floatformat:0|intcomma }}</div>
+    {% if refunds %}
+      <div class="fl-kpi-sub fl-kpi-sub-neg">
+        −{{ refunds|floatformat:0|intcomma }} refunded
+      </div>
+    {% else %}
+      <div class="fl-kpi-sub">Gross, before refunds</div>
+    {% endif %}
+  </div>
+
+  <div class="fl-kpi fl-kpi-exp">
+    <div class="fl-kpi-label">Expenses</div>
+    <div class="fl-kpi-value">KES {{ expenses|floatformat:0|intcomma }}</div>
+    <div class="fl-kpi-sub">
+      {% if net_revenue %}
+        {{ expenses|floatformat:0|intcomma }} of {{ net_revenue|floatformat:0|intcomma }} revenue
+      {% else %}
+        No revenue yet
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="fl-kpi fl-kpi-profit {% if profit >= 0 %}is-positive{% else %}is-negative{% endif %}">
+    <div class="fl-kpi-label">Net profit</div>
+    <div class="fl-kpi-value">
+      {% if profit >= 0 %}+{% endif %}KES {{ profit|floatformat:0|intcomma }}
+    </div>
+    <div class="fl-kpi-sub">
+      {% if profit >= 0 %}Profit{% else %}Loss{% endif %}
+      {% if vat_enabled %}
+        · excl. {{ vat_label|default:"VAT" }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="fl-kpi fl-kpi-margin">
+    <div class="fl-kpi-label">Margin</div>
+    <div class="fl-kpi-value">{{ margin }}<span class="fl-kpi-pct">%</span></div>
+    <div class="fl-kpi-sub">
+      {% if vat_enabled %}
+        {{ vat_label|default:"VAT" }} collected: KES {{ vat_collected|floatformat:0|intcomma }}
+      {% else %}
+        Profit ÷ net revenue
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ==================== CHART ==================== #}
+<div class="fl-panel fl-panel-wide">
+  <div class="fl-panel-head">
+    <div>
+      <h3 class="fl-panel-title">Revenue vs expenses</h3>
+      <p class="fl-panel-sub">
+        Bucketed by {{ bucket }}{% if bucket == 'day' %} (daily){% elif bucket == 'week' %} (weekly){% else %} (monthly){% endif %}
+      </p>
+    </div>
+    <div class="fl-legend">
+      <span class="fl-legend-item"><span class="fl-legend-dot fl-legend-rev"></span>Revenue</span>
+      <span class="fl-legend-item"><span class="fl-legend-dot fl-legend-exp"></span>Expenses</span>
+    </div>
+  </div>
+
+  {% if chart_data %}
+    <div class="fl-chart" role="img" aria-label="Revenue vs expenses chart">
+      {% for point in chart_data %}
+        <div class="fl-chart-col">
+          <div class="fl-chart-bars">
+            <div class="fl-chart-bar fl-chart-bar-rev"
+                 style="height: {% widthratio point.revenue chart_max 100 %}%;"
+                 title="{{ point.label }} — revenue KES {{ point.revenue|floatformat:0 }}"></div>
+            <div class="fl-chart-bar fl-chart-bar-exp"
+                 style="height: {% widthratio point.expenses chart_max 100 %}%;"
+                 title="{{ point.label }} — expenses KES {{ point.expenses|floatformat:0 }}"></div>
+          </div>
+          <div class="fl-chart-label">{{ point.label }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="fl-empty">
+      <div class="fl-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/>
+          <path d="M7 14l4-4 4 4 4-6"/>
+        </svg>
+      </div>
+      <h4>No activity in this period</h4>
+      <p class="muted">Change the date range or record a transaction to see the chart.</p>
+    </div>
+  {% endif %}
+</div>
+
+{# ==================== BREAKDOWNS ==================== #}
+<div class="fl-grid-2">
+
+  {# ----- Expenses by reason ----- #}
+  <div class="fl-panel">
+    <div class="fl-panel-head">
+      <h3 class="fl-panel-title">Top expense categories</h3>
+      <a href="{% url 'bnb_expense_list' %}" class="fl-panel-link">All expenses</a>
+    </div>
+    {% if expense_by_reason %}
+      <ul class="fl-bars-list">
+        {% for row in expense_by_reason %}
+          <li class="fl-bar-row">
+            <div class="fl-bar-head">
+              <span class="fl-bar-name" title="{{ row.reason }}">{{ row.reason|truncatechars:32 }}</span>
+              <span class="fl-bar-amount">KES {{ row.total|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="fl-bar-track">
+              <div class="fl-bar-fill fl-bar-fill-exp" style="width: {{ row.pct }}%;"></div>
+            </div>
+            <div class="fl-bar-pct">{{ row.pct }}%</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fl-empty-sm"><p class="muted">No expenses recorded in this period.</p></div>
+    {% endif %}
+  </div>
+
+  {# ----- Revenue by source ----- #}
+  <div class="fl-panel">
+    <div class="fl-panel-head">
+      <h3 class="fl-panel-title">Revenue by source</h3>
+      <a href="{% url 'bnb_revenue_list' %}" class="fl-panel-link">All revenue</a>
+    </div>
+    {% if revenue_by_source %}
+      <ul class="fl-source-list">
+        {% for row in revenue_by_source %}
+          <li class="fl-source-item">
+            <span class="fl-source-tag fl-source-{{ row.source }}">
+              {{ source_labels|default_if_none:''|dictsort:0|first|default:row.source }}
+            </span>
+            <span class="fl-source-name">
+              {{ source_labels|default_if_none:''|dictsort:0|first }}
+              {{ row.source|capfirst }}
+            </span>
+            <span class="fl-source-amount">KES {{ row.total|floatformat:0|intcomma }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="fl-empty-sm"><p class="muted">No revenue recorded in this period.</p></div>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ==================== RECENT ACTIVITY FEED ==================== #}
+<div class="fl-panel fl-panel-wide">
+  <div class="fl-panel-head">
+    <div>
+      <h3 class="fl-panel-title">Recent activity</h3>
+      <p class="fl-panel-sub">Every money movement, most recent first</p>
+    </div>
+    <a href="{% url 'bnb_finance_profit_ledger' %}" class="fl-panel-link">P&amp;L view →</a>
+  </div>
+
+  {% if recent %}
+    <ul class="fl-feed">
+      {% for entry in recent %}
+        <li class="fl-feed-item fl-feed-{{ entry.kind }}">
+          <span class="fl-feed-icon" aria-hidden="true">
+            {% if entry.kind == 'revenue' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            {% elif entry.kind == 'expense' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                <polyline points="17 18 23 18 23 12"/>
+              </svg>
+            {% elif entry.kind == 'refund' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+              </svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            {% endif %}
+          </span>
+
+          <div class="fl-feed-body">
+            <div class="fl-feed-title">{{ entry.reason|truncatechars:64 }}</div>
+            <div class="fl-feed-meta">
+              <span class="fl-feed-kind">{{ entry.get_kind_display }}</span>
+              <span class="fl-meta-sep">·</span>
+              {{ entry.occurred_at|date:"d M Y, H:i" }}
+              {% if entry.property %}
+                <span class="fl-meta-sep">·</span>
+                {{ entry.property.name }}
+              {% endif %}
+            </div>
+          </div>
+
+          <span class="fl-feed-amount fl-feed-amount-{{ entry.kind }}">
+            {% if entry.kind == 'revenue' %}+{% else %}−{% endif %}KES {{ entry.amount|floatformat:0|intcomma }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="fl-empty">
+      <div class="fl-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h4>No activity yet</h4>
+      <p class="muted">Transactions will appear here as they’re recorded.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+  /* ============================================================ */
+  /*  FILTER BAR                                                  */
+  /* ============================================================ */
+  .fl-filterbar {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .fl-filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .fl-filter-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2);
+  }
+  .fl-select,
+  .fl-input {
+    padding: 9px 32px 9px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 180px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fl-input { padding-right: 12px; min-width: 140px; cursor: text; }
+  .fl-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 11px center;
+  }
+  .fl-select:hover,
+  .fl-input:hover { border-color: #cbd5e1; }
+  .fl-select:focus,
+  .fl-input:focus {
+    outline: none;
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+
+  .fl-filter-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    align-items: center;
+  }
+  .fl-btn {
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter .15s, background .15s, border-color .15s, transform .08s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fl-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(99,102,241,0.32);
+  }
+  .fl-btn-primary:hover { filter: brightness(1.06); }
+  .fl-btn-primary:active { transform: translateY(1px); }
+  .fl-btn-ghost {
+    background: #fff;
+    border-color: #e2e8f0;
+    color: var(--text-2);
+  }
+  .fl-btn-ghost:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  .fl-filter-meta {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: var(--muted-2);
+    padding-top: 6px;
+    border-top: 1px dashed #eef2f7;
+    margin-top: 4px;
+  }
+  .fl-filter-meta strong { color: var(--text-2); font-weight: 800; }
+  .fl-meta-sep { color: #cbd5e1; margin: 0 6px; font-weight: 400; }
+
+  @media (max-width: 640px) {
+    .fl-filter-actions { margin-left: 0; width: 100%; }
+    .fl-btn { flex: 1; }
+    .fl-select, .fl-input { min-width: 0; width: 100%; }
+    .fl-filter-group { flex: 1; min-width: 140px; }
+  }
+
+  /* ============================================================ */
+  /*  KPI CARDS                                                   */
+  /* ============================================================ */
+  .fl-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .fl-kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .fl-kpis { grid-template-columns: 1fr; } }
+
+  .fl-kpi {
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .fl-kpi::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #38bdf8, #22d3ee);
+  }
+  .fl-kpi-exp::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .fl-kpi-profit::before { background: linear-gradient(90deg, #34d399, #10b981); }
+  .fl-kpi-profit.is-negative::before { background: linear-gradient(90deg, #f87171, #ef4444); }
+  .fl-kpi-margin::before { background: linear-gradient(90deg, #a78bfa, #8b5cf6); }
+  .fl-kpi:hover { box-shadow: var(--shadow-md); }
+
+  .fl-kpi-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-2);
+    margin-bottom: 8px;
+  }
+  .fl-kpi-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .fl-kpi-profit.is-positive .fl-kpi-value { color: #047857; }
+  .fl-kpi-profit.is-negative .fl-kpi-value { color: #b91c1c; }
+  .fl-kpi-pct { font-size: 14px; margin-left: 2px; font-weight: 800; }
+  .fl-kpi-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  .fl-kpi-sub-neg { color: #b91c1c; }
+
+  /* ============================================================ */
+  /*  PANEL                                                       */
+  /* ============================================================ */
+  .fl-panel {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .fl-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .fl-panel-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.1px;
+  }
+  .fl-panel-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin: 2px 0 0;
+  }
+  .fl-panel-link {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-1);
+    padding: 5px 9px;
+    border-radius: 7px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .fl-panel-link:hover { background: rgba(99,102,241,0.08); }
+
+  .fl-panel-wide { grid-column: 1 / -1; }
+  .fl-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .fl-grid-2 { grid-template-columns: 1fr; } }
+
+  /* ============================================================ */
+  /*  CHART                                                       */
+  /* ============================================================ */
+  .fl-legend {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-weight: 700;
+  }
+  .fl-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .fl-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .fl-legend-rev { background: linear-gradient(180deg, #34d399, #10b981); }
+  .fl-legend-exp { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+
+  .fl-chart {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 10px;
+    align-items: end;
+    padding: 22px 18px 16px;
+    min-height: 240px;
+    overflow-x: auto;
+  }
+  .fl-chart-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .fl-chart-bars {
+    width: 100%;
+    height: 170px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+  }
+  .fl-chart-bar {
+    width: 40%;
+    min-width: 6px;
+    border-radius: 4px 4px 2px 2px;
+    transition: height .4s ease-out, filter .15s;
+    min-height: 2px;
+    cursor: pointer;
+  }
+  .fl-chart-bar:hover { filter: brightness(1.10); }
+  .fl-chart-bar-rev { background: linear-gradient(180deg, #34d399, #10b981); }
+  .fl-chart-bar-exp { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+  .fl-chart-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted-2);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  @media (max-width: 640px) {
+    .fl-chart { gap: 6px; padding: 18px 10px 12px; min-height: 200px; }
+    .fl-chart-bars { height: 140px; }
+    .fl-chart-label { font-size: 9.5px; }
+  }
+
+  /* ============================================================ */
+  /*  BREAKDOWN LISTS                                             */
+  /* ============================================================ */
+  .fl-bars-list { list-style: none; margin: 0; padding: 14px 18px; }
+  .fl-bar-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fl-bar-row:last-child { border-bottom: none; }
+  .fl-bar-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .fl-bar-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .fl-bar-amount {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fl-bar-track {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .fl-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width .4s ease-out;
+  }
+  .fl-bar-fill-exp { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .fl-bar-pct {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--muted-2);
+    text-align: right;
+  }
+
+  /* Revenue-by-source chips */
+  .fl-source-list { list-style: none; margin: 0; padding: 8px 18px 18px; }
+  .fl-source-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fl-source-item:last-child { border-bottom: none; }
+  .fl-source-tag {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: #6366f1;
+    flex-shrink: 0;
+  }
+  .fl-source-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .fl-source-amount {
+    font-size: 13px;
+    font-weight: 800;
+    color: #047857;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ============================================================ */
+  /*  RECENT ACTIVITY FEED                                        */
+  /* ============================================================ */
+  .fl-feed { list-style: none; margin: 0; padding: 0; }
+  .fl-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .fl-feed-item:last-child { border-bottom: none; }
+  .fl-feed-item:hover { background: #fafbff; }
+  .fl-feed-icon {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    background: #ecfdf5;
+    color: #047857;
+  }
+  .fl-feed-icon svg { width: 15px; height: 15px; }
+  .fl-feed-expense .fl-feed-icon { background: #fffbeb; color: #b45309; }
+  .fl-feed-refund  .fl-feed-icon { background: #fef2f2; color: #b91c1c; }
+  .fl-feed-vat     .fl-feed-icon { background: #eef2ff; color: #4338ca; }
+  .fl-feed-adjustment .fl-feed-icon { background: #f1f5f9; color: #475569; }
+
+  .fl-feed-body { flex: 1; min-width: 0; }
+  .fl-feed-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fl-feed-meta {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .fl-feed-kind {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .fl-feed-revenue    .fl-feed-kind { background: #ecfdf5; color: #047857; }
+  .fl-feed-expense    .fl-feed-kind { background: #fffbeb; color: #b45309; }
+  .fl-feed-refund     .fl-feed-kind { background: #fef2f2; color: #b91c1c; }
+  .fl-feed-vat        .fl-feed-kind { background: #eef2ff; color: #4338ca; }
+
+  .fl-feed-amount {
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  .fl-feed-amount-revenue { color: #047857; }
+  .fl-feed-amount-expense { color: #b45309; }
+  .fl-feed-amount-refund  { color: #b91c1c; }
+  .fl-feed-amount-vat     { color: #4338ca; }
+
+  @media (max-width: 640px) {
+    .fl-feed-item { flex-wrap: wrap; }
+    .fl-feed-amount { width: 100%; text-align: right; padding-left: 44px; }
+  }
+
+  /* ============================================================ */
+  /*  EMPTY STATES                                                */
+  /* ============================================================ */
+  .fl-empty { padding: 40px 20px; text-align: center; }
+  .fl-empty-ico {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .fl-empty-ico svg { width: 22px; height: 22px; }
+  .fl-empty h4 {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .fl-empty p {
+    font-size: 12.5px;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  .fl-empty-sm { padding: 28px 18px; text-align: center; font-size: 12.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fl-chart-bar,
+    .fl-bar-fill,
+    .fl-btn { transition: none; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var sel = document.getElementById('flRange');
+    if (!sel) return;
+
+    function toggleCustomDates(show) {
+      document.querySelectorAll('.fl-custom-dates').forEach(function (el) {
+        el.style.display = show ? '' : 'none';
+      });
+    }
+
+    // 1. Wire the change handler FIRST — this is the only place that submits.
+    sel.addEventListener('change', function () {
+      var isCustom = sel.value === 'custom';
+      toggleCustomDates(isCustom);
+      // Only auto-submit for preset ranges. 'custom' waits for the user
+      // to fill in the two date inputs and click Apply.
+      if (!isCustom) {
+        sel.form.submit();
+      }
+    });
+
+    // 2. Set the initial visibility WITHOUT submitting.
+    toggleCustomDates(sel.value === 'custom');
+  })();
+</script>
+{% endblock %}

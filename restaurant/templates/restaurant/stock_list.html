@@ -1,0 +1,327 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Inventory — Restaurant{% endblock %}
+{% block page_title %}Stock &amp; Inventory{% endblock %}
+{% block breadcrumb %}<span class="crumb">Stock</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="sl-header">
+  <div>
+    <h1>Stock &amp; Inventory</h1>
+    <p>
+      {% if items %}
+        {{ items|length }} item{{ items|length|pluralize }} tracked.
+        {% if low_count %}
+          <span class="sl-alert-badge">{{ low_count }} need restock</span>
+        {% endif %}
+      {% else %}
+        No stock items tracked yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px; flex-wrap:wrap;">
+    <a href="{% url 'restaurant_stock_movement_list' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 7 8 12 13 7"/>
+        <line x1="8" y1="12" x2="8" y2="21"/>
+        <polyline points="21 17 16 12 11 17"/>
+        <line x1="16" y1="12" x2="16" y2="3"/>
+      </svg>
+      Movements
+    </a>
+    <a href="{% url 'restaurant_stock_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add Item
+    </a>
+  </div>
+</div>
+
+{% if items %}
+
+<!-- ============ KPIs ============ -->
+<div class="sl-kpis">
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3"/>
+        <path d="M3 8h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8z"/>
+        <line x1="10" y1="13" x2="14" y2="13"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value">{{ items|length }}</div>
+      <div class="sl-kpi-label">Total Items</div>
+    </div>
+  </div>
+
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value">KES {{ total_value|floatformat:0 }}</div>
+      <div class="sl-kpi-label">Total Stock Value</div>
+    </div>
+  </div>
+
+  <div class="sl-kpi {% if low_count %}kpi-alert{% endif %}">
+    <div class="sl-kpi-icon k-rose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value">{{ low_count }}</div>
+      <div class="sl-kpi-label">Low Stock Alerts</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<form method="get" class="sl-toolbar">
+  <div class="sl-toolbar-row">
+    <div class="sl-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by name or SKU…" autocomplete="off">
+    </div>
+
+    <div class="sl-select-group">
+      <label for="category">Category</label>
+      <select id="category" name="category">
+        <option value="">All Categories</option>
+        {% for value, label in category_choices %}
+          <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <label class="sl-toggle">
+      <input type="checkbox" name="low" value="1" {% if only_low %}checked{% endif %} onchange="this.form.submit()">
+      <span>Only show low stock</span>
+    </label>
+
+    <button type="submit" class="btn">Filter</button>
+    {% if q or category or only_low %}
+      <a href="{% url 'restaurant_stock_list' %}" class="btn secondary">Reset</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Category</th>
+        <th class="right">Current Stock</th>
+        <th class="right">Reorder Level</th>
+        <th class="right">Unit Cost</th>
+        <th class="right">Stock Value</th>
+        <th class="center">Status</th>
+        <th style="width:100px; text-align:center;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr onclick="window.location='{% url 'restaurant_stock_detail' item.id %}';" style="cursor: pointer;"
+          class="{% if item.is_low_stock %}row-low{% endif %}">
+        
+        <td>
+          <div class="sl-item-name">{{ item.name }}</div>
+          {% if item.sku %}
+            <div class="sl-item-sku">SKU: {{ item.sku }}</div>
+          {% endif %}
+        </td>
+
+        <td>
+          <span class="sl-category">{{ item.get_category_display }}</span>
+        </td>
+
+        <td class="right">
+          <div class="sl-stock-value {% if item.is_out_of_stock %}text-danger{% elif item.is_low_stock %}text-warn{% endif %}">
+            {{ item.current_stock|floatformat:2 }}
+          </div>
+          <div class="sl-stock-unit">{{ item.unit }}</div>
+        </td>
+
+        <td class="right">
+          <span class="sl-reorder">{{ item.reorder_level|floatformat:0 }} {{ item.unit }}</span>
+        </td>
+
+        <td class="right">
+          <span class="sl-cost">KES {{ item.unit_cost|floatformat:2 }}</span>
+        </td>
+
+        <td class="right">
+          <span class="sl-value">KES {{ item.stock_value|floatformat:0 }}</span>
+        </td>
+
+        <td class="center">
+          {% if item.is_out_of_stock %}
+            <span class="sl-status sl-status-out">Out of stock</span>
+          {% elif item.is_low_stock %}
+            <span class="sl-status sl-status-low">Low stock</span>
+          {% else %}
+            <span class="sl-status sl-status-ok">Healthy</span>
+          {% endif %}
+        </td>
+
+        <td class="center" onclick="event.stopPropagation();">
+          <div class="flex" style="gap:6px; justify-content:center;">
+            <a href="{% url 'restaurant_stock_movement_add' %}?item={{ item.id }}" class="btn secondary sm" title="Add Movement">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="sl-empty">
+  <div class="sl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v3"/>
+      <path d="M3 8h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8z"/>
+      <line x1="10" y1="13" x2="14" y2="13"/>
+    </svg>
+  </div>
+  <h4>No stock items yet</h4>
+  <p class="muted">
+    {% if q or category or only_low %}
+      No items match your filters. <a href="{% url 'restaurant_stock_list' %}" style="color:var(--brand-2);">Clear filters</a>
+    {% else %}
+      Add your first ingredient or consumable to start tracking inventory.
+    {% endif %}
+  </p>
+  {% if not q and not category and not only_low %}
+    <a href="{% url 'restaurant_stock_add' %}" class="btn" style="margin-top:14px;">Add First Item</a>
+  {% endif %}
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Stock list ================= */
+
+  .sl-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .sl-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .sl-header p { font-size: 13.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  
+  .sl-alert-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+
+  /* ---- KPI strip ---- */
+  .sl-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .sl-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .sl-kpi.kpi-alert { border-color: #fecaca; background: linear-gradient(180deg, #fff, #fef2f2); }
+  
+  .sl-kpi-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .sl-kpi-icon svg { width: 20px; height: 20px; }
+  .sl-kpi-icon.k-amber { background: #fef3c7; color: #b45309; }
+  .sl-kpi-icon.k-green { background: #ecfdf5; color: #047857; }
+  .sl-kpi-icon.k-rose  { background: #fef2f2; color: #b91c1c; }
+  
+  .sl-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .sl-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Toolbar ---- */
+  .sl-toolbar { background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+  .sl-toolbar-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  
+  .sl-search { position: relative; flex: 1 1 300px; max-width: 440px; }
+  .sl-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted-2); pointer-events: none; }
+  .sl-search input { width: 100%; padding: 10px 12px 10px 38px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+  .sl-search input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .sl-select-group label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .sl-select-group select { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; min-width: 160px; }
+  .sl-select-group select:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .sl-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; user-select: none; padding-bottom: 9px; }
+  .sl-toggle input { appearance: none; width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 5px; background: #fff; position: relative; cursor: pointer; flex: 0 0 18px; transition: all 0.15s; }
+  .sl-toggle input:checked { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); border-color: transparent; }
+  .sl-toggle input:checked::after { content: ""; position: absolute; left: 5px; top: 1px; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+  /* ---- Table cells ---- */
+  .sl-item-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .sl-item-sku { font-size: 11px; color: var(--muted-2); margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  
+  .sl-category { display: inline-block; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; border: 1px solid var(--line); color: var(--text-2); font-size: 11.5px; font-weight: 600; }
+  
+  .sl-stock-value { font-size: 15px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .sl-stock-unit { font-size: 10.5px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px; }
+  .text-danger { color: #b91c1c; }
+  .text-warn { color: #b45309; }
+
+  .sl-reorder { font-size: 12.5px; color: var(--muted); }
+  .sl-cost { font-size: 13px; color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sl-value { font-size: 13px; color: var(--brand-2); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  .sl-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .sl-status-ok  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .sl-status-low { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .sl-status-out { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  .row-low { background: #fef9f3; }
+  .row-low:hover { background: #fef3c7 !important; }
+
+  /* ---- Empty states ---- */
+  .sl-empty {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .sl-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .sl-empty-ico svg { width: 30px; height: 30px; }
+  .sl-empty h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+  @media (max-width: 720px) {
+    .sl-header h1 { font-size: 20px; }
+    .sl-header { flex-direction: column; align-items: stretch; }
+    th:nth-child(2), td:nth-child(2),
+    th:nth-child(6), td:nth-child(6) { display: none; }
+    .sl-toolbar-row { flex-direction: column; align-items: stretch; }
+    .sl-search, .sl-select-group select { max-width: 100%; width: 100%; }
+  }
+</style>
+{% endblock %}

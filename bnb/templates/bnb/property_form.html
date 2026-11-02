@@ -1,0 +1,1150 @@
+{% extends 'bnb/propertiessub_base.html' %}
+{% load humanize %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}Add{% endif %} property — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEADER ==================== #}
+<div class="pf-head">
+  <div class="pf-head-main">
+    <a href="{% url 'bnb_property_list' %}" class="pf-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to properties
+    </a>
+
+    <h1>
+      {% if mode == 'edit' %}Edit "{{ property.name }}"{% else %}Add a new stay{% endif %}
+    </h1>
+    <p class="muted">
+      {% if mode == 'edit' %}
+        Update the details below. Changes are applied when you click Save.
+      {% else %}
+        Fill in the details below. It will be published to the marketplace after saving.
+      {% endif %}
+    </p>
+  </div>
+
+  {% if mode == 'edit' and property.listing_id %}
+    <div class="pf-head-actions">
+      {% if property.listing.status == 'approved' and property.listing.is_active %}
+        <a href="{% url 'marketplace:listing_detail' property.listing.slug %}"
+           target="_blank" rel="noopener"
+           class="btn secondary sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          View live
+        </a>
+        <span class="pf-state pf-state-live"><span class="pf-state-dot"></span> Live on marketplace</span>
+      {% elif property.listing.status == 'pending' %}
+        <span class="pf-state pf-state-pending"><span class="pf-state-dot"></span> Pending review</span>
+      {% elif property.listing.status == 'rejected' %}
+        <span class="pf-state pf-state-rejected"><span class="pf-state-dot"></span> Rejected</span>
+      {% else %}
+        <span class="pf-state pf-state-muted"><span class="pf-state-dot"></span> {{ property.listing.get_status_display }}</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+{# ==================== ERROR SUMMARY ==================== #}
+{% if form.errors or form.non_field_errors %}
+  <div class="err-summary" role="alert">
+    <strong>There's a problem with your submission.</strong>
+    <ul>
+      {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+      {% for field in form %}
+        {% for e in field.errors %}<li><b>{{ field.label }}:</b> {{ e }}</li>{% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="pf" novalidate>
+  {% csrf_token %}
+
+  <!-- ============ 1 · BASICS ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">1</span>
+      <div>
+        <h2>Basics</h2>
+        <p>The essentials guests see first.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field pf-full">
+        <label for="{{ form.name.id_for_label }}">Property name <span class="req">*</span></label>
+        {{ form.name }}
+        {% for e in form.name.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="pf-field">
+        <label for="{{ form.category.id_for_label }}">Category <span class="req">*</span></label>
+        {{ form.category }}
+        <p class="pf-hint">Only stay categories are available here.</p>
+        {% for e in form.category.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="pf-field">
+        <label for="{{ form.price.id_for_label }}">Base price (KES) <span class="req">*</span></label>
+        {{ form.price }}
+        {% for e in form.price.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="pf-field pf-full">
+        <label for="{{ form.short_description.id_for_label }}">Short description</label>
+        {{ form.short_description }}
+        <p class="pf-hint">One line — appears on the listing card.</p>
+      </div>
+
+      <div class="pf-field pf-full">
+        <label for="{{ form.description.id_for_label }}">Full description</label>
+        {{ form.description }}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · LOCATION ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">2</span>
+      <div>
+        <h2>Location</h2>
+        <p>Where guests will find you.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field pf-full">
+        <label for="{{ form.location_label.id_for_label }}">City / area <span class="req">*</span></label>
+        {{ form.location_label }}
+        {% for e in form.location_label.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="pf-field pf-full">
+        <label for="{{ form.address.id_for_label }}">Street / building</label>
+        {{ form.address }}
+        {% for e in form.address.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+
+      <!-- Map picker -->
+      <div class="pf-field pf-full">
+        <label>Pin the location on the map</label>
+
+        <div class="map-picker-toolbar">
+          <button type="button" id="mapUseMyLocation" class="map-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="3"/>
+              <line x1="12" y1="2" x2="12" y2="4"/>
+              <line x1="12" y1="20" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="4" y2="12"/>
+              <line x1="20" y1="12" x2="22" y2="12"/>
+            </svg>
+            Use my location
+          </button>
+
+          <button type="button" id="mapClearPin" class="map-btn map-btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Clear pin
+          </button>
+
+          <div class="map-style-selector">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--muted);flex-shrink:0;">
+              <polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21"/>
+              <line x1="8" y1="3" x2="8" y2="18"/>
+              <line x1="16" y1="6" x2="16" y2="21"/>
+            </svg>
+            <select id="mapStyleSelect" class="map-select" aria-label="Map style">
+              <option value="esri" selected>Esri World Street</option>
+              <option value="osm">OpenStreetMap</option>
+              <option value="carto">Carto Positron</option>
+              <option value="satellite">Esri Satellite</option>
+              <option value="topo">OpenTopoMap</option>
+              <option value="humanitarian">OSM Humanitarian</option>
+            </select>
+          </div>
+
+          <span class="map-status" id="mapStatus">Click the map to place a pin.</span>
+        </div>
+
+        <div id="propertyMap" class="property-map" aria-label="Location picker"></div>
+
+        <p class="pf-hint">
+          Click on the map to place or move the pin. Drag for fine-tuning,
+          or type coordinates below.
+        </p>
+      </div>
+
+      <div class="pf-field">
+        <label for="{{ form.latitude.id_for_label }}">Latitude</label>
+        {{ form.latitude }}
+        {% for e in form.latitude.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="pf-field">
+        <label for="{{ form.longitude.id_for_label }}">Longitude</label>
+        {{ form.longitude }}
+        {% for e in form.longitude.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3 · CONTACT ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">3</span>
+      <div>
+        <h2>Contact</h2>
+        <p>How guests and staff reach you.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field">
+        <label for="{{ form.phone.id_for_label }}">Phone</label>
+        {{ form.phone }}
+      </div>
+      <div class="pf-field">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+      </div>
+      <div class="pf-field pf-full">
+        <label for="{{ form.whatsapp.id_for_label }}">WhatsApp</label>
+        {{ form.whatsapp }}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 · SOCIAL LINKS ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">4</span>
+      <div>
+        <h2>Social links <span class="pf-optional">all optional</span></h2>
+        <p>Show guests where else to find you.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
+      <div class="pf-field"><label for="{{ form.facebook.id_for_label }}">Facebook</label>{{ form.facebook }}</div>
+      <div class="pf-field"><label for="{{ form.instagram.id_for_label }}">Instagram</label>{{ form.instagram }}</div>
+      <div class="pf-field"><label for="{{ form.twitter.id_for_label }}">X / Twitter</label>{{ form.twitter }}</div>
+      <div class="pf-field"><label for="{{ form.tiktok.id_for_label }}">TikTok</label>{{ form.tiktok }}</div>
+      <div class="pf-field"><label for="{{ form.youtube.id_for_label }}">YouTube</label>{{ form.youtube }}</div>
+    </div>
+  </section>
+
+  <!-- ============ 5 · CAPACITY & PRICING ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">5</span>
+      <div>
+        <h2>Capacity &amp; pricing</h2>
+        <p>How the property is priced and how many guests it hosts.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field"><label for="{{ form.price_unit.id_for_label }}">Price unit</label>{{ form.price_unit }}</div>
+      <div class="pf-field"><label for="{{ form.min_nights.id_for_label }}">Min nights</label>{{ form.min_nights }}</div>
+      <div class="pf-field"><label for="{{ form.max_guests.id_for_label }}">Max guests</label>{{ form.max_guests }}</div>
+      <div class="pf-field"><label for="{{ form.bedrooms.id_for_label }}">Bedrooms</label>{{ form.bedrooms }}</div>
+      <div class="pf-field"><label for="{{ form.baths.id_for_label }}">Bathrooms</label>{{ form.baths }}</div>
+    </div>
+  </section>
+
+  <!-- ============ 6 · CHECK-IN & POLICIES ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">6</span>
+      <div>
+        <h2>Check-in &amp; policies</h2>
+        <p>Timing, amenities, and rules guests agree to.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field"><label for="{{ form.check_in_time.id_for_label }}">Check-in time</label>{{ form.check_in_time }}</div>
+      <div class="pf-field"><label for="{{ form.check_out_time.id_for_label }}">Check-out time</label>{{ form.check_out_time }}</div>
+
+      <!-- Amenities: dropdown to add + chips to remove -->
+      <div class="pf-field pf-full">
+        <label for="{{ form.amenities_picker.id_for_label }}">
+          Amenities
+          {% if not form.amenities_picker.field.queryset.exists %}
+            <span class="pf-optional">no amenities in your library yet</span>
+          {% endif %}
+        </label>
+
+        {% if form.amenities_picker.field.queryset.exists %}
+          <div class="pf-amenity-picker">
+            {# Visible dropdown — JS reads its value on change #}
+            {{ form.amenities_picker }}
+
+            {# Chips render here by JS #}
+            <div class="pf-amenity-chips" id="pfAmenityChips" aria-live="polite">
+              {# Populated by JS from the hidden field #}
+            </div>
+
+            {# The canonical value read on submit — newline-separated names #}
+            {{ form.amenities_value }}
+          </div>
+
+          <p class="pf-hint">
+            Pick from your library — click <strong>×</strong> on a chip to remove.
+            <a href="{% url 'bnb_amenities' %}" target="_blank" rel="noopener" class="pf-hint-link">Manage amenities →</a>
+          </p>
+          {% for e in form.amenities_picker.errors %}<p class="err">{{ e }}</p>{% endfor %}
+          {% for e in form.amenities_value.errors %}<p class="err">{{ e }}</p>{% endfor %}
+        {% else %}
+          <div class="pf-empty-inline">
+            <p class="muted" style="font-size: 13px; margin: 0 0 10px;">
+              You haven't added any amenities to your library yet.
+            </p>
+            <a href="{% url 'bnb_amenities' %}" class="btn secondary sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add amenities
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="pf-field pf-full">
+        <label for="{{ form.house_rules.id_for_label }}">House rules <span class="pf-optional">one per line</span></label>
+        {{ form.house_rules }}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7 · IMAGES ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">7</span>
+      <div>
+        <h2>
+          Images
+          <span class="pf-optional">
+            {% if mode == 'edit' %}(up to 4 total){% else %}(cover required, up to 4 total){% endif %}
+          </span>
+        </h2>
+        <p>Upload a cover image and up to three extras.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field pf-full">
+        <label for="{{ form.cover_image.id_for_label }}">
+          Cover image
+          {% if mode != 'edit' %}<span class="req">*</span>{% endif %}
+        </label>
+        {{ form.cover_image }}
+        {% if mode == 'edit' and property.cover_image %}
+          <img src="{{ property.cover_image.url }}" class="pf-preview" alt="">
+        {% endif %}
+        {% for e in form.cover_image.errors %}<p class="err">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="pf-field">
+        <label for="{{ form.image_2.id_for_label }}">Image 2</label>
+        {{ form.image_2 }}
+        {% if mode == 'edit' and property.image_2 %}<img src="{{ property.image_2.url }}" class="pf-preview" alt="">{% endif %}
+      </div>
+      <div class="pf-field">
+        <label for="{{ form.image_3.id_for_label }}">Image 3</label>
+        {{ form.image_3 }}
+        {% if mode == 'edit' and property.image_3 %}<img src="{{ property.image_3.url }}" class="pf-preview" alt="">{% endif %}
+      </div>
+      <div class="pf-field">
+        <label for="{{ form.image_4.id_for_label }}">Image 4</label>
+        {{ form.image_4 }}
+        {% if mode == 'edit' and property.image_4 %}<img src="{{ property.image_4.url }}" class="pf-preview" alt="">{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8 · AVAILABILITY & PUBLISHING ============ -->
+  <section class="pf-section">
+    <header class="pf-section-head">
+      <span class="pf-step">8</span>
+      <div>
+        <h2>Availability &amp; publishing</h2>
+        <p>Control whether this property is bookable and visible.</p>
+      </div>
+    </header>
+
+    <div class="pf-grid">
+      <div class="pf-field pf-full">
+        <label class="pf-check">
+          {{ form.is_active }}
+          <span>This property is active and accepts bookings</span>
+        </label>
+      </div>
+
+      <div class="pf-field pf-full">
+        <label class="pf-check pf-check-highlight">
+          {{ form.publish_to_marketplace }}
+          <span>Publish to the public marketplace</span>
+        </label>
+        <p class="pf-hint">
+          {% if mode == 'edit' %}
+            When checked, this property stays live on the marketplace. Uncheck to hide it while keeping the record.
+          {% else %}
+            When checked, this property is pushed to the marketplace immediately and appears on the public site.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ACTIONS ============ -->
+  <div class="pf-actions">
+    <a href="{% url 'bnb_property_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5"/>
+      </svg>
+      {% if mode == 'edit' %}Save changes{% else %}Create property{% endif %}
+    </button>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<style>
+  /* ============================================================ */
+  /*  FORM SHELL                                                   */
+  /* ============================================================ */
+
+  .pf-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .pf-head-main { min-width: 0; flex: 1 1 auto; }
+
+  .pf-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    margin-left: -8px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    transition: color .15s, background .15s;
+  }
+  .pf-back:hover { color: var(--brand-1); background: rgba(14,165,233,0.06); }
+  .pf-back svg { width: 13px; height: 13px; }
+
+  .pf-head h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .pf-head p { font-size: 13px; }
+  .pf-head-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* Edit-mode state pills */
+  .pf-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .pf-state-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.85;
+  }
+  .pf-state-live     { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .pf-state-pending  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .pf-state-rejected { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .pf-state-muted    { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  /* ---------- Error summary ---------- */
+  .err-summary {
+    padding: 14px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 12px;
+    color: #991b1b;
+    margin-bottom: 18px;
+  }
+  .err-summary strong { display: block; margin-bottom: 6px; font-size: 13.5px; }
+  .err-summary ul { padding-left: 18px; font-size: 12.5px; margin: 0; }
+  .err-summary li { margin-bottom: 3px; }
+  .err { font-size: 12px; color: #b91c1c; margin-top: 4px; font-weight: 500; }
+
+  /* ---------- Form card ---------- */
+  .pf {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 18px;
+    padding: 8px 28px 24px;
+    box-shadow: 0 4px 24px rgba(15,23,42,0.04),
+                0 1px 3px rgba(15,23,42,0.03);
+  }
+
+  .pf-section {
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .pf-section:last-of-type { border-bottom: none; }
+
+  .pf-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .pf-step {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .pf-section-head h2 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pf-section-head p {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .pf-optional {
+    font-weight: 500;
+    color: var(--muted-2);
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    border: 1px solid var(--line-2);
+  }
+
+  /* ---------- Grid ---------- */
+  .pf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 20px;
+  }
+  .pf-field.pf-full { grid-column: 1 / -1; }
+  @media (max-width: 720px) {
+    .pf-grid { grid-template-columns: 1fr; gap: 14px; }
+  }
+
+  .pf-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.01em;
+  }
+  .pf-field .req { color: #ef4444; margin-left: 2px; }
+
+  .pf-field input,
+  .pf-field select,
+  .pf-field textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f9fbfd;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .pf-field input:hover,
+  .pf-field select:hover,
+  .pf-field textarea:hover { border-color: #cbd5e1; }
+  .pf-field input:focus,
+  .pf-field select:focus,
+  .pf-field textarea:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .pf-field textarea { min-height: 100px; resize: vertical; }
+
+  .pf-preview {
+    margin-top: 8px;
+    width: 160px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    display: block;
+  }
+
+  /* ---------- Amenity picker (dropdown + chips) ---------- */
+  .pf-amenity-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pf-amenity-select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #f9fbfd;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .pf-amenity-select:hover { border-color: #cbd5e1; }
+  .pf-amenity-select:focus {
+    border-color: var(--brand-1);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .pf-amenity-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 2px 0;
+    min-height: 0;
+  }
+
+  .pf-amenity-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px 5px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #e0f2fe, #eef2ff);
+    border: 1px solid #bae6fd;
+    color: #075985;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    max-width: 100%;
+    transition: background .15s, border-color .15s;
+  }
+  .pf-amenity-chip:hover {
+    background: linear-gradient(135deg, #cffafe, #e0e7ff);
+    border-color: #7dd3fc;
+  }
+
+  .pf-amenity-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+  }
+
+  .pf-amenity-chip-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.7);
+    color: #0369a1;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: background .15s, color .15s, transform .05s;
+  }
+  .pf-amenity-chip-x:hover {
+    background: #0369a1;
+    color: #fff;
+  }
+  .pf-amenity-chip-x:active { transform: scale(0.94); }
+
+  .pf-amenity-chips-empty {
+    font-size: 12.5px;
+    color: var(--muted-2);
+    font-style: italic;
+    padding: 6px 0;
+  }
+
+  .pf-empty-inline {
+    padding: 20px 16px;
+    background: #f8fafc;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  /* ---------- Checkboxes ---------- */
+  .pf-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--text-2);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .pf-check input[type="checkbox"] {
+    width: 18px; height: 18px;
+    cursor: pointer;
+    accent-color: var(--brand-1);
+  }
+
+  .pf-check-highlight {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #ecfeff, #e0f2fe);
+    border: 1.5px solid #7dd3fc;
+    border-radius: 12px;
+    font-weight: 700;
+    color: var(--text);
+    transition: background .15s, border-color .15s;
+  }
+  .pf-check-highlight:hover {
+    background: linear-gradient(135deg, #cffafe, #bae6fd);
+    border-color: var(--brand-1);
+  }
+  .pf-check-highlight input[type="checkbox"] {
+    width: 20px; height: 20px;
+  }
+
+  /* ---------- Actions ---------- */
+  .pf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 22px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .pf-actions { flex-direction: column-reverse; }
+    .pf-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  /* ============================================================ */
+  /*  MAP PICKER                                                  */
+  /* ============================================================ */
+  .map-picker-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .map-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(14,165,233,0.28);
+    transition: filter .15s, box-shadow .15s;
+  }
+  .map-btn:hover { filter: brightness(1.05); box-shadow: 0 8px 18px rgba(14,165,233,0.35); }
+  .map-btn svg { width: 14px; height: 14px; }
+
+  .map-btn-secondary {
+    background: #fff;
+    color: var(--text-2);
+    border-color: var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+  .map-btn-secondary:hover {
+    background: #f8fafc;
+    box-shadow: var(--shadow-md);
+    filter: none;
+  }
+
+  .map-style-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    padding: 4px 10px;
+  }
+
+  .map-select {
+    background: transparent;
+    border: none;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-family: inherit;
+  }
+  .map-select:focus { color: var(--brand-2); }
+
+  .map-status {
+    font-size: 12px;
+    color: var(--muted-2);
+    margin-left: auto;
+  }
+  @media (max-width: 768px) {
+    .map-status { margin-left: 0; width: 100%; text-align: center; }
+  }
+
+  .property-map {
+    width: 100%;
+    height: 360px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #eef2ff;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 640px) { .property-map { height: 280px; } }
+
+  .property-map .leaflet-container { z-index: 1; }
+
+  .pf-hint {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .pf-hint kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    border: 1px solid var(--line-2);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    color: var(--text);
+  }
+  .pf-hint-link {
+    color: var(--brand-1);
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 4px;
+  }
+  .pf-hint-link:hover { text-decoration: underline; }
+
+  /* ---------- Compact mobile ---------- */
+  @media (max-width: 640px) {
+    .pf { padding: 4px 18px 20px; border-radius: 16px; }
+    .pf-head h1 { font-size: 19px; }
+    .pf-section { padding: 22px 0; }
+    .pf-section-head h2 { font-size: 14px; }
+    .pf-step { width: 28px; height: 28px; flex-basis: 28px; font-size: 12px; }
+    .pf-preview { width: 120px; }
+    .pf-amenity-chip-label { max-width: 180px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  /* ============================================================
+     MAP PICKER
+     ============================================================ */
+  (function () {
+    var latEl = document.getElementById('{{ form.latitude.id_for_label }}');
+    var lngEl = document.getElementById('{{ form.longitude.id_for_label }}');
+    var mapEl = document.getElementById('propertyMap');
+    var statusEl = document.getElementById('mapStatus');
+    var useBtn = document.getElementById('mapUseMyLocation');
+    var clearBtn = document.getElementById('mapClearPin');
+    var styleSelect = document.getElementById('mapStyleSelect');
+
+    if (!latEl || !lngEl || !mapEl) return;
+
+    function parseFloatOrNull(v) {
+      if (v === null || v === undefined) return null;
+      var s = String(v).trim();
+      if (s === '') return null;
+      var n = parseFloat(s);
+      return isNaN(n) ? null : n;
+    }
+    function setStatus(msg) { if (statusEl) statusEl.textContent = msg; }
+    function updateFields(lat, lng) {
+      latEl.value = lat.toFixed(6);
+      lngEl.value = lng.toFixed(6);
+    }
+
+    var initLat = parseFloatOrNull(latEl.value);
+    var initLng = parseFloatOrNull(lngEl.value);
+    var hasPin = initLat !== null && initLng !== null;
+
+    var center = hasPin ? [initLat, initLng] : [-1.286389, 36.817223];
+    var initialZoom = hasPin ? 15 : 6;
+
+    var map = L.map(mapEl, { zoomControl: true }).setView(center, initialZoom);
+
+    var tileLayers = {
+      esri: L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+      ),
+      osm: L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { maxZoom: 19, subdomains: 'abc', attribution: '&copy; OpenStreetMap contributors' }
+      ),
+      carto: L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO' }
+      ),
+      satellite: L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+      ),
+      topo: L.tileLayer(
+        'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        { maxZoom: 17, subdomains: 'abc', attribution: '&copy; OpenTopoMap (CC-BY-SA)' }
+      ),
+      humanitarian: L.tileLayer(
+        'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+        { maxZoom: 20, subdomains: 'abc', attribution: '&copy; OpenStreetMap, Tiles by HOT' }
+      ),
+    };
+
+    var currentLayerKey = (styleSelect && styleSelect.value) || 'esri';
+    if (!tileLayers[currentLayerKey]) currentLayerKey = 'esri';
+    var currentLayer = tileLayers[currentLayerKey].addTo(map);
+
+    if (styleSelect) {
+      styleSelect.addEventListener('change', function () {
+        var key = this.value;
+        if (!tileLayers[key]) return;
+        map.removeLayer(currentLayer);
+        currentLayer = tileLayers[key].addTo(map);
+        currentLayerKey = key;
+        if (marker) marker.bringToFront();
+        setStatus('Map style: ' + this.options[this.selectedIndex].text);
+      });
+    }
+
+    var marker = hasPin ? L.marker(center, { draggable: true }).addTo(map) : null;
+
+    function place(lat, lng) {
+      if (!marker) {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', function () {
+          var ll = marker.getLatLng();
+          updateFields(ll.lat, ll.lng);
+          setStatus('Pin moved.');
+        });
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+      updateFields(lat, lng);
+    }
+
+    map.on('click', function (e) {
+      place(e.latlng.lat, e.latlng.lng);
+      setStatus('Pin placed. Drag to fine-tune.');
+    });
+
+    if (marker) {
+      marker.on('dragend', function () {
+        var ll = marker.getLatLng();
+        updateFields(ll.lat, ll.lng);
+        setStatus('Pin moved.');
+      });
+    }
+
+    if (useBtn) {
+      useBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+          setStatus('Geolocation not supported by your browser.');
+          return;
+        }
+        setStatus('Getting your location…');
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          var lat = pos.coords.latitude;
+          var lng = pos.coords.longitude;
+          map.setView([lat, lng], 15);
+          place(lat, lng);
+          setStatus('Using your current location.');
+        }, function () {
+          setStatus('Could not get your location.');
+        });
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        if (marker) { map.removeLayer(marker); marker = null; }
+        latEl.value = '';
+        lngEl.value = '';
+        setStatus('Pin cleared.');
+      });
+    }
+
+    [latEl, lngEl].forEach(function (el) {
+      el.addEventListener('change', function () {
+        var lat = parseFloatOrNull(latEl.value);
+        var lng = parseFloatOrNull(lngEl.value);
+        if (lat !== null && lng !== null) {
+          map.setView([lat, lng], 15);
+          place(lat, lng);
+        }
+      });
+    });
+  })();
+
+  /* ============================================================
+     AMENITIES — dropdown to add, chips to remove
+     ============================================================ */
+  (function () {
+    var selectEl = document.querySelector('[data-amenity-picker]');
+    var valueEl  = document.querySelector('[data-amenity-value]');
+    var chipsEl  = document.getElementById('pfAmenityChips');
+    if (!selectEl || !valueEl || !chipsEl) return;
+
+    // Read the current newline-separated names from the hidden field
+    function getNames() {
+      return (valueEl.value || '')
+        .split('\n')
+        .map(function (s) { return s.trim(); })
+        .filter(Boolean);
+    }
+
+    // Write the list back to the hidden field (deduped, order preserved)
+    function setNames(names) {
+      var seen = {};
+      var cleaned = [];
+      names.forEach(function (n) {
+        var k = n.toLowerCase();
+        if (k && !seen[k]) { seen[k] = 1; cleaned.push(n); }
+      });
+      valueEl.value = cleaned.join('\n');
+      render();
+    }
+
+    // Render chips from the hidden field
+    function render() {
+      var names = getNames();
+      chipsEl.innerHTML = '';
+
+      if (names.length === 0) {
+        var empty = document.createElement('span');
+        empty.className = 'pf-amenity-chips-empty';
+        empty.textContent = 'No amenities selected yet.';
+        chipsEl.appendChild(empty);
+        return;
+      }
+
+      names.forEach(function (name) {
+        var chip = document.createElement('span');
+        chip.className = 'pf-amenity-chip';
+
+        var label = document.createElement('span');
+        label.className = 'pf-amenity-chip-label';
+        label.textContent = name;
+
+        var x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'pf-amenity-chip-x';
+        x.setAttribute('aria-label', 'Remove ' + name);
+        x.innerHTML = '&times;';
+        x.addEventListener('click', function () {
+          var next = getNames().filter(function (n) {
+            return n.toLowerCase() !== name.toLowerCase();
+          });
+          setNames(next);
+        });
+
+        chip.appendChild(label);
+        chip.appendChild(x);
+        chipsEl.appendChild(chip);
+      });
+    }
+
+    // When the user picks an amenity from the dropdown, add it as a chip
+    selectEl.addEventListener('change', function () {
+      var name = (this.value || '').trim();
+      if (!name) return;
+
+      var names = getNames();
+      var exists = names.some(function (n) {
+        return n.toLowerCase() === name.toLowerCase();
+      });
+      if (!exists) names.push(name);
+
+      setNames(names);
+
+      // Reset the select to the placeholder so the next pick works
+      this.value = '';
+    });
+
+    // Initial render (edit mode)
+    render();
+  })();
+</script>
+{% endblock %}

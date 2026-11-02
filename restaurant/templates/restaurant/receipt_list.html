@@ -1,0 +1,414 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}Receipts — Restaurant{% endblock %}
+{% block page_title %}Receipts{% endblock %}
+{% block breadcrumb %}<span class="crumb">Receipts</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="rc-header">
+  <div>
+    <h1>Receipts</h1>
+    <p>
+      {% if receipts %}
+        {{ receipts|length }} receipt{{ receipts|length|pluralize }} found.
+        {% if q or request.GET.from or request.GET.to %}
+          <a href="{% url 'restaurant_receipt_list' %}" style="color:var(--brand-2); font-weight:600; margin-left:6px;">Clear filters</a>
+        {% endif %}
+      {% else %}
+        No receipts match your filters.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px;">
+    <a href="{% url 'restaurant_order_list' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+      </svg>
+      View Orders
+    </a>
+  </div>
+</div>
+
+{% if receipts %}
+
+<!-- ============ KPIs ============ -->
+<div class="rc-kpis">
+  <div class="rc-kpi">
+    <div class="rc-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rc-kpi-value" id="kpiTotalAmount">KES 0</div>
+      <div class="rc-kpi-label">Total Collected</div>
+    </div>
+  </div>
+
+  <div class="rc-kpi">
+    <div class="rc-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 2v20l3-2 2 2 3-2 3 2 2-2 3 2V2H4z"/>
+        <line x1="8" y1="7" x2="16" y2="7"/>
+        <line x1="8" y1="11" x2="16" y2="11"/>
+        <line x1="8" y1="15" x2="13" y2="15"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rc-kpi-value">{{ receipts|length }}</div>
+      <div class="rc-kpi-label">Receipts Issued</div>
+    </div>
+  </div>
+
+  <div class="rc-kpi">
+    <div class="rc-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="rc-kpi-value" id="kpiTopMethod">—</div>
+      <div class="rc-kpi-label">Top Method</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<form method="get" class="rc-toolbar">
+  
+  <div class="rc-toolbar-row">
+    <!-- Search -->
+    <div class="rc-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by receipt #, customer, or reference…" autocomplete="off">
+    </div>
+
+    <!-- Date Filters -->
+    <div class="rc-date-filters">
+      <div class="rc-date-field">
+        <label for="from">From</label>
+        <input type="date" id="from" name="from" value="{{ request.GET.from|default:'' }}">
+      </div>
+      <div class="rc-date-field">
+        <label for="to">To</label>
+        <input type="date" id="to" name="to" value="{{ request.GET.to|default:'' }}">
+      </div>
+    </div>
+
+    <!-- Search button + Clear -->
+    <button type="submit" class="btn">Filter</button>
+    {% if q or request.GET.from or request.GET.to %}
+      <a href="{% url 'restaurant_receipt_list' %}" class="btn secondary">Clear</a>
+    {% endif %}
+  </div>
+
+  <!-- Method Filter Chips -->
+  <div class="rc-chips">
+    <span class="rc-chips-label">Quick filter:</span>
+    <button type="button" class="rc-chip active" data-method="all">All Methods</button>
+    <button type="button" class="rc-chip" data-method="cash">Cash</button>
+    <button type="button" class="rc-chip" data-method="mpesa">M-Pesa</button>
+    <button type="button" class="rc-chip" data-method="card">Card</button>
+    <button type="button" class="rc-chip" data-method="bank">Bank</button>
+  </div>
+</form>
+
+<!-- ============ Table ============ -->
+<div class="table-wrap">
+  <table id="rcTable">
+    <thead>
+      <tr>
+        <th>Receipt #</th>
+        <th>Date</th>
+        <th>Customer</th>
+        <th>Method</th>
+        <th>Reference</th>
+        <th style="text-align:right;">Amount</th>
+        <th style="text-align:center; width:100px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for receipt in receipts %}
+      <tr class="rc-row"
+          data-method="{{ receipt.method }}"
+          onclick="window.location='{% url 'restaurant_receipt_detail' receipt.id %}';"
+          style="cursor: pointer;">
+        
+        <td>
+          <div class="rc-number">{{ receipt.number }}</div>
+          <div class="rc-order-link">Order #{{ receipt.order.id }}</div>
+        </td>
+
+        <td>
+          <div class="rc-date">{{ receipt.issued_at|date:"M j, Y" }}</div>
+          <div class="rc-time">{{ receipt.issued_at|date:"H:i" }}</div>
+        </td>
+
+        <td>
+          <div class="rc-customer">
+            <div class="rc-avatar">{{ receipt.customer_name|slice:":1"|upper }}</div>
+            <div class="rc-customer-meta">
+              <div class="rc-customer-name">{{ receipt.customer_name }}</div>
+              {% if receipt.customer_phone %}
+                <div class="rc-customer-sub">{{ receipt.customer_phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+
+        <td>
+          <span class="rc-method method-{{ receipt.method }}">
+            {% if receipt.method == 'mpesa' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>
+            {% elif receipt.method == 'card' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+            {% endif %}
+            {{ receipt.get_method_display }}
+          </span>
+        </td>
+
+        <td>
+          {% if receipt.reference %}
+            <span class="rc-ref">{{ receipt.reference }}</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+
+        <td style="text-align:right;">
+          <div class="rc-amount">KES {{ receipt.amount|floatformat:2 }}</div>
+        </td>
+
+        <td style="text-align:center;" onclick="event.stopPropagation();">
+          <div class="flex" style="gap:6px; justify-content:center;">
+            <a href="{% url 'restaurant_receipt_print' receipt.id %}" target="_blank" class="btn secondary sm" title="Print Receipt">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+              </svg>
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Client-side filter empty state -->
+  <div class="rc-empty-filter" id="rcEmptyFilter" hidden>
+    <h4>No receipts match your filter</h4>
+    <p class="muted">Try selecting a different payment method.</p>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="rc-empty">
+  <div class="rc-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 2v20l3-2 2 2 3-2 3 2 2-2 3 2V2H4z"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+    </svg>
+  </div>
+  <h4>No receipts found</h4>
+  <p class="muted">
+    {% if q or request.GET.from or request.GET.to %}
+      No results match your filters. <a href="{% url 'restaurant_receipt_list' %}" style="color:var(--brand-2);">Clear filters</a>
+    {% else %}
+      Receipts are automatically generated when you record a payment against an order.
+    {% endif %}
+  </p>
+  <a href="{% url 'restaurant_order_list' %}" class="btn" style="margin-top:14px;">View Orders</a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Receipts list ================= */
+
+  .rc-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .rc-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .rc-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .rc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .rc-kpi {
+    background: #fff; border: 1px solid var(--line-2); border-radius: 14px;
+    padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+  }
+  .rc-kpi-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+  .rc-kpi-icon svg { width: 20px; height: 20px; }
+  .rc-kpi-icon.k-green  { background: #ecfdf5; color: #047857; }
+  .rc-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; }
+  .rc-kpi-icon.k-amber  { background: #fef3c7; color: #b45309; }
+  .rc-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .rc-kpi-label { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-top: 3px; }
+
+  /* ---- Toolbar ---- */
+  .rc-toolbar { background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 16px; }
+  .rc-toolbar-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  
+  .rc-search { position: relative; flex: 1 1 300px; max-width: 440px; }
+  .rc-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted-2); pointer-events: none; }
+  .rc-search input { width: 100%; padding: 10px 12px 10px 38px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+  .rc-search input:focus { outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 4px rgba(245,158,11,0.13); }
+
+  .rc-date-filters { display: flex; gap: 8px; }
+  .rc-date-field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .rc-date-field input { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+
+  .rc-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+  .rc-chips-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted-2); margin-right: 6px; }
+  .rc-chip {
+    padding: 5px 12px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px;
+    background: #fff; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+  .rc-chip:hover { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+  .rc-chip.active { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; border-color: transparent; }
+
+  /* ---- Table Specifics ---- */
+  .rc-number {
+    display: inline-block; padding: 3px 8px; border-radius: 6px;
+    background: #f1f5f9; border: 1px solid var(--line); color: var(--text-2);
+    font-size: 11.5px; font-weight: 800; letter-spacing: 0.4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .rc-order-link { font-size: 11px; color: var(--muted-2); margin-top: 4px; font-weight: 600; }
+  .rc-date { font-size: 13px; font-weight: 600; color: var(--text); }
+  .rc-time { font-size: 11.5px; color: var(--muted-2); margin-top: 2px; }
+
+  .rc-customer { display: flex; align-items: center; gap: 10px; }
+  .rc-avatar {
+    width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%;
+    display: grid; place-items: center; background: linear-gradient(135deg, #fbbf24, #f97316);
+    color: #fff; font-weight: 700; font-size: 12px;
+  }
+  .rc-customer-name { font-weight: 700; color: var(--text); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .rc-customer-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+
+  .rc-method { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+  .rc-method svg { width: 13px; height: 13px; }
+  .rc-method.method-mpesa { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .rc-method.method-card  { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .rc-method.method-cash  { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .rc-method.method-bank  { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .rc-ref { font-size: 12px; color: var(--text-2); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line-2); }
+  .rc-amount { font-size: 13.5px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* ---- Empty states ---- */
+  .rc-empty, .rc-empty-filter { text-align: center; padding: 60px 20px; background: #fff; border: 1px dashed var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
+  .rc-empty-ico {
+    width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+    display: grid; place-items: center; background: #fef3c7; color: var(--brand-2); border: 1px solid #fde68a;
+  }
+  .rc-empty-ico svg { width: 30px; height: 30px; }
+  .rc-empty h4, .rc-empty-filter h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+    .rc-toolbar-row { flex-direction: column; align-items: stretch; }
+    .rc-search, .rc-date-filters { max-width: 100%; width: 100%; }
+    .rc-date-field { flex: 1; }
+    .rc-date-field input { width: 100%; }
+  }
+  @media (max-width: 600px) {
+    .rc-header h1 { font-size: 20px; }
+    .rc-header { flex-direction: column; align-items: stretch; }
+    th:nth-child(2), td:nth-child(2) { display: none; }
+    .rc-customer-name { max-width: 120px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // --- KPI counters computed client-side ---
+    var rows = document.querySelectorAll('.rc-row');
+    var totalAmount = 0;
+    var methods = {};
+
+    rows.forEach(function (r) {
+      // 1. Calculate Total Amount
+      var amountEl = r.querySelector('.rc-amount');
+      if (amountEl) {
+        var val = parseFloat((amountEl.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(val)) totalAmount += val;
+      }
+
+      // 2. Track Payment Methods
+      var methodEl = r.querySelector('.rc-method');
+      if (methodEl) {
+        var methodName = (methodEl.textContent || '').trim();
+        methods[methodName] = (methods[methodName] || 0) + 1;
+      }
+    });
+
+    // Helper to set KPI text
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    // Update Total Amount
+    setText('kpiTotalAmount', 'KES ' + totalAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+
+    // Update Top Payment Method
+    var topMethod = '—';
+    var maxCount = 0;
+    for (var m in methods) {
+      if (methods[m] > maxCount) {
+        maxCount = methods[m];
+        topMethod = m;
+      }
+    }
+    setText('kpiTopMethod', topMethod);
+
+    // --- Quick Method Filter Chips ---
+    var chips = document.querySelectorAll('.rc-chip');
+    var emptyState = document.getElementById('rcEmptyFilter');
+    var table = document.getElementById('rcTable');
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        // Update active state
+        chips.forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+
+        var filter = chip.dataset.method;
+        var visible = 0;
+
+        rows.forEach(function (row) {
+          var rowMethod = row.dataset.method;
+          var ok = (filter === 'all' || rowMethod === filter);
+          row.hidden = !ok;
+          if (ok) visible++;
+        });
+
+        // Handle empty state
+        if (visible === 0) {
+          table.style.display = 'none';
+          emptyState.hidden = false;
+        } else {
+          table.style.display = '';
+          emptyState.hidden = true;
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

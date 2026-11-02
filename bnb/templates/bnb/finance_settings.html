@@ -1,0 +1,271 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}VAT &amp; Settings — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="fs-header">
+  <div>
+    <h1>VAT &amp; Financial Settings</h1>
+    <p class="muted">Configure how your organization handles taxes and financial reporting.</p>
+  </div>
+</div>
+
+<div class="fs-grid">
+
+  {# ==================== MAIN FORM ==================== #}
+  <div class="fs-card">
+    <div class="fs-card-head">
+      <h2>Tax Configuration</h2>
+      <p>VAT is optional. If disabled, all ledger entries are recorded at gross amount.</p>
+    </div>
+    
+    <form method="post" class="fs-form">
+      {% csrf_token %}
+
+      {# VAT Toggle #}
+      <div class="fs-toggle-row">
+        <div class="fs-toggle-text">
+          <strong>Enable VAT Tracking</strong>
+          <span>When enabled, expenses and revenue are split into Net and Tax components.</span>
+        </div>
+        <label class="fs-switch">
+          <input type="checkbox" name="vat_enabled" value="1" {% if settings.vat_enabled %}checked{% endif %}>
+          <span class="fs-slider"></span>
+        </label>
+      </div>
+
+      <hr class="fs-divider">
+
+      {# VAT Details #}
+      <div class="fs-fields">
+        
+        <div class="fs-field">
+          <label for="vat_label">Tax Label</label>
+          <input type="text" id="vat_label" name="vat_label" value="{{ settings.vat_label|default:'VAT' }}" placeholder="e.g. VAT, GST, Sales Tax">
+          <small>Shown in reports and invoices.</small>
+        </div>
+
+        <div class="fs-field">
+          <label for="vat_rate">Tax Rate (%)</label>
+          <input type="number" id="vat_rate" name="vat_rate" step="0.01" min="0" max="100" value="{{ settings.vat_rate|default:'0' }}" placeholder="e.g. 16">
+          <small>Enter a percentage (e.g., 16 for 16%).</small>
+        </div>
+
+      </div>
+
+      <hr class="fs-divider">
+
+      {# Inclusive / Exclusive #}
+      <div class="fs-toggle-row">
+        <div class="fs-toggle-text">
+          <strong>Prices include VAT</strong>
+          <span>If checked, the amounts you enter are treated as VAT-inclusive. If unchecked, VAT is added on top.</span>
+        </div>
+        <label class="fs-switch">
+          <input type="checkbox" name="vat_inclusive" value="1" {% if settings.vat_inclusive %}checked{% endif %}>
+          <span class="fs-slider"></span>
+        </label>
+      </div>
+
+      <div class="fs-actions">
+        <button type="submit" class="btn success">Save Settings</button>
+      </div>
+
+    </form>
+  </div>
+
+  {# ==================== SIDEBAR INFO ==================== #}
+  <div class="fs-sidebar">
+    
+    <div class="fs-info-card">
+      <div class="fs-info-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <h3>How VAT works</h3>
+      <p>When you record an expense or confirm a booking:</p>
+      <ul>
+        <li>If VAT is <strong>ON</strong>, the system automatically calculates the tax portion.</li>
+        <li>If VAT is <strong>OFF</strong>, the full amount is recorded as the net total.</li>
+      </ul>
+      <p>This ensures your Profit &amp; Loss statements remain accurate regardless of your tax jurisdiction.</p>
+    </div>
+
+    <div class="fs-info-card fs-info-card-warn">
+      <div class="fs-info-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3>Changing the rate</h3>
+      <p>Past ledger entries will <strong>not</strong> be recalculated if you change the VAT rate. The rate at the time of recording is permanently attached to that entry.</p>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEADER                                                      */
+  /* ============================================================ */
+  .fs-header {
+    margin-bottom: 24px;
+  }
+  .fs-header h1 {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .fs-header p { font-size: 13.5px; color: var(--muted); }
+
+  /* ============================================================ */
+  /*  LAYOUT GRID                                                 */
+  /* ============================================================ */
+  .fs-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .fs-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================ */
+  /*  MAIN CARD                                                   */
+  /* ============================================================ */
+  .fs-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .fs-card-head {
+    padding: 20px 24px; border-bottom: 1px solid var(--line-2);
+    background: #fafbfd;
+  }
+  .fs-card-head h2 { font-size: 16px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+  .fs-card-head p { font-size: 12.5px; color: var(--muted-2); margin: 0; }
+
+  .fs-form { padding: 24px; }
+
+  /* Toggles */
+  .fs-toggle-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px;
+  }
+  .fs-toggle-text strong {
+    display: block; font-size: 14px; font-weight: 700;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .fs-toggle-text span {
+    display: block; font-size: 12.5px; color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Custom Checkbox Switch */
+  .fs-switch {
+    position: relative; display: inline-block;
+    width: 44px; height: 24px; flex-shrink: 0;
+  }
+  .fs-switch input { opacity: 0; width: 0; height: 0; }
+  .fs-slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1; transition: .2s;
+    border-radius: 24px;
+  }
+  .fs-slider:before {
+    position: absolute; content: "";
+    height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: white; transition: .2s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .fs-switch input:checked + .fs-slider { background-color: #10b981; }
+  .fs-switch input:focus + .fs-slider { box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+  .fs-switch input:checked + .fs-slider:before { transform: translateX(20px); }
+
+  /* Divider */
+  .fs-divider {
+    border: none; border-top: 1px solid var(--line-2);
+    margin: 24px 0;
+  }
+
+  /* Fields */
+  .fs-fields {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  }
+  @media (max-width: 600px) { .fs-fields { grid-template-columns: 1fr; } }
+  
+  .fs-field label {
+    display: block; font-size: 12.5px; font-weight: 700;
+    color: var(--text-2); margin-bottom: 6px;
+  }
+  .fs-field input {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #f8fafc; color: var(--text);
+    font-family: inherit; outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .fs-field input:focus {
+    border-color: var(--brand-1); background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .fs-field small {
+    display: block; font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+
+  /* Actions */
+  .fs-actions {
+    display: flex; justify-content: flex-end;
+    margin-top: 32px; padding-top: 24px;
+    border-top: 1px solid var(--line-2);
+  }
+
+  /* ============================================================ */
+  /*  SIDEBAR INFO CARDS                                          */
+  /* ============================================================ */
+  .fs-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  .fs-info-card {
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: 14px; padding: 20px;
+  }
+  .fs-info-card-warn {
+    background: #fffbeb; border-color: #fde68a;
+  }
+  
+  .fs-info-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #dbeafe; color: #1e40af;
+    display: grid; place-items: center; margin-bottom: 12px;
+  }
+  .fs-info-card-warn .fs-info-icon {
+    background: #fef3c7; color: #b45309;
+  }
+  .fs-info-icon svg { width: 16px; height: 16px; }
+
+  .fs-info-card h3 {
+    font-size: 14px; font-weight: 800; color: #1e3a8a; margin: 0 0 8px;
+  }
+  .fs-info-card-warn h3 { color: #92400e; }
+  
+  .fs-info-card p {
+    font-size: 12.5px; color: #1e40af; line-height: 1.5; margin: 0 0 10px;
+  }
+  .fs-info-card-warn p { color: #92400e; }
+  
+  .fs-info-card ul {
+    padding-left: 18px; margin: 0 0 10px; font-size: 12.5px;
+    color: #1e40af; line-height: 1.6;
+  }
+  .fs-info-card-warn ul { color: #92400e; }
+</style>
+{% endblock %}

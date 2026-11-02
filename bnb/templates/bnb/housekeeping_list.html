@@ -1,0 +1,703 @@
+{% extends 'bnb/operationssub_base.html' %}
+{% load humanize %}
+{% block title %}Housekeeping — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="hk-head">
+  <div>
+    <h1>Housekeeping</h1>
+    <p class="muted">
+      {% if pill_counts.all %}
+        {{ pill_counts.all }} task{{ pill_counts.all|pluralize }} across your properties.
+      {% else %}
+        No housekeeping tasks yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_housekeeping_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New task
+  </a>
+</div>
+
+{# ==================== STATS ==================== #}
+{% if pill_counts.all %}
+  <div class="hk-stats">
+    <a href="?status=open" class="hk-stat">
+      <div class="hk-stat-label">Open</div>
+      <div class="hk-stat-value">{{ open_count }}</div>
+      <div class="hk-stat-sub">Awaiting action</div>
+    </a>
+    <a href="?status=in_progress" class="hk-stat hk-stat-sky">
+      <div class="hk-stat-label">In progress</div>
+      <div class="hk-stat-value">{{ in_progress_count }}</div>
+      <div class="hk-stat-sub">Being worked on</div>
+    </a>
+    <a href="?status=done" class="hk-stat hk-stat-green">
+      <div class="hk-stat-label">Done today</div>
+      <div class="hk-stat-value">{{ done_today_count }}</div>
+      <div class="hk-stat-sub">Completed</div>
+    </a>
+    <div class="hk-stat hk-stat-red">
+      <div class="hk-stat-label">Overdue</div>
+      <div class="hk-stat-value">{{ overdue_count }}</div>
+      <div class="hk-stat-sub">Past scheduled time</div>
+    </div>
+  </div>
+{% endif %}
+
+{# ==================== FILTER PILLS ==================== #}
+<div class="hk-pills" role="group" aria-label="Filter by status">
+  <a class="hk-pill {% if not status %}is-active{% endif %}"
+     href="?{% if priority %}priority={{ priority }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}">
+    All <span class="hk-pill-count">{{ pill_counts.all }}</span>
+  </a>
+  <a class="hk-pill hk-pill-open {% if status == 'open' %}is-active{% endif %}"
+     href="?status=open{% if priority %}&priority={{ priority }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Open <span class="hk-pill-count">{{ pill_counts.open }}</span>
+  </a>
+  <a class="hk-pill hk-pill-in_progress {% if status == 'in_progress' %}is-active{% endif %}"
+     href="?status=in_progress{% if priority %}&priority={{ priority }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    In progress <span class="hk-pill-count">{{ pill_counts.in_progress }}</span>
+  </a>
+  <a class="hk-pill hk-pill-done {% if status == 'done' %}is-active{% endif %}"
+     href="?status=done{% if priority %}&priority={{ priority }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+    Done <span class="hk-pill-count">{{ pill_counts.done }}</span>
+  </a>
+</div>
+
+{# ==================== TOOLBAR ==================== #}
+<form method="get" class="hk-toolbar">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+
+  <div class="hk-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by description, property, or assignee…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?{% if status %}status={{ status }}&{% endif %}{% if priority %}priority={{ priority }}&{% endif %}sort={{ sort }}"
+         class="hk-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="priority" class="hk-select" aria-label="Filter by priority" onchange="this.form.submit()">
+    <option value="">All priorities</option>
+    <option value="urgent" {% if priority == 'urgent' %}selected{% endif %}>Urgent</option>
+    <option value="high"   {% if priority == 'high'   %}selected{% endif %}>High</option>
+    <option value="normal" {% if priority == 'normal' %}selected{% endif %}>Normal</option>
+    <option value="low"    {% if priority == 'low'    %}selected{% endif %}>Low</option>
+  </select>
+
+  <select name="sort" class="hk-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="priority"  {% if sort == 'priority'  %}selected{% endif %}>Priority</option>
+    <option value="scheduled" {% if sort == 'scheduled' %}selected{% endif %}>Scheduled date</option>
+    <option value="newest"    {% if sort == 'newest'    %}selected{% endif %}>Newest first</option>
+    <option value="oldest"    {% if sort == 'oldest'    %}selected{% endif %}>Oldest first</option>
+    <option value="property"  {% if sort == 'property'  %}selected{% endif %}>By property</option>
+  </select>
+
+  <button type="submit" class="btn secondary sm">Apply</button>
+</form>
+
+{# ==================== TASK LIST ==================== #}
+{% if tasks %}
+  <div class="hk-list">
+    {% for t in tasks %}
+      <article class="hk-card {% if t.status == 'done' %}is-done{% endif %} hk-card-{{ t.status }}">
+
+        <!-- Status icon -->
+        <div class="hk-status-ico hk-status-ico-{{ t.status }}">
+          {% if t.status == 'done' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {% elif t.status == 'in_progress' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          {% endif %}
+        </div>
+
+        <!-- Body -->
+        <div class="hk-body">
+          <div class="hk-title-row">
+            <h3 class="hk-title">{{ t.description }}</h3>
+            <span class="hk-priority hk-priority-{{ t.priority }}">{{ t.get_priority_display }}</span>
+          </div>
+
+          <div class="hk-meta">
+            <span class="hk-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+              {{ t.property.name }}
+            </span>
+
+            <span class="hk-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              {{ t.get_task_type_display }}
+            </span>
+
+            {% if t.assigned_to %}
+              <span class="hk-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="7" r="4"/></svg>
+                {{ t.assigned_to }}
+              </span>
+            {% endif %}
+
+            {% if t.scheduled_for %}
+              <span class="hk-meta-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                {{ t.scheduled_for|date:"d M, H:i" }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Status pill -->
+        <div class="hk-status">
+          <span class="hk-pill-status hk-pill-status-{{ t.status }}">
+            <span class="hk-pill-dot"></span>
+            {{ t.get_status_display }}
+          </span>
+        </div>
+
+        <!-- Actions -->
+        <div class="hk-actions">
+          <a href="{% url 'bnb_housekeeping_edit' t.id %}" class="hk-act-btn" title="Edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </a>
+          <a href="{% url 'bnb_housekeeping_toggle' t.id %}" class="hk-act-btn hk-act-btn-{{ t.status }}" title="{% if t.status == 'done' %}Reopen{% else %}Mark done{% endif %}">
+            {% if t.status == 'done' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 3 3 9 9 9"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            {% endif %}
+          </a>
+          <form method="post" action="{% url 'bnb_housekeeping_delete' t.id %}" style="display:inline;" onsubmit="return confirm('Delete this task?');">
+            {% csrf_token %}
+            <button type="submit" class="hk-act-btn hk-act-btn-danger" title="Delete">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </form>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  {# ==================== PAGINATION ==================== #}
+  {% if page_obj.has_other_pages %}
+    <nav class="hk-pager" aria-label="Housekeeping task pagination">
+      {% if page_obj.has_previous %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if priority %}priority={{ priority }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ page_obj.previous_page_number }}" class="hk-pager-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Prev</span>
+        </a>
+      {% else %}
+        <span class="hk-pager-btn is-disabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Prev</span>
+        </span>
+      {% endif %}
+
+      <div class="hk-pager-nums">
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="hk-pager-num is-current">{{ num }}</span>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <a href="?{% if status %}status={{ status }}&{% endif %}{% if priority %}priority={{ priority }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ num }}" class="hk-pager-num">{{ num }}</a>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <span class="hk-pager-ellipsis">…</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {% if page_obj.has_next %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if priority %}priority={{ priority }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ page_obj.next_page_number }}" class="hk-pager-btn">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      {% else %}
+        <span class="hk-pager-btn is-disabled">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+{% else %}
+
+  {# ==================== EMPTY STATE ==================== #}
+  {% if status or priority or q %}
+    <div class="hk-empty">
+      <div class="hk-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <h4>No tasks match your filters</h4>
+      <p class="muted">Try clearing the search or switching to "All".</p>
+      <a href="{% url 'bnb_housekeeping' %}" class="btn secondary" style="margin-top:14px;">Clear filters</a>
+    </div>
+  {% else %}
+    <div class="hk-empty">
+      <div class="hk-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h4>No housekeeping tasks yet</h4>
+      <p class="muted">Create your first task to keep things tidy across your properties.</p>
+      <a href="{% url 'bnb_housekeeping_add' %}" class="btn" style="margin-top:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create first task
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .hk-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .hk-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .hk-head p { font-size: 13px; }
+
+  /* ============================================================ */
+  /*  STATS                                                       */
+  /* ============================================================ */
+  .hk-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 18px;
+  }
+  @media (max-width: 900px) { .hk-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .hk-stats { gap: 8px; } }
+
+  .hk-stat {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  a.hk-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .hk-stat-label {
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .hk-stat-value {
+    font-size: 24px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .hk-stat-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+  .hk-stat-sky   .hk-stat-value { color: #0369a1; }
+  .hk-stat-green .hk-stat-value { color: #047857; }
+  .hk-stat-red   .hk-stat-value { color: #b91c1c; }
+  @media (max-width: 480px) { .hk-stat-value { font-size: 21px; } }
+
+  /* ============================================================ */
+  /*  FILTER PILLS                                                */
+  /* ============================================================ */
+  .hk-pills {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .hk-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    background: #fff;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .hk-pill:hover { background: #f8fafc; color: var(--text-2); border-color: #cbd5e1; }
+  .hk-pill.is-active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .hk-pill-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    background: #f1f5f9;
+    color: var(--muted);
+  }
+  .hk-pill.is-active .hk-pill-count {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+  }
+
+  /* ============================================================ */
+  /*  TOOLBAR                                                     */
+  /* ============================================================ */
+  .hk-toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    align-items: center; margin-bottom: 18px;
+  }
+  .hk-search {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 220px;
+  }
+  .hk-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .hk-search input {
+    width: 100%;
+    padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .hk-search input::placeholder { color: var(--muted-2); }
+  .hk-search input:hover { border-color: #cbd5e1; }
+  .hk-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .hk-search-reset {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .hk-search-reset:hover { background: #cbd5e1; }
+
+  .hk-select {
+    padding: 10px 14px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 140px;
+    outline: none;
+  }
+  .hk-select:hover { border-color: #cbd5e1; }
+  .hk-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* ============================================================ */
+  /*  TASK CARD                                                   */
+  /* ============================================================ */
+  .hk-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .hk-card {
+    display: grid;
+    grid-template-columns: 42px 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: box-shadow .18s, border-color .18s, transform .12s;
+  }
+  .hk-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: #dbe2f0;
+  }
+  .hk-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 12px 0 0 12px;
+    background: transparent;
+  }
+  .hk-card-open::before        { background: #f59e0b; }
+  .hk-card-in_progress::before { background: #3b82f6; }
+  .hk-card-done::before        { background: #10b981; }
+  .hk-card.is-done {
+    opacity: 0.68;
+  }
+
+  @media (max-width: 720px) {
+    .hk-card {
+      grid-template-columns: 36px 1fr;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .hk-card > .hk-status,
+    .hk-card > .hk-actions {
+      grid-column: 2 / -1;
+      justify-self: flex-start;
+      margin-top: 4px;
+    }
+    .hk-actions { justify-self: flex-end; }
+  }
+
+  /* Status icon */
+  .hk-status-ico {
+    flex: 0 0 42px;
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    background: #f1f5f9;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+  }
+  .hk-status-ico svg { width: 18px; height: 18px; }
+  .hk-status-ico-open {
+    background: #fffbeb; color: #b45309; border-color: #fde68a;
+  }
+  .hk-status-ico-in_progress {
+    background: #eff6ff; color: #1e40af; border-color: #bfdbfe;
+  }
+  .hk-status-ico-done {
+    background: #ecfdf5; color: #047857; border-color: #a7f3d0;
+  }
+
+  /* Body */
+  .hk-body { min-width: 0; }
+  .hk-title-row {
+    display: flex; align-items: baseline; gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .hk-title {
+    font-size: 13.5px; font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .hk-priority {
+    font-size: 9.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .hk-priority-low    { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+  .hk-priority-normal { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .hk-priority-high   { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .hk-priority-urgent { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  .hk-meta {
+    display: flex; flex-wrap: wrap; gap: 10px 14px;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .hk-meta-item {
+    display: inline-flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .hk-meta-item svg { width: 11px; height: 11px; color: var(--muted-2); flex-shrink: 0; }
+
+  /* Status pill */
+  .hk-status { flex-shrink: 0; }
+  .hk-pill-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .hk-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .hk-pill-status-open        { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .hk-pill-status-in_progress { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .hk-pill-status-done        { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+
+  /* Actions */
+  .hk-actions {
+    display: flex; gap: 4px; flex-shrink: 0;
+  }
+  .hk-act-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .hk-act-btn svg { width: 14px; height: 14px; }
+  .hk-act-btn:hover {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+  }
+  .hk-act-btn-done:hover {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+  }
+  .hk-act-btn-danger:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+  }
+
+  /* ============================================================ */
+  /*  PAGINATION                                                  */
+  /* ============================================================ */
+  .hk-pager {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  .hk-pager-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .hk-pager-btn:hover { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+  .hk-pager-btn svg { width: 13px; height: 13px; }
+  .hk-pager-btn.is-disabled {
+    opacity: 0.4; cursor: not-allowed; pointer-events: none;
+  }
+  .hk-pager-nums { display: inline-flex; align-items: center; gap: 4px; }
+  .hk-pager-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .hk-pager-num:hover { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+  .hk-pager-num.is-current {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+    cursor: default;
+  }
+  .hk-pager-ellipsis {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 34px;
+    color: var(--muted-2);
+    font-size: 13px; font-weight: 700;
+    user-select: none;
+  }
+
+  /* ============================================================ */
+  /*  EMPTY                                                       */
+  /* ============================================================ */
+  .hk-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background:
+      radial-gradient(500px 220px at 50% 0%, rgba(14,165,233,0.06), transparent 60%),
+      #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .hk-empty-ico {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .hk-empty-ico svg { width: 30px; height: 30px; }
+  .hk-empty h4 {
+    font-size: 16px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .hk-empty p { font-size: 13px; max-width: 380px; margin: 0 auto; }
+
+  /* ============================================================ */
+  /*  RESPONSIVE                                                  */
+  /* ============================================================ */
+  @media (max-width: 640px) {
+    .hk-head h1 { font-size: 19px; }
+    .hk-search { flex: 1 1 100%; }
+    .hk-select { flex: 1 1 45%; }
+    .hk-pager-btn span { display: none; }
+    .hk-pager-num { min-width: 30px; height: 30px; font-size: 12px; }
+  }
+</style>
+{% endblock %}

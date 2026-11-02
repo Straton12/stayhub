@@ -1,0 +1,505 @@
+{% extends 'tours/base.html' %}
+{% block title %}Tours Overview — StayHub{% endblock %}
+{% block page_title %}Tours Overview{% endblock %}
+
+{% block content %}
+
+<!-- ============ Hero ============ -->
+<div class="td-hero">
+  <div class="td-hero-text">
+    <h1>Welcome, {{ user.username|capfirst }}.</h1>
+    <p>
+      {% if user.organization %}
+        Managing <strong>{{ user.organization.name }}</strong>'s tour packages, guides and bookings.
+      {% else %}
+        Your tours &amp; travel workspace.
+      {% endif %}
+    </p>
+  </div>
+  <div class="td-hero-actions">
+    <a href="{% url 'tours_booking_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New Booking
+    </a>
+    <a href="{% url 'tours_package_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      Add Package
+    </a>
+  </div>
+</div>
+
+<!-- ============ KPI cards ============ -->
+<div class="grid mb">
+  <a class="card kpi" href="{% url 'tours_package_list' %}">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </div>
+    <h3>Packages</h3>
+    <div class="value">{{ packages_count }}</div>
+    <div class="sub">Tours you offer</div>
+  </a>
+
+  <a class="card kpi kpi-blue" href="{% url 'tours_booking_list' %}">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <h3>Bookings</h3>
+    <div class="value">{{ bookings_count }}</div>
+    <div class="sub">All-time traveller bookings</div>
+  </a>
+
+  <a class="card kpi kpi-amber" href="{% url 'tours_guide_list' %}">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <h3>Guides</h3>
+    <div class="value">{{ guides_count }}</div>
+    <div class="sub">Registered tour guides</div>
+  </a>
+
+  <a class="card kpi kpi-purple" href="{% url 'tours_vehicle_list' %}">
+    <div class="kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 17h14"/>
+        <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+        <circle cx="7.5" cy="17.5" r="1.5"/>
+        <circle cx="16.5" cy="17.5" r="1.5"/>
+      </svg>
+    </div>
+    <h3>Vehicles</h3>
+    <div class="value">{{ vehicles_count }}</div>
+    <div class="sub">Transport for tours</div>
+  </a>
+</div>
+
+<!-- ============ Quick links ============ -->
+<div class="td-quick">
+  <a class="td-quick-item" href="{% url 'tours_package_list' %}">
+    <span class="td-quick-ico q-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Packages</strong>
+      <small>Manage your tours</small>
+    </span>
+    <svg class="td-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="td-quick-item" href="{% url 'tours_guide_list' %}">
+    <span class="td-quick-ico q-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Guides</strong>
+      <small>Assign expert guides</small>
+    </span>
+    <svg class="td-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="td-quick-item" href="{% url 'tours_vehicle_list' %}">
+    <span class="td-quick-ico q-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 17h14"/>
+        <path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/>
+        <circle cx="7.5" cy="17.5" r="1.5"/>
+        <circle cx="16.5" cy="17.5" r="1.5"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Vehicles</strong>
+      <small>Fleet and logistics</small>
+    </span>
+    <svg class="td-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+  <a class="td-quick-item" href="{% url 'network_dashboard' %}">
+    <span class="td-quick-ico q-pink">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+      </svg>
+    </span>
+    <span>
+      <strong>Network</strong>
+      <small>Referrals and partners</small>
+    </span>
+    <svg class="td-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+</div>
+
+<!-- ============ Recent bookings ============ -->
+<div class="section-head">
+  <div>
+    <h3 class="section-title">Recent bookings</h3>
+    <p class="muted" style="margin-top:4px;">
+      {% if bookings %}
+        Latest {{ bookings|length }} booking{{ bookings|length|pluralize }}.
+      {% else %}
+        Nothing yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="flex" style="gap:8px;">
+    <a href="{% url 'tours_booking_list' %}" class="btn secondary sm">View all</a>
+    <a href="{% url 'tours_booking_add' %}" class="btn sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New
+    </a>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Package</th>
+        <th>Travel date</th>
+        <th>Travellers</th>
+        <th>Status</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>
+          <div class="td-customer">
+            <div class="td-avatar">{{ b.customer_name|slice:":1"|upper }}</div>
+            <div class="td-customer-meta">
+              <div class="td-customer-name">{{ b.customer_name }}</div>
+              {% if b.customer_phone %}
+                <div class="td-customer-sub">{{ b.customer_phone }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="td-package">
+            <span class="td-package-name">{{ b.package.name }}</span>
+            <span class="td-package-dest">{{ b.package.destination }}</span>
+          </div>
+        </td>
+        <td class="td-date">{{ b.travel_date|date:"d M Y" }}</td>
+        <td>
+          <span class="td-trav-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M4 21v-2a4 4 0 0 1 3-3.87"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            {{ b.travellers_count }}
+          </span>
+        </td>
+        <td>
+          <span class="status-pill status-{{ b.status }}">
+            <span class="dot"></span>
+            {{ b.get_status_display }}
+          </span>
+        </td>
+        <td class="td-money">KES {{ b.total_amount|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">
+          <div class="td-empty">
+            <div class="td-empty-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <h4>No bookings yet</h4>
+            <p class="muted">Create your first tour booking to see it here.</p>
+            <a href="{% url 'tours_booking_add' %}" class="btn" style="margin-top:14px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New Booking
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Tours dashboard page ================= */
+
+  /* ---- Hero ---- */
+  .td-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 22px 24px;
+    border-radius: 16px;
+    margin-bottom: 22px;
+    background:
+      radial-gradient(600px 200px at 0% 0%, rgba(16,185,129,0.30), transparent 60%),
+      radial-gradient(500px 200px at 100% 100%, rgba(34,211,238,0.22), transparent 60%),
+      linear-gradient(135deg, #053b2c 0%, #064e3b 55%, #047857 100%);
+    color: #d1fae5;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(5,59,44,0.30);
+  }
+  .td-hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(700px 260px at 80% -20%, rgba(52,211,153,0.30), transparent 60%);
+    pointer-events: none;
+  }
+  .td-hero-text { position: relative; z-index: 1; min-width: 240px; }
+  .td-hero-text h1 {
+    font-size: 22px; font-weight: 800; color: #fff;
+    letter-spacing: -0.4px; margin-bottom: 6px;
+  }
+  .td-hero-text p {
+    font-size: 13.5px; color: #a7f3d0; line-height: 1.55; max-width: 560px;
+  }
+  .td-hero-text strong { color: #fff; font-weight: 700; }
+  .td-hero-actions {
+    position: relative; z-index: 1;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .td-hero-actions .btn {
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    box-shadow: 0 10px 24px rgba(16,185,129,0.45);
+  }
+  .td-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: none;
+  }
+  .td-hero-actions .btn.secondary:hover {
+    background: rgba(255,255,255,0.14);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+    filter: none;
+  }
+
+  /* ---- KPI cards ---- */
+  .card.kpi { padding-left: 22px; position: relative; }
+  .card.kpi .kpi-icon {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .card.kpi .kpi-icon svg { width: 16px; height: 16px; }
+  .card.kpi.kpi-blue   .kpi-icon { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .card.kpi.kpi-amber  .kpi-icon { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .card.kpi.kpi-purple .kpi-icon { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .card.kpi .value { font-size: 30px; }
+
+  /* ---- Quick links ---- */
+  .td-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .td-quick-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    color: inherit;
+    text-decoration: none;
+  }
+  .td-quick-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .td-quick-ico {
+    flex: 0 0 36px;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .td-quick-ico svg { width: 16px; height: 16px; }
+  .td-quick-ico.q-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .td-quick-ico.q-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .td-quick-ico.q-pink   { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
+  .td-quick-ico.q-green  { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+
+  .td-quick-item > span:nth-child(2) { flex: 1; min-width: 0; }
+  .td-quick-item strong {
+    display: block;
+    font-size: 13.5px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.1px;
+  }
+  .td-quick-item small {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2); margin-top: 2px;
+  }
+  .td-quick-arrow {
+    width: 16px; height: 16px;
+    color: var(--muted-2);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .td-quick-item:hover .td-quick-arrow {
+    color: var(--brand-2);
+    transform: translateX(3px);
+  }
+
+  /* ---- Section header ---- */
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  /* ---- Customer cell ---- */
+  .td-customer { display: flex; align-items: center; gap: 10px; }
+  .td-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff; font-weight: 700; font-size: 13px;
+    box-shadow: 0 4px 10px rgba(16,185,129,0.30);
+  }
+  .td-customer-meta { min-width: 0; }
+  .td-customer-name {
+    font-weight: 700; color: var(--text); font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .td-customer-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 1px;
+  }
+
+  /* ---- Package cell ---- */
+  .td-package { display: flex; flex-direction: column; }
+  .td-package-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .td-package-dest { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+
+  .td-date { color: var(--text-2); font-size: 12.5px; white-space: nowrap; }
+
+  /* ---- Travellers badge ---- */
+  .td-trav-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .td-trav-badge svg { width: 11px; height: 11px; }
+
+  /* ---- Money ---- */
+  .td-money {
+    text-align: right;
+    font-size: 12.5px;
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Status pills ---- */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-pending   { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-confirmed { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .status-pill.status-completed { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-cancelled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---- Empty state inside table ---- */
+  .td-empty { padding: 40px 20px; text-align: center; }
+  .td-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .td-empty-ico svg { width: 26px; height: 26px; }
+  .td-empty h4 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .td-hero { padding: 18px; }
+    .td-hero-text h1 { font-size: 18px; }
+    .card.kpi .value { font-size: 24px; }
+    .td-customer-name { max-width: 140px; }
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4) { display: none; } /* hide date + travellers */
+  }
+</style>
+{% endblock %}

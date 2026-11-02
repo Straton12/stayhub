@@ -1,0 +1,787 @@
+{% extends 'bnb/bookingssub_base.html' %}
+{% load humanize %}
+{% block title %}All bookings — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="bl-head">
+  <div>
+    <h1>All bookings</h1>
+    <p class="muted">
+      {% if paginator.count %}
+        Showing {{ bookings|length }} of {{ paginator.count }} booking{{ paginator.count|pluralize }}.
+      {% else %}
+        No bookings match these filters.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'bnb_booking_list' %}" class="btn secondary sm">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+      <polyline points="21 3 21 9 15 9"/>
+    </svg>
+    Refresh
+  </a>
+</div>
+
+{# ==================== PENDING BANNER ==================== #}
+{% if pending_count %}
+  <div class="bl-alert">
+    <div class="bl-alert-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3 2"/>
+      </svg>
+    </div>
+    <div class="bl-alert-body">
+      <strong>
+        {{ pending_count }} booking{{ pending_count|pluralize }} awaiting your approval
+      </strong>
+      <span>Guests are waiting — approve or decline to lock the dates.</span>
+    </div>
+    <a href="?status=pending" class="bl-alert-cta">
+      Review now
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </a>
+  </div>
+{% endif %}
+
+{# ==================== FILTER PILLS ==================== #}
+<div class="bl-filters" role="group" aria-label="Filter by status">
+  <a class="bl-pill {% if not status %}is-active{% endif %}"
+     href="?{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}">
+    All
+  </a>
+  {% for key, label in booking_statuses %}
+    <a class="bl-pill bl-pill-{{ key }} {% if status == key %}is-active{% endif %}"
+       href="?status={{ key }}{% if q %}&q={{ q|urlencode }}{% endif %}&sort={{ sort }}">
+      {{ label }}
+    </a>
+  {% endfor %}
+</div>
+
+{# ==================== SEARCH + SORT ==================== #}
+<form method="get" class="bl-toolbar">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+
+  <div class="bl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by guest, email, phone, or property…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?{% if status %}status={{ status }}&{% endif %}sort={{ sort }}"
+         class="bl-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="sort" class="bl-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="newest"  {% if sort == 'newest'  %}selected{% endif %}>Newest first</option>
+    <option value="oldest"  {% if sort == 'oldest'  %}selected{% endif %}>Oldest first</option>
+    <option value="checkin" {% if sort == 'checkin' %}selected{% endif %}>Check-in date</option>
+    <option value="amount"  {% if sort == 'amount'  %}selected{% endif %}>Highest amount</option>
+  </select>
+
+  <button type="submit" class="btn secondary sm">Apply</button>
+</form>
+
+{# ==================== TABLE OR EMPTY ==================== #}
+{% if bookings %}
+  <div class="bl-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Guest</th>
+          <th>Property</th>
+          <th>Check-in</th>
+          <th>Check-out</th>
+          <th>Source</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+          <tr class="bl-row bl-row-{{ b.status }}">
+            <td data-label="Guest">
+              <div class="bl-guest">
+                <span class="bl-avatar">{{ b.guest_name|slice:":1"|upper }}</span>
+                <div class="bl-guest-meta">
+                  <div class="bl-guest-name">{{ b.guest_name }}</div>
+                  {% if b.guest_phone %}<div class="bl-guest-sub">{{ b.guest_phone }}</div>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td data-label="Property">
+              <div class="bl-prop">
+                <span class="bl-prop-name">{{ b.property.name }}</span>
+                {% if b.property.location_label %}<span class="bl-prop-sub">{{ b.property.location_label }}</span>{% endif %}
+              </div>
+            </td>
+            <td data-label="Check-in">
+              <span class="bl-date">{{ b.check_in|date:"d M Y" }}</span>
+            </td>
+            <td data-label="Check-out">
+              <span class="bl-date">{{ b.check_out|date:"d M Y" }}</span>
+            </td>
+            <td data-label="Source">
+              <span class="bl-src bl-src-{{ b.source }}">{{ b.get_source_display }}</span>
+            </td>
+            <td data-label="Amount">
+              <strong class="bl-amount">KES {{ b.total_amount|floatformat:0|intcomma }}</strong>
+            </td>
+            <td data-label="Status">
+              <span class="bl-status bl-status-{{ b.status }}">
+                <span class="bl-status-dot"></span>
+                {{ b.get_status_display }}
+              </span>
+            </td>
+            <td data-label="">
+              <a href="{% url 'bnb_booking_detail' b.id %}" class="bl-view-btn">
+                View
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ==================== PAGINATION ==================== #}
+  {% if page_obj.has_other_pages %}
+    <nav class="bl-pager" aria-label="Booking list pagination">
+      {# Prev #}
+      {% if page_obj.has_previous %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ page_obj.previous_page_number }}"
+           class="bl-pager-btn" aria-label="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Prev</span>
+        </a>
+      {% else %}
+        <span class="bl-pager-btn is-disabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Prev</span>
+        </span>
+      {% endif %}
+
+      {# Page numbers — first / last / ±2 around current #}
+      <div class="bl-pager-nums">
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="bl-pager-num is-current" aria-current="page">{{ num }}</span>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <a href="?{% if status %}status={{ status }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ num }}"
+               class="bl-pager-num">{{ num }}</a>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <span class="bl-pager-ellipsis">…</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {# Next #}
+      {% if page_obj.has_next %}
+        <a href="?{% if status %}status={{ status }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}sort={{ sort }}&page={{ page_obj.next_page_number }}"
+           class="bl-pager-btn" aria-label="Next page">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+      {% else %}
+        <span class="bl-pager-btn is-disabled">
+          <span>Next</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+{% else %}
+
+  {# ---------- Empty state ---------- #}
+  <div class="bl-empty">
+    <div class="bl-empty-ico" aria-hidden="true">
+      {% if q or status %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      {% endif %}
+    </div>
+    {% if q or status %}
+      <h4>No bookings match your filters</h4>
+      <p class="muted">
+        Try a different status{% if q %} or a broader search{% endif %}.
+      </p>
+      <a href="{% url 'bnb_booking_list' %}" class="btn secondary" style="margin-top:14px;">
+        Clear filters
+      </a>
+    {% else %}
+      <h4>No bookings yet</h4>
+      <p class="muted">
+        When a guest books one of your properties from the marketplace,
+        the reservation will appear here.
+      </p>
+      <a href="{% url 'bnb_bookings_home' %}" class="btn" style="margin-top:14px;">
+        Go to bookings overview
+      </a>
+    {% endif %}
+  </div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================ */
+  /*  BOOKINGS · LIST                                                 */
+  /* ================================================================ */
+
+  .bl-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 18px;
+  }
+  .bl-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .bl-head p { font-size: 13px; }
+
+  /* ---------- Pending banner ---------- */
+  .bl-alert {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 14px -8px rgba(146,64,14,0.28);
+    flex-wrap: wrap;
+  }
+  .bl-alert-icon {
+    flex: 0 0 38px;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.7);
+    color: #b45309;
+    border: 1px solid rgba(146,64,14,0.15);
+  }
+  .bl-alert-icon svg { width: 18px; height: 18px; }
+  .bl-alert-body { flex: 1; min-width: 200px; }
+  .bl-alert-body strong {
+    display: block;
+    font-size: 13px; font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .bl-alert-body span {
+    display: block;
+    font-size: 12px; opacity: 0.9;
+  }
+  .bl-alert-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #b45309;
+    color: #fff;
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter .15s;
+  }
+  .bl-alert-cta:hover { filter: brightness(1.08); }
+  .bl-alert-cta svg { width: 12px; height: 12px; }
+  @media (max-width: 640px) {
+    .bl-alert { text-align: left; }
+    .bl-alert-cta { justify-content: center; }
+  }
+
+  /* ---------- Filter pills ---------- */
+  .bl-filters {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .bl-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    background: #fff;
+    color: var(--muted);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .bl-pill:hover { background: #f8fafc; color: var(--text-2); border-color: #cbd5e1; }
+  .bl-pill.is-active {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+
+  /* ---------- Toolbar ---------- */
+  .bl-toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    align-items: center; margin-bottom: 18px;
+  }
+  .bl-search {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 220px;
+  }
+  .bl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .bl-search input {
+    width: 100%;
+    padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .bl-search input::placeholder { color: var(--muted-2); }
+  .bl-search input:hover { border-color: #cbd5e1; }
+  .bl-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .bl-search-reset {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .bl-search-reset:hover { background: #cbd5e1; }
+
+  .bl-select {
+    padding: 10px 14px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 150px;
+    outline: none;
+  }
+  .bl-select:hover { border-color: #cbd5e1; }
+  .bl-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* ---------- Table ---------- */
+  .bl-table {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .bl-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .bl-table th {
+    text-align: left;
+    padding: 14px 18px;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    background: #fafbfd;
+    border-bottom: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+  .bl-table td {
+    padding: 14px 18px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line-2);
+    vertical-align: middle;
+  }
+  .bl-table tbody tr {
+    transition: background .15s;
+  }
+  .bl-table tbody tr:hover {
+    background: #f8fafc;
+  }
+  .bl-table tr:last-child td { border-bottom: none; }
+
+  /* Left accent per status */
+  .bl-row { position: relative; }
+  .bl-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: transparent;
+  }
+  .bl-row-pending::before     { background: #f59e0b; }
+  .bl-row-confirmed::before   { background: #3b82f6; }
+  .bl-row-checked_in::before  { background: #10b981; }
+  .bl-row-checked_out::before { background: #94a3b8; }
+  .bl-row-cancelled::before   { background: #ef4444; }
+  .bl-row-no_show::before     { background: #dc2626; }
+
+  /* ---------- Guest cell ---------- */
+  .bl-guest {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .bl-avatar {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .bl-guest-meta { min-width: 0; }
+  .bl-guest-name {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .bl-guest-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+    margin-top: 1px;
+  }
+
+  /* ---------- Property cell ---------- */
+  .bl-prop {
+    display: flex; flex-direction: column;
+    gap: 1px;
+  }
+  .bl-prop-name {
+    font-size: 13px; font-weight: 600;
+    color: var(--text);
+  }
+  .bl-prop-sub {
+    font-size: 11.5px;
+    color: var(--muted-2);
+  }
+
+  /* ---------- Dates ---------- */
+  .bl-date {
+    color: var(--text-2);
+    font-size: 12.5px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Source pill ---------- */
+  .bl-src {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .bl-src-direct      { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .bl-src-airbnb      { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .bl-src-booking     { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bl-src-expedia     { background: #fefce8; color: #a16207; border-color: #fef08a; }
+  .bl-src-agent       { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .bl-src-referral    { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .bl-src-marketplace { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+  .bl-src-walk_in     { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
+  /* ---------- Amount ---------- */
+  .bl-amount {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ---------- Status pill ---------- */
+  .bl-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .bl-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .bl-status-pending     { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bl-status-confirmed   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bl-status-checked_in  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .bl-status-checked_out { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .bl-status-cancelled   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .bl-status-no_show     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---------- View button ---------- */
+  .bl-view-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #fff;
+    color: var(--brand-1);
+    border: 1px solid var(--line-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  .bl-view-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+  }
+  .bl-view-btn:active { transform: translateY(1px); }
+  .bl-view-btn svg { width: 11px; height: 11px; }
+
+  /* ============================================================ */
+  /*  PAGINATION                                                  */
+  /* ============================================================ */
+  .bl-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-2);
+    flex-wrap: wrap;
+  }
+  .bl-pager-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .bl-pager-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .bl-pager-btn svg { width: 13px; height: 13px; }
+  .bl-pager-btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .bl-pager-nums {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .bl-pager-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .bl-pager-num:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .bl-pager-num.is-current {
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+    cursor: default;
+  }
+  .bl-pager-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 34px;
+    color: var(--muted-2);
+    font-size: 13px;
+    font-weight: 700;
+    user-select: none;
+  }
+
+  /* ---------- Empty state ---------- */
+  .bl-empty {
+    text-align: center;
+    padding: 54px 24px;
+    background:
+      radial-gradient(500px 220px at 50% 0%, rgba(14,165,233,0.06), transparent 60%),
+      #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .bl-empty-ico {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .bl-empty-ico svg { width: 30px; height: 30px; }
+  .bl-empty h4 {
+    font-size: 16px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .bl-empty p {
+    font-size: 13px;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1024px) {
+    .bl-table th, .bl-table td { padding: 12px 14px; }
+  }
+
+  /* Card mode below 720px */
+  @media (max-width: 720px) {
+    .bl-table {
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+    .bl-table table,
+    .bl-table thead,
+    .bl-table tbody,
+    .bl-table tr,
+    .bl-table td {
+      display: block;
+    }
+    .bl-table thead { display: none; }
+    .bl-table tr {
+      background: #fff;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+    .bl-row::before {
+      top: 14px; bottom: 14px;
+      border-radius: 3px;
+    }
+    .bl-table td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0;
+      border: none;
+      text-align: right;
+      font-size: 13px;
+    }
+    .bl-table td::before {
+      content: attr(data-label);
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      text-align: left;
+      flex-shrink: 0;
+    }
+    .bl-table td[data-label="Guest"],
+    .bl-table td[data-label="Property"] {
+      justify-content: flex-start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line-2);
+    }
+    .bl-table td[data-label="Guest"]::before,
+    .bl-table td[data-label="Property"]::before {
+      display: none;
+    }
+    .bl-table td[data-label=""] {
+      justify-content: flex-end;
+      padding-top: 12px;
+      border-top: 1px solid var(--line-2);
+      margin-top: 4px;
+    }
+    .bl-table td[data-label=""]::before { display: none; }
+    .bl-view-btn {
+      padding: 9px 16px;
+      font-size: 12.5px;
+    }
+
+    .bl-head { margin-bottom: 14px; }
+    .bl-head h1 { font-size: 19px; }
+
+    .bl-pager-btn span { display: none; }
+    .bl-pager-num { min-width: 30px; height: 30px; font-size: 12px; }
+  }
+</style>
+{% endblock %}

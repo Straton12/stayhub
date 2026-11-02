@@ -1,0 +1,480 @@
+{% extends 'tours/base.html' %}
+{% block title %}Tour Packages — Tours{% endblock %}
+{% block page_title %}Tour Packages{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="pl-header">
+  <div>
+    <h1>Tour Packages</h1>
+    <p>
+      {% if packages %}
+        {{ packages|length }} package{{ packages|length|pluralize }} in your catalogue.
+      {% else %}
+        No packages yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'tours_package_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Package
+  </a>
+</div>
+
+{% if packages %}
+
+<!-- ============ KPIs ============ -->
+<div class="pl-kpis">
+  <div class="pl-kpi">
+    <div class="pl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </div>
+    <div>
+      <div class="pl-kpi-value">{{ packages|length }}</div>
+      <div class="pl-kpi-label">Total packages</div>
+    </div>
+  </div>
+
+  <div class="pl-kpi">
+    <div class="pl-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+    </div>
+    <div>
+      <div class="pl-kpi-value" id="kpiDestinations">0</div>
+      <div class="pl-kpi-label">Destinations</div>
+    </div>
+  </div>
+
+  <div class="pl-kpi">
+    <div class="pl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="pl-kpi-value" id="kpiDuration">0</div>
+      <div class="pl-kpi-label">Avg. days</div>
+    </div>
+  </div>
+
+  <div class="pl-kpi">
+    <div class="pl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="pl-kpi-value" id="kpiAvgPrice">KES 0</div>
+      <div class="pl-kpi-label">Avg. price</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toolbar ============ -->
+<div class="pl-toolbar">
+  <div class="pl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="plSearch" placeholder="Search by package name or destination…" autocomplete="off">
+  </div>
+  <div class="pl-count" id="plCount">{{ packages|length }} package{{ packages|length|pluralize }}</div>
+</div>
+
+<!-- ============ Package cards ============ -->
+<div class="pl-grid" id="plGrid">
+  {% for p in packages %}
+  <article class="pl-card"
+           data-search="{{ p.name|lower }} {{ p.destination|lower }}">
+    <div class="pl-card-head">
+      <div class="pl-avatar">{{ p.name|slice:":1"|upper }}</div>
+      <div class="pl-card-id">
+        <h3 class="pl-name">{{ p.name }}</h3>
+        <div class="pl-dest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          {{ p.destination }}
+        </div>
+      </div>
+    </div>
+
+    {% if p.description %}
+      <p class="pl-desc">{{ p.description }}</p>
+    {% endif %}
+
+    <div class="pl-card-footer">
+      <div class="pl-stat">
+        <span class="pl-stat-value">{{ p.duration_days }}</span>
+        <span class="pl-stat-label">Day{{ p.duration_days|pluralize }}</span>
+      </div>
+      <div class="pl-stat pl-stat-price">
+        <span class="pl-stat-value">KES {{ p.price_per_person|floatformat:0 }}</span>
+        <span class="pl-stat-label">Per person</span>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<!-- Filtered-empty state -->
+<div class="pl-empty-filter" id="plEmptyFilter" hidden>
+  <div class="pl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try a different search term.</p>
+</div>
+
+{% else %}
+
+<!-- ============ Empty state ============ -->
+<div class="pl-empty">
+  <div class="pl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12h20"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </div>
+  <h4>No tour packages yet</h4>
+  <p class="muted">Add your first tour package to start taking bookings.</p>
+  <a href="{% url 'tours_package_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Package
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Tour packages list ================= */
+
+  /* ---- Header ---- */
+  .pl-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .pl-header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .pl-header p { font-size: 13px; color: var(--muted); }
+
+  /* ---- KPI strip ---- */
+  .pl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .pl-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .pl-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .pl-kpi-icon svg { width: 18px; height: 18px; }
+  .pl-kpi-icon.k-green  { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+  .pl-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .pl-kpi-icon.k-purple { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .pl-kpi-icon.k-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+  .pl-kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .pl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Toolbar ---- */
+  .pl-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .pl-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 420px;
+  }
+  .pl-search svg {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .pl-search input {
+    width: 100%;
+    padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pl-search input::placeholder { color: var(--muted-2); }
+  .pl-search input:focus {
+    outline: none;
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.13);
+  }
+  .pl-count {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+
+  /* ---- Grid ---- */
+  .pl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ---- Package card ---- */
+  .pl-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .pl-card::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10b981, #22d3ee);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .pl-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+  .pl-card:hover::before { opacity: 1; }
+
+  .pl-card-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 20px 14px;
+  }
+  .pl-avatar {
+    width: 48px; height: 48px; flex: 0 0 48px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 8px 18px rgba(16,185,129,0.35);
+    letter-spacing: -0.5px;
+  }
+  .pl-card-id { min-width: 0; flex: 1; }
+  .pl-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pl-dest {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pl-dest svg { width: 12px; height: 12px; color: var(--muted-2); flex: 0 0 12px; }
+
+  /* ---- Description ---- */
+  .pl-desc {
+    padding: 0 20px 14px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    flex: 1;
+
+    /* clamp to 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ---- Card footer ---- */
+  .pl-card-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f6f8fc);
+  }
+  .pl-stat {
+    padding: 14px 20px;
+    display: flex; flex-direction: column;
+  }
+  .pl-stat + .pl-stat { border-left: 1px solid var(--line-2); }
+  .pl-stat-price { text-align: right; }
+  .pl-stat-value {
+    font-size: 15px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .pl-stat-price .pl-stat-value { color: var(--brand-2); }
+  .pl-stat-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* ---- Empty states ---- */
+  .pl-empty-filter,
+  .pl-empty {
+    text-align: center;
+    padding: 50px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .pl-empty-ico {
+    width: 60px; height: 60px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #d1fae5; color: var(--brand-2);
+    border: 1px solid #a7f3d0;
+  }
+  .pl-empty-ico svg { width: 28px; height: 28px; }
+  .pl-empty h4,
+  .pl-empty-filter h4 {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .pl-header h1 { font-size: 18px; }
+    .pl-grid { grid-template-columns: 1fr; }
+    .pl-avatar { width: 42px; height: 42px; flex-basis: 42px; font-size: 16px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    // ---- Search filter ----
+    var search = document.getElementById('plSearch');
+    var cards  = document.querySelectorAll('.pl-card');
+    var grid   = document.getElementById('plGrid');
+    var count  = document.getElementById('plCount');
+    var empty  = document.getElementById('plEmptyFilter');
+
+    function apply() {
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) count.textContent = visible + ' package' + (visible === 1 ? '' : 's');
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      if (grid) grid.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+
+    // ---- KPIs computed from cards ----
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+    var destSet = {};
+    var totalDays = 0;
+    var totalPrice = 0;
+    var n = cards.length;
+
+    cards.forEach(function (c) {
+      // destination
+      var destEl = c.querySelector('.pl-dest');
+      if (destEl) {
+        var dest = (destEl.textContent || '').replace(/\s+/g, ' ').trim();
+        if (dest) destSet[dest.toLowerCase()] = dest;
+      }
+
+      // duration
+      var stats = c.querySelectorAll('.pl-stat-value');
+      if (stats[0]) {
+        var d = parseInt((stats[0].textContent || '').replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(d)) totalDays += d;
+      }
+      // price
+      if (stats[1]) {
+        var p = parseFloat((stats[1].textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(p)) totalPrice += p;
+      }
+    });
+
+    setText('kpiDestinations', Object.keys(destSet).length);
+    setText('kpiDuration', n ? Math.round(totalDays / n) : 0);
+    setText('kpiAvgPrice',
+      'KES ' + (n ? Math.round(totalPrice / n).toLocaleString() : '0')
+    );
+  })();
+</script>
+{% endblock %}

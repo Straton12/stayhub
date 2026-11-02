@@ -1,0 +1,832 @@
+{% extends 'bnb/base.html' %}
+{% load humanize %}
+
+{% block title %}BnB Overview — StayHub{% endblock %}
+{% block page_title %}BnB Overview{% endblock %}
+
+{% block content %}
+
+<div class="bd-hero">
+  <div class="bd-hero-text">
+    <h1>Welcome back, {{ user.display_name|default:user.username|capfirst }}.</h1>
+    <p>
+      {% if user.organization %}
+        Managing <strong>{{ user.organization.name }}</strong>'s properties.
+      {% else %}
+        Your BnB workspace.
+      {% endif %}
+      {% if notifications_unread %}
+        <br><span class="bd-hero-note">You have <strong>{{ notifications_unread }}</strong> unread notification{{ notifications_unread|pluralize }}.</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="bd-hero-actions">
+    <a href="{% url 'bnb_booking_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New booking
+    </a>
+    <a href="{% url 'bnb_property_add' %}" class="btn secondary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+      Add property
+    </a>
+  </div>
+</div>
+
+{# ==================== PENDING MARKETPLACE APPROVALS ==================== #}
+{% if pending_marketplace_count %}
+  <div class="bd-alert">
+    <div class="bd-alert-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 7v5l3 2"/>
+      </svg>
+    </div>
+    <div class="bd-alert-body">
+      <strong>
+        {{ pending_marketplace_count }} marketplace booking{{ pending_marketplace_count|pluralize }} awaiting your approval
+      </strong>
+      <span>Review the request, then approve to lock the dates — or decline to free them.</span>
+    </div>
+    <a href="{% url 'bnb_booking_list' %}?status=pending" class="bd-alert-cta">
+      Review now
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </a>
+  </div>
+{% endif %}
+
+<div class="bd-kpis">
+  <a class="bd-kpi bd-kpi-sky" href="{% url 'bnb_property_list' %}">
+    <div class="bd-kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+    </div>
+    <div class="bd-kpi-body">
+      <div class="bd-kpi-label">Properties</div>
+      <div class="bd-kpi-value">{{ props_count }}</div>
+      <div class="bd-kpi-sub">{{ occupied_props }} occupied now</div>
+    </div>
+  </a>
+
+  <a class="bd-kpi bd-kpi-cyan" href="{% url 'bnb_booking_list' %}">
+    <div class="bd-kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="bd-kpi-body">
+      <div class="bd-kpi-label">Bookings</div>
+      <div class="bd-kpi-value">{{ bookings_count }}</div>
+      <div class="bd-kpi-sub">All-time stays</div>
+    </div>
+  </a>
+
+  <a class="bd-kpi bd-kpi-green" href="{% url 'bnb_finance_home' %}">
+    <div class="bd-kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </div>
+    <div class="bd-kpi-body">
+      <div class="bd-kpi-label">Total revenue</div>
+      <div class="bd-kpi-value">KES {{ total_revenue|floatformat:0|intcomma }}</div>
+      <div class="bd-kpi-sub">KES {{ month_revenue|floatformat:0|intcomma }} this month</div>
+    </div>
+  </a>
+
+  <div class="bd-kpi bd-kpi-violet">
+    <div class="bd-kpi-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <div class="bd-kpi-body">
+      <div class="bd-kpi-label">Occupancy today</div>
+      <div class="bd-kpi-value">{{ occupancy_rate }}%</div>
+      <div class="bd-kpi-sub">{{ occupied_props }} of {{ props_count }} propert{{ props_count|pluralize:"y,ies" }}</div>
+    </div>
+  </div>
+</div>
+
+{# ==================== TODAY STRIP ==================== #}
+<div class="bd-today">
+  <div class="bd-today-item">
+    <span class="bd-today-label">Check-ins today</span>
+    <span class="bd-today-value">{{ checkins_today }}</span>
+  </div>
+  <div class="bd-today-sep" aria-hidden="true"></div>
+  <div class="bd-today-item">
+    <span class="bd-today-label">Check-outs today</span>
+    <span class="bd-today-value">{{ checkouts_today }}</span>
+  </div>
+  <div class="bd-today-sep" aria-hidden="true"></div>
+  <div class="bd-today-item">
+    <span class="bd-today-label">Pay-later bookings</span>
+    <span class="bd-today-value">{{ pay_later_count|default:0 }}</span>
+  </div>
+  {% if unpaid_total and unpaid_total > 0 %}
+    <div class="bd-today-sep" aria-hidden="true"></div>
+    <div class="bd-today-item">
+      <span class="bd-today-label">Outstanding</span>
+      <span class="bd-today-value bd-today-amber">
+        KES {{ unpaid_total|floatformat:0|intcomma }}
+      </span>
+    </div>
+  {% endif %}
+</div>
+
+<div class="bd-quick">
+  <a class="bd-quick-item" href="{% url 'bnb_property_list' %}">
+    <span class="bd-quick-ico q-sky">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/></svg>
+    </span>
+    <span><strong>Properties</strong><small>Manage listings</small></span>
+    <svg class="bd-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+
+  <a class="bd-quick-item" href="{% url 'bnb_booking_calendar' %}">
+    <span class="bd-quick-ico q-cyan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </span>
+    <span><strong>Calendar</strong><small>See all stays</small></span>
+    <svg class="bd-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+
+  <a class="bd-quick-item" href="{% url 'bnb_housekeeping' %}">
+    <span class="bd-quick-ico q-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/></svg>
+    </span>
+    <span><strong>Housekeeping</strong><small>Tasks &amp; assignments</small></span>
+    <svg class="bd-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+
+  <a class="bd-quick-item" href="{% url 'bnb_review_list' %}">
+    <span class="bd-quick-ico q-violet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/></svg>
+    </span>
+    <span><strong>Reviews</strong><small>Guest feedback</small></span>
+    <svg class="bd-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  </a>
+</div>
+
+<div class="bd-split">
+  <div class="card bd-panel">
+    <div class="bd-panel-head">
+      <div><h3 class="bd-panel-title">Upcoming check-ins</h3><p class="bd-panel-sub">Guests arriving soon</p></div>
+      <a href="{% url 'bnb_booking_list' %}" class="bd-panel-link">View all</a>
+    </div>
+    {% if upcoming_checkins %}
+      <ul class="bd-list">
+        {% for b in upcoming_checkins %}
+          <li class="bd-list-item">
+            <span class="bd-list-avatar">{{ b.guest_name|slice:":1"|upper }}</span>
+            <div class="bd-list-body">
+              <div class="bd-list-title">{{ b.guest_name }}</div>
+              <div class="bd-list-meta">{{ b.property.name }} · {{ b.check_in|date:"d M Y" }}</div>
+            </div>
+            <span class="status-pill status-{{ b.status }}"><span class="dot"></span>{{ b.get_status_display }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="bd-empty-sm"><p class="muted">No upcoming arrivals.</p><a href="{% url 'bnb_booking_add' %}" class="btn sm">Create booking</a></div>
+    {% endif %}
+  </div>
+
+  <div class="card bd-panel">
+    <div class="bd-panel-head">
+      <div><h3 class="bd-panel-title">Marketplace activity</h3><p class="bd-panel-sub">Your live listings</p></div>
+      <a href="{% url 'marketplace:manage_home' %}" class="bd-panel-link">Manage</a>
+    </div>
+    {% if listings_recent %}
+      <ul class="bd-list">
+        {% for l in listings_recent %}
+          <li class="bd-list-item">
+            <span class="bd-list-thumb">
+              {% if l.cover_image %}<img src="{{ l.cover_image.url }}" alt="">
+              {% elif l.cover_image_url %}<img src="{{ l.cover_image_url }}" alt="">
+              {% else %}<span class="bd-list-thumb-fallback"></span>{% endif %}
+            </span>
+            <div class="bd-list-body">
+              <div class="bd-list-title">{{ l.title|truncatechars:38 }}</div>
+              <div class="bd-list-meta">{{ l.get_status_display }}{% if l.price %} · KES {{ l.price|floatformat:0 }}{% endif %}</div>
+            </div>
+            {% if l.status == 'approved' and l.is_active %}
+              <span class="status-pill status-checked_in"><span class="dot"></span>Live</span>
+            {% elif l.status == 'pending' %}
+              <span class="status-pill status-pending"><span class="dot"></span>Pending</span>
+            {% else %}
+              <span class="status-pill status-cancelled"><span class="dot"></span>{{ l.get_status_display }}</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="bd-empty-sm"><p class="muted">No marketplace listings yet.</p><a href="{% url 'bnb_property_list' %}" class="btn sm">Add a property</a></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bd-section-head">
+  <div>
+    <h3 class="bd-section-title">Recent bookings</h3>
+    <p class="muted" style="margin-top:4px;">
+      {% if bookings_paginator.count %}
+        Showing {{ bookings|length }} of {{ bookings_paginator.count }} booking{{ bookings_paginator.count|pluralize }}.
+      {% else %}
+        Nothing yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="bd-section-actions">
+    <a href="{% url 'bnb_booking_list' %}" class="btn secondary sm">View all</a>
+    <a href="{% url 'bnb_booking_add' %}" class="btn sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New
+    </a>
+  </div>
+</div>
+
+<div class="table-wrap bd-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Guest</th>
+        <th>Property</th>
+        <th>Check-in</th>
+        <th>Check-out</th>
+        <th>Source</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+        <tr>
+          <td data-label="Guest">
+            <div class="bd-guest">
+              <div class="bd-avatar">{{ b.guest_name|slice:":1"|upper }}</div>
+              <div class="bd-guest-meta">
+                <div class="bd-guest-name">{{ b.guest_name }}</div>
+                {% if b.guest_phone %}<div class="bd-guest-sub">{{ b.guest_phone }}</div>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td data-label="Property">
+            <div class="bd-unit">
+              <span class="bd-unit-name">{{ b.property.name }}</span>
+              {% if b.property.location_label %}<span class="bd-unit-prop">{{ b.property.location_label }}</span>{% endif %}
+            </div>
+          </td>
+          <td data-label="Check-in" class="bd-date">{{ b.check_in|date:"d M Y" }}</td>
+          <td data-label="Check-out" class="bd-date">{{ b.check_out|date:"d M Y" }}</td>
+          <td data-label="Source"><span class="src-pill src-{{ b.source }}">{{ b.get_source_display }}</span></td>
+          <td data-label="Status"><span class="status-pill status-{{ b.status }}"><span class="dot"></span>{{ b.get_status_display }}</span></td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="bd-empty">
+              <div class="bd-empty-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <h4>No bookings yet</h4>
+              <p class="muted">Create your first booking to see it here.</p>
+              <a href="{% url 'bnb_booking_add' %}" class="btn" style="margin-top:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New booking
+              </a>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ==================== PAGINATION ==================== #}
+{% if bookings_page.has_other_pages %}
+  <nav class="bd-pager" aria-label="Recent bookings pagination">
+    {# Prev #}
+    {% if bookings_page.has_previous %}
+      <a href="?bookings_page={{ bookings_page.previous_page_number }}"
+         class="bd-pager-btn" aria-label="Previous page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        <span>Prev</span>
+      </a>
+    {% else %}
+      <span class="bd-pager-btn is-disabled" aria-disabled="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        <span>Prev</span>
+      </span>
+    {% endif %}
+
+    {# Page numbers — first, last, ±2 around current #}
+    <div class="bd-pager-nums">
+      {% for num in bookings_page.paginator.page_range %}
+        {% if num == bookings_page.number %}
+          <span class="bd-pager-num is-current" aria-current="page">{{ num }}</span>
+        {% elif num == 1 or num == bookings_page.paginator.num_pages or num >= bookings_page.number|add:"-2" and num <= bookings_page.number|add:"2" %}
+          <a href="?bookings_page={{ num }}" class="bd-pager-num">{{ num }}</a>
+        {% elif num == bookings_page.number|add:"-3" or num == bookings_page.number|add:"3" %}
+          <span class="bd-pager-ellipsis">…</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {# Next #}
+    {% if bookings_page.has_next %}
+      <a href="?bookings_page={{ bookings_page.next_page_number }}"
+         class="bd-pager-btn" aria-label="Next page">
+        <span>Next</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="bd-pager-btn is-disabled" aria-disabled="true">
+        <span>Next</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </span>
+    {% endif %}
+  </nav>
+{% endif %}
+
+{% if recent_reviews %}
+<div class="bd-section-head" style="margin-top:32px;">
+  <div><h3 class="bd-section-title">Recent reviews</h3><p class="muted" style="margin-top:4px;">What guests are saying.</p></div>
+  <a href="{% url 'bnb_review_list' %}" class="btn secondary sm">View all</a>
+</div>
+
+<div class="bd-reviews">
+  {% for r in recent_reviews %}
+    <div class="bd-review">
+      <div class="bd-review-head">
+        <div class="bd-review-avatar">{{ r.guest_name|slice:":1"|upper }}</div>
+        <div style="min-width:0;flex:1;">
+          <div class="bd-review-name">{{ r.guest_name }}</div>
+          <div class="bd-review-prop">{{ r.property.name }}</div>
+        </div>
+        <div class="bd-review-stars" aria-label="{{ r.rating }} out of 5">
+          {% for i in "12345" %}
+            <svg viewBox="0 0 24 24" {% if forloop.counter <= r.rating %}fill="currentColor"{% else %}fill="none" stroke="currentColor" stroke-width="1.5"{% endif %}><path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/></svg>
+          {% endfor %}
+        </div>
+      </div>
+      {% if r.comment %}<p class="bd-review-body">{{ r.comment|truncatechars:180 }}</p>{% endif %}
+      <div class="bd-review-date">{{ r.review_date|date:"d M Y" }}</div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================
+     BnB DASHBOARD
+     ================================================================ */
+
+  /* ---------- Pending marketplace approvals banner ---------- */
+  .bd-alert {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 14px -8px rgba(146,64,14,0.28);
+  }
+  .bd-alert-icon {
+    flex: 0 0 42px;
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(146,64,14,0.15);
+    color: #b45309;
+  }
+  .bd-alert-icon svg { width: 20px; height: 20px; }
+  .bd-alert-body { flex: 1; min-width: 0; }
+  .bd-alert-body strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .bd-alert-body span {
+    display: block;
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .bd-alert-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: #b45309;
+    color: #fff;
+    font-size: 12.5px; font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter .15s;
+    flex-shrink: 0;
+  }
+  .bd-alert-cta:hover { filter: brightness(1.08); }
+  .bd-alert-cta svg { width: 13px; height: 13px; }
+  @media (max-width: 640px) {
+    .bd-alert { flex-direction: column; align-items: stretch; text-align: left; }
+    .bd-alert-cta { justify-content: center; }
+  }
+
+  /* ---------- Today strip ---------- */
+  .bd-today {
+    display: flex; align-items: center; gap: 20px;
+    padding: 14px 20px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .bd-today-item { display: flex; flex-direction: column; gap: 3px; }
+  .bd-today-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+    color: var(--muted-2);
+  }
+  .bd-today-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+  }
+  .bd-today-value.bd-today-amber { color: #b45309; }
+  .bd-today-sep {
+    width: 1px; height: 32px;
+    background: var(--line-2);
+    flex-shrink: 0;
+  }
+  @media (max-width: 640px) {
+    .bd-today { gap: 14px; padding: 12px 16px; }
+    .bd-today-sep { display: none; }
+    .bd-today-item { flex: 1 1 45%; }
+  }
+
+  /* ---------- Pagination ---------- */
+  .bd-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .bd-pager-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition:
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .bd-pager-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .bd-pager-btn:active { transform: translateY(1px); }
+  .bd-pager-btn svg { width: 13px; height: 13px; }
+  .bd-pager-btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .bd-pager-nums {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bd-pager-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .bd-pager-num:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+    color: #0369a1;
+  }
+  .bd-pager-num.is-current {
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    border-color: transparent;
+    color: #062745;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+    cursor: default;
+  }
+
+  .bd-pager-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 34px;
+    color: var(--muted-2);
+    font-size: 13px;
+    font-weight: 700;
+    user-select: none;
+  }
+
+  @media (max-width: 480px) {
+    .bd-pager { gap: 6px; }
+    .bd-pager-btn { padding: 7px 10px; font-size: 12px; }
+    .bd-pager-btn span { display: none; }
+    .bd-pager-num { min-width: 30px; height: 30px; font-size: 12px; }
+  }
+
+  /* Payment-policy source-pill variants */
+  .src-pill.src-pay_now           { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+  .src-pill.src-pay_on_arrival    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .src-pill.src-pay_on_delivery   { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .src-pill.src-pay_on_completion { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .src-pill.src-pay_deposit       { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+
+  /* Extra status-pill states */
+  .status-pill.status-in_progress { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-refunded    { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
+  /* ================================================================
+     EXISTING STYLES — unchanged
+     ================================================================ */
+
+  .bd-hero {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+    padding: clamp(20px, 3vw, 26px) clamp(20px, 3vw, 28px);
+    border-radius: 18px; margin-bottom: 22px;
+    color: #e0f2fe;
+    background:
+      radial-gradient(600px 220px at 0% 0%, rgba(56,189,248,0.30), transparent 60%),
+      radial-gradient(560px 220px at 100% 100%, rgba(34,211,238,0.24), transparent 60%),
+      linear-gradient(135deg, #062745 0%, #0b2545 55%, #155e75 100%);
+    box-shadow: 0 20px 50px rgba(6,39,69,0.30);
+  }
+  .bd-hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(700px 260px at 80% -20%, rgba(34,211,238,0.28), transparent 60%);
+    pointer-events: none;
+  }
+  .bd-hero-text { position: relative; z-index: 1; min-width: 240px; flex: 1 1 auto; }
+  .bd-hero-text h1 { font-size: clamp(18px, 2.4vw, 24px); font-weight: 800; color: #fff; letter-spacing: -0.4px; margin-bottom: 6px; }
+  .bd-hero-text p { font-size: clamp(13px, 1.4vw, 14px); color: #bae6fd; line-height: 1.55; max-width: 640px; }
+  .bd-hero-text strong { color: #fff; font-weight: 700; }
+  .bd-hero-note { color: #7dd3fc; font-size: 12.5px; }
+  .bd-hero-actions { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; }
+  .bd-hero-actions .btn {
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    box-shadow: 0 10px 24px rgba(14,165,233,0.45);
+    color: #062745; font-weight: 800;
+  }
+  .bd-hero-actions .btn:hover { filter: brightness(1.05); color: #062745; }
+  .bd-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.10); color: #fff;
+    border: 1px solid rgba(255,255,255,0.22); box-shadow: none;
+  }
+
+  .bd-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px; margin-bottom: 22px;
+  }
+  .bd-kpi {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px; background: #fff;
+    border: 1px solid var(--line-2); border-radius: 16px;
+    box-shadow: var(--shadow-sm); color: inherit;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+  }
+  a.bd-kpi:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(15,23,42,0.10); border-color: #dbe2f0; }
+  .bd-kpi-icon {
+    flex: 0 0 44px; width: 44px; height: 44px;
+    border-radius: 12px; display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;
+  }
+  .bd-kpi-icon svg { width: 20px; height: 20px; }
+  .bd-kpi-body { flex: 1; min-width: 0; }
+  .bd-kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .bd-kpi-value { font-size: clamp(20px, 2.2vw, 26px); font-weight: 800; color: var(--text); letter-spacing: -0.6px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bd-kpi-sub { font-size: 12px; color: var(--muted-2); margin-top: 5px; }
+  .bd-kpi-sky    .bd-kpi-icon { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+  .bd-kpi-cyan   .bd-kpi-icon { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+  .bd-kpi-green  .bd-kpi-icon { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .bd-kpi-violet .bd-kpi-icon { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .bd-quick {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; margin-bottom: 26px;
+  }
+  .bd-quick-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; background: #fff;
+    border: 1px solid var(--line-2); border-radius: 12px;
+    box-shadow: var(--shadow-sm); color: inherit;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  .bd-quick-item:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.08); border-color: #dbe2f0; }
+  .bd-quick-ico {
+    flex: 0 0 38px; width: 38px; height: 38px;
+    border-radius: 10px; display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;
+  }
+  .bd-quick-ico svg { width: 17px; height: 17px; }
+  .bd-quick-ico.q-cyan   { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+  .bd-quick-ico.q-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .bd-quick-ico.q-violet { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .bd-quick-item > span:nth-child(2) { flex: 1; min-width: 0; }
+  .bd-quick-item strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .bd-quick-item small { display: block; font-size: 11.5px; color: var(--muted-2); margin-top: 2px; }
+  .bd-quick-arrow { width: 16px; height: 16px; color: var(--muted-2); transition: color .15s, transform .15s; }
+  .bd-quick-item:hover .bd-quick-arrow { color: var(--brand-2); transform: translateX(3px); }
+
+  .bd-split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 26px; }
+  @media (max-width: 900px) { .bd-split { grid-template-columns: 1fr; } }
+
+  .bd-panel { padding: 0; overflow: hidden; }
+  .bd-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 16px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .bd-panel-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; }
+  .bd-panel-sub { font-size: 12px; color: var(--muted-2); margin: 2px 0 0; }
+  .bd-panel-link { font-size: 12.5px; font-weight: 700; color: var(--brand-1); padding: 6px 10px; border-radius: 8px; }
+  .bd-panel-link:hover { background: rgba(14,165,233,0.08); }
+
+  .bd-list { list-style: none; margin: 0; padding: 0; }
+  .bd-list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line-2);
+  }
+  .bd-list-item:last-child { border-bottom: none; }
+  .bd-list-item:hover { background: #fafbff; }
+  .bd-list-avatar {
+    flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff; font-size: 12.5px; font-weight: 800;
+  }
+  .bd-list-thumb {
+    flex: 0 0 40px; width: 40px; height: 40px; border-radius: 9px;
+    overflow: hidden; background: #eef2ff;
+    display: grid; place-items: center;
+  }
+  .bd-list-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bd-list-thumb-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #c7d2fe, #a5f3fc); }
+  .bd-list-body { flex: 1; min-width: 0; }
+  .bd-list-title { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bd-list-meta { font-size: 11.5px; color: var(--muted-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .bd-empty-sm { padding: 28px 18px; text-align: center; }
+  .bd-empty-sm .muted { font-size: 13px; margin-bottom: 10px; }
+
+  .bd-section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .bd-section-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+  .bd-section-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .bd-table { margin-bottom: 8px; }
+  .bd-guest { display: flex; align-items: center; gap: 10px; }
+  .bd-avatar {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .bd-guest-meta { min-width: 0; }
+  .bd-guest-name { font-weight: 700; color: var(--text); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .bd-guest-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .bd-unit { display: flex; flex-direction: column; }
+  .bd-unit-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .bd-unit-prop { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .bd-date { color: var(--text-2); font-size: 12.5px; white-space: nowrap; }
+
+  .src-pill {
+    display: inline-flex; align-items: center; padding: 3px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .src-pill.src-direct      { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .src-pill.src-airbnb      { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .src-pill.src-booking     { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .src-pill.src-expedia     { background: #fefce8; color: #a16207; border-color: #fef08a; }
+  .src-pill.src-agent       { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .src-pill.src-referral    { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .src-pill.src-marketplace { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+  .src-pill.src-walk_in     { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-pill.status-pending     { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .status-pill.status-confirmed   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .status-pill.status-checked_in  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .status-pill.status-checked_out { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .status-pill.status-cancelled   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .status-pill.status-no_show     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  .bd-empty { padding: 48px 20px; text-align: center; }
+  .bd-empty-ico {
+    width: 56px; height: 56px; margin: 0 auto 12px;
+    border-radius: 16px; display: grid; place-items: center;
+    background: #e0f2fe; color: var(--brand-2); border: 1px solid #bae6fd;
+  }
+  .bd-empty-ico svg { width: 26px; height: 26px; }
+  .bd-empty h4 { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+
+  .bd-reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .bd-review { background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .bd-review-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bd-review-avatar {
+    flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .bd-review-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .bd-review-prop { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .bd-review-stars { display: inline-flex; gap: 2px; flex-shrink: 0; }
+  .bd-review-stars svg { width: 14px; height: 14px; color: #f59e0b; }
+  .bd-review-body { font-size: 13px; color: var(--text-2); line-height: 1.55; margin-bottom: 10px; }
+  .bd-review-date { font-size: 11.5px; color: var(--muted-2); }
+
+  @media (max-width: 720px) {
+    .bd-hero { padding: 20px; }
+    .bd-hero-text h1 { font-size: 18px; }
+    .bd-hero-actions { width: 100%; }
+    .bd-hero-actions .btn { flex: 1; justify-content: center; }
+    .bd-kpi { padding: 14px; }
+    .bd-kpi-value { font-size: 20px; }
+    .bd-table table, .bd-table thead, .bd-table tbody, .bd-table th, .bd-table td, .bd-table tr { display: block; }
+    .bd-table thead { display: none; }
+    .bd-table tr { padding: 14px 16px; border-bottom: 1px solid var(--line-2); }
+    .bd-table td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border: none; text-align: right; }
+    .bd-table td::before {
+      content: attr(data-label);
+      font-size: 11px; font-weight: 700; color: var(--muted-2);
+      text-transform: uppercase; letter-spacing: 0.6px; text-align: left;
+    }
+    .bd-table td[data-label="Guest"], .bd-table td[data-label="Property"] { justify-content: flex-start; }
+    .bd-table td[data-label="Guest"]::before, .bd-table td[data-label="Property"]::before { display: none; }
+    .bd-table td > * { margin-left: auto; }
+    .bd-table td[data-label="Guest"] > *, .bd-table td[data-label="Property"] > * { margin-left: 0; }
+  }
+  @media (max-width: 480px) { .bd-quick, .bd-reviews { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

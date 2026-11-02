@@ -1,0 +1,43 @@
+{% extends 'bnb/base.html' %}
+{% block page_title %}Settings{% endblock %}
+
+{% block subtabs %}
+<nav class="subtabs">
+  <div class="subtabs-inner">
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_settings_home' %}active{% endif %}"
+       href="{% url 'bnb_settings_home' %}">Overview</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_settings_general' %}active{% endif %}"
+       href="{% url 'bnb_settings_general' %}">General</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_settings_team' %}active{% endif %}"
+       href="{% url 'bnb_settings_team' %}">Team</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_settings_billing' %}active{% endif %}"
+       href="{% url 'bnb_settings_billing' %}">Billing</a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size:22px;font-weight:800;letter-spacing:-0.4px;margin-bottom:6px;">Settings</h1>
+<p class="muted" style="margin-bottom:22px;">Workspace configuration and stats.</p>
+
+<div class="grid mb">
+  <a class="card" href="{% url 'bnb_property_list' %}">
+    <h3>Properties</h3>
+    <div class="value">{{ properties_count|default:0 }}</div>
+    <div class="sub">{{ active_properties_count|default:0 }} active</div>
+  </a>
+  <a class="card" href="{% url 'bnb_staff_list' %}">
+    <h3>Staff</h3>
+    <div class="value">{{ staff_count|default:0 }}</div>
+    <div class="sub">{{ active_staff_count|default:0 }} active</div>
+  </a>
+  <a class="card" href="{% url 'bnb_guest_list' %}">
+    <h3>Guests</h3>
+    <div class="value">{{ guests_count|default:0 }}</div>
+  </a>
+  <a class="card" href="{% url 'bnb_expense_list' %}">
+    <h3>Expense categories</h3>
+    <div class="value">{{ categories_count|default:0 }}</div>
+  </a>
+</div>
+{% endblock %}

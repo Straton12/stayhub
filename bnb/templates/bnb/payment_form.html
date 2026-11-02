@@ -1,0 +1,232 @@
+{% extends 'bnb/financesub_base.html' %}
+{% block title %}Record payment — BnB{% endblock %}
+
+{% block content %}
+<div class="mb">
+  <a href="{% url 'bnb_payment_list' %}" class="pmf-back">← Back to payments</a>
+  <h1 class="pmf-title">Record payment</h1>
+</div>
+
+<form method="post" class="pmf" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors or form.errors %}
+    <div class="pmf-alert pmf-alert-error" role="alert">
+      <div class="pmf-alert-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <strong>Please correct the errors below.</strong>
+      </div>
+      {% if form.non_field_errors %}
+        {% for err in form.non_field_errors %}<p>{{ err }}</p>{% endfor %}
+      {% endif %}
+      {% if form.errors %}
+        <ul class="pmf-alert-list">
+          {% for field in form %}
+            {% if field.errors %}
+              {% for err in field.errors %}
+                <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <section class="pmf-section">
+    <div class="pmf-grid">
+
+      {# ---------- Booking ---------- #}
+      <div class="pmf-field {% if form.booking.errors %}has-error{% endif %}">
+        <label for="{{ form.booking.id_for_label }}">Booking</label>
+        {{ form.booking }}
+        <small class="pmf-help">Optional. Link to the booking this payment settles.</small>
+        {% for err in form.booking.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Invoice ---------- #}
+      <div class="pmf-field {% if form.invoice.errors %}has-error{% endif %}">
+        <label for="{{ form.invoice.id_for_label }}">Invoice</label>
+        {{ form.invoice }}
+        <small class="pmf-help">Optional. Link to the invoice this payment settles.</small>
+        {% for err in form.invoice.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Amount ---------- #}
+      <div class="pmf-field {% if form.amount.errors %}has-error{% endif %}">
+        <label for="{{ form.amount.id_for_label }}">
+          Amount (KES) <span class="req">*</span>
+        </label>
+        {{ form.amount }}
+        {% for err in form.amount.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Method ---------- #}
+      <div class="pmf-field {% if form.method.errors %}has-error{% endif %}">
+        <label for="{{ form.method.id_for_label }}">Method</label>
+        {{ form.method }}
+        {% for err in form.method.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Reference ---------- #}
+      <div class="pmf-field {% if form.reference.errors %}has-error{% endif %}">
+        <label for="{{ form.reference.id_for_label }}">Reference</label>
+        {{ form.reference }}
+        <small class="pmf-help">Transaction ID, cheque number, etc.</small>
+        {% for err in form.reference.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Date ---------- #}
+      <div class="pmf-field {% if form.payment_date.errors %}has-error{% endif %}">
+        <label for="{{ form.payment_date.id_for_label }}">Date</label>
+        {{ form.payment_date }}
+        {% for err in form.payment_date.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+      {# ---------- Notes ---------- #}
+      <div class="pmf-field pmf-full {% if form.notes.errors %}has-error{% endif %}">
+        <label for="{{ form.notes.id_for_label }}">Notes</label>
+        {{ form.notes }}
+        {% for err in form.notes.errors %}<small class="pmf-error">{{ err }}</small>{% endfor %}
+      </div>
+
+    </div>
+  </section>
+
+  <div class="pmf-actions">
+    <a href="{% url 'bnb_payment_list' %}" class="btn secondary">Cancel</a>
+    <button type="submit" class="btn success">Record payment</button>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .mb { margin-bottom: 18px; }
+  .pmf-back {
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    text-decoration: none; transition: color .15s;
+  }
+  .pmf-back:hover { color: var(--text); }
+  .pmf-title {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    margin-top: 6px; color: var(--text);
+  }
+
+  .pmf {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; padding: 8px 26px 24px;
+    box-shadow: var(--shadow-sm); max-width: 920px;
+  }
+  @media (max-width: 640px) {
+    .pmf { padding: 8px 16px 18px; border-radius: 14px; }
+  }
+
+  .pmf-section { padding: 22px 0; }
+  .pmf-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px;
+  }
+  .pmf-field.pmf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .pmf-grid { grid-template-columns: 1fr; }
+  }
+
+  .pmf-field label {
+    font-size: 12.5px; font-weight: 700; color: var(--text-2);
+    margin-bottom: 6px; display: block; letter-spacing: 0.01em;
+  }
+  .pmf-field .req { color: #ef4444; margin-left: 2px; }
+
+  .pmf-field input:not([type="checkbox"]),
+  .pmf-field select,
+  .pmf-field textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #f8fafc; color: var(--text);
+    font-family: inherit; outline: none;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .pmf-field textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+
+  .pmf-field select {
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: right 10px center;
+    background-size: 14px; padding-right: 32px;
+  }
+
+  .pmf-field input:hover,
+  .pmf-field select:hover,
+  .pmf-field textarea:hover { border-color: #cbd5e1; }
+  .pmf-field input:focus,
+  .pmf-field select:focus,
+  .pmf-field textarea:focus {
+    border-color: var(--brand-1); background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  .pmf-field input[type="number"]::-webkit-outer-spin-button,
+  .pmf-field input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .pmf-field input[type="number"] { -moz-appearance: textfield; }
+
+  .pmf-help {
+    display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted-2);
+  }
+
+  .pmf-field.has-error input,
+  .pmf-field.has-error select,
+  .pmf-field.has-error textarea {
+    border-color: #ef4444; background: #fef2f2;
+  }
+  .pmf-field.has-error input:focus,
+  .pmf-field.has-error select:focus,
+  .pmf-field.has-error textarea:focus {
+    border-color: #dc2626; background: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.14);
+  }
+  .pmf-error {
+    display: block; margin-top: 5px; font-size: 11.5px;
+    font-weight: 600; color: #b91c1c;
+  }
+
+  .pmf-alert {
+    margin: 18px 0 0; padding: 14px 16px; border-radius: 12px;
+    font-size: 13px; line-height: 1.55;
+  }
+  .pmf-alert p { margin: 0; }
+  .pmf-alert p + p { margin-top: 4px; }
+  .pmf-alert-error {
+    background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+  }
+  .pmf-alert-head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; font-weight: 800;
+  }
+  .pmf-alert-head svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .pmf-alert-list {
+    margin: 6px 0 0; padding-left: 20px; font-size: 12.5px; font-weight: 500;
+  }
+  .pmf-alert-list li + li { margin-top: 4px; }
+
+  .pmf-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 22px; border-top: 1px solid var(--line-2); flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .pmf-actions { flex-direction: column-reverse; }
+    .pmf-actions .btn { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pmf-field input, .pmf-field select, .pmf-field textarea,
+    .pmf-back { transition: none; }
+  }
+</style>
+{% endblock %}

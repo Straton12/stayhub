@@ -1,0 +1,389 @@
+{% extends 'laundry/base.html' %}
+{% block title %}Laundry Services — Laundry{% endblock %}
+{% block page_title %}Laundry Services{% endblock %}
+
+{% block content %}
+
+<div class="sl-header">
+  <div>
+    <h1>Services</h1>
+    <p>
+      {% if items %}
+        {{ items|length }} service{{ items|length|pluralize }} in your catalogue.
+      {% else %}
+        No services yet.
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% url 'laundry_service_add' %}" class="btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Service
+  </a>
+</div>
+
+{% if items %}
+
+<div class="sl-kpis">
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-indigo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value">{{ items|length }}</div>
+      <div class="sl-kpi-label">Total services</div>
+    </div>
+  </div>
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiActive">0</div>
+      <div class="sl-kpi-label">Active</div>
+    </div>
+  </div>
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiAvgPrice">KES 0</div>
+      <div class="sl-kpi-label">Avg. price</div>
+    </div>
+  </div>
+  <div class="sl-kpi">
+    <div class="sl-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sl-kpi-value" id="kpiSameDay">0</div>
+      <div class="sl-kpi-label">Same-day</div>
+    </div>
+  </div>
+</div>
+
+<div class="sl-toolbar">
+  <div class="sl-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="slSearch" placeholder="Search by name or type…" autocomplete="off">
+  </div>
+  <div class="sl-count" id="slCount">{{ items|length }} service{{ items|length|pluralize }}</div>
+</div>
+
+<div class="sl-grid" id="slGrid">
+  {% for s in items %}
+  <article class="sl-card"
+           data-search="{{ s.name|lower }} {{ s.get_service_type_display|lower }}"
+           data-active="{% if s.is_active %}1{% else %}0{% endif %}"
+           data-sameday="{% if s.same_day %}1{% else %}0{% endif %}">
+    <div class="sl-card-head">
+      <div class="sl-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <div class="sl-card-id">
+        <h3 class="sl-name">{{ s.name }}</h3>
+        <span class="sl-type-chip">{{ s.get_service_type_display }}</span>
+      </div>
+      <span class="avail-pill {% if s.is_active %}avail-yes{% else %}avail-no{% endif %}">
+        <span class="dot"></span>
+        {% if s.is_active %}Active{% else %}Inactive{% endif %}
+      </span>
+    </div>
+
+    {% if s.short_description %}
+      <p class="sl-desc">{{ s.short_description }}</p>
+    {% endif %}
+
+    <div class="sl-card-footer">
+      <div class="sl-price">
+        <span class="sl-price-label">Price</span>
+        <span class="sl-price-value">KES {{ s.price|floatformat:0 }}</span>
+        <span class="sl-price-unit">{{ s.get_price_unit_display }}</span>
+      </div>
+      <a href="{% url 'laundry_service_edit' s.id %}" class="btn sm secondary">Edit</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<div class="sl-empty-filter" id="slEmptyFilter" hidden>
+  <div class="sl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  </div>
+  <h4>No matches</h4>
+  <p class="muted">Try a different search term.</p>
+</div>
+
+{% else %}
+
+<div class="sl-empty">
+  <div class="sl-empty-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="3" width="16" height="18" rx="2"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  </div>
+  <h4>No services yet</h4>
+  <p class="muted">Add your first laundry service to start taking orders.</p>
+  <a href="{% url 'laundry_service_add' %}" class="btn" style="margin-top:14px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Service
+  </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .sl-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 18px;
+  }
+  .sl-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .sl-header p  { font-size: 13px; color: var(--muted); }
+
+  .sl-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px; margin-bottom: 18px;
+  }
+  .sl-kpi {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .sl-kpi-icon {
+    flex: 0 0 40px; width: 40px; height: 40px;
+    border-radius: 10px; display: grid; place-items: center;
+  }
+  .sl-kpi-icon svg { width: 18px; height: 18px; }
+  .k-indigo { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+  .k-green  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .k-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+  .k-amber  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .sl-kpi-value { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; line-height: 1.15; }
+  .sl-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  .sl-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .sl-search {
+    position: relative; flex: 1 1 280px; max-width: 420px;
+  }
+  .sl-search svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: var(--muted-2); pointer-events: none;
+  }
+  .sl-search input {
+    width: 100%; padding: 10px 12px 10px 38px;
+    border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13.5px; background: #fff; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .sl-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.13);
+  }
+  .sl-count {
+    font-size: 12.5px; color: var(--muted); font-weight: 700;
+    padding: 6px 12px; background: #fff;
+    border: 1px solid var(--line); border-radius: 999px;
+    box-shadow: var(--shadow-sm); white-space: nowrap;
+  }
+
+  .sl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .sl-card {
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .sl-card::before {
+    content: ""; position: absolute; inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-1), var(--brand-3));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .sl-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(15,23,42,0.10);
+    border-color: #dbe2f0;
+  }
+  .sl-card:hover::before { opacity: 1; }
+
+  .sl-card-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 18px 12px;
+  }
+  .sl-avatar {
+    width: 46px; height: 46px; flex: 0 0 46px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #818cf8, #22d3ee);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(99,102,241,0.35);
+  }
+  .sl-avatar svg { width: 22px; height: 22px; }
+  .sl-card-id { min-width: 0; flex: 1; }
+  .sl-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .sl-type-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+
+  .avail-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.2px; white-space: nowrap;
+  }
+  .avail-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .avail-yes { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .avail-no  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  .sl-desc {
+    padding: 0 18px 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .sl-card-footer {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f6f8fc);
+    margin-top: auto;
+  }
+  .sl-price { display: flex; flex-direction: column; gap: 2px; }
+  .sl-price-label {
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.7px; color: var(--muted-2);
+    font-weight: 700;
+  }
+  .sl-price-value {
+    font-size: 16px; font-weight: 800; color: var(--brand-2);
+    letter-spacing: -0.3px;
+  }
+  .sl-price-unit {
+    font-size: 11px; color: var(--muted-2); font-weight: 600;
+  }
+
+  .sl-empty-filter,
+  .sl-empty {
+    text-align: center; padding: 50px 20px;
+    background: #fff; border: 1px dashed var(--line);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+  }
+  .sl-empty-ico {
+    width: 60px; height: 60px; margin: 0 auto 12px;
+    border-radius: 16px; display: grid; place-items: center;
+    background: #eef2ff; color: var(--brand-2); border: 1px solid #e0e7ff;
+  }
+  .sl-empty-ico svg { width: 28px; height: 28px; }
+  .sl-empty h4, .sl-empty-filter h4 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+  @media (max-width: 720px) {
+    .sl-header h1 { font-size: 18px; }
+    .sl-grid { grid-template-columns: 1fr; }
+    .sl-avatar { width: 42px; height: 42px; flex-basis: 42px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  (function () {
+    var search = document.getElementById('slSearch');
+    var cards  = document.querySelectorAll('.sl-card');
+    var grid   = document.getElementById('slGrid');
+    var count  = document.getElementById('slCount');
+    var empty  = document.getElementById('slEmptyFilter');
+
+    var total = cards.length;
+    var active = 0, sameDay = 0, priceSum = 0, priceCount = 0;
+    cards.forEach(function (c) {
+      if (c.dataset.active === '1') active++;
+      if (c.dataset.sameday === '1') sameDay++;
+      var pv = c.querySelector('.sl-price-value');
+      if (pv) {
+        var n = parseFloat((pv.textContent || '').replace(/[^0-9.]/g, ''));
+        if (!isNaN(n)) { priceSum += n; priceCount++; }
+      }
+    });
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    setText('kpiActive', active);
+    setText('kpiSameDay', sameDay);
+    setText('kpiAvgPrice', 'KES ' + (priceCount ? Math.round(priceSum / priceCount).toLocaleString() : '0'));
+
+    function apply() {
+      if (!grid) return;
+      var q = (search.value || '').trim().toLowerCase();
+      var visible = 0;
+      cards.forEach(function (c) {
+        var text = c.dataset.search || '';
+        var ok = !q || text.indexOf(q) !== -1;
+        c.hidden = !ok;
+        if (ok) visible++;
+      });
+      if (count) count.textContent = visible + ' service' + (visible === 1 ? '' : 's');
+      if (empty) empty.hidden = visible !== 0 || cards.length === 0;
+      grid.style.display = visible === 0 ? 'none' : '';
+    }
+    if (search) search.addEventListener('input', apply);
+  })();
+</script>
+{% endblock %}

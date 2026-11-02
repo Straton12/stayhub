@@ -1,0 +1,111 @@
+{% extends 'payments/base.html' %}
+{% block pay_title %}Card payment{% endblock %}
+
+{% block pay_content %}
+
+<div class="pay-header">
+  <h1>Card payment</h1>
+  <p>Card payments are processed securely by our payment partner.</p>
+</div>
+
+<div class="pay-card pay-card-center">
+
+  <div class="card-art" aria-hidden="true">
+    <div class="card-strip"></div>
+    <div class="card-number">•••• •••• •••• ••••</div>
+    <div class="card-bottom">
+      <div>
+        <span>CARD HOLDER</span>
+        <strong>{{ booking.customer_name }}</strong>
+      </div>
+      <div class="card-expiry">
+        <span>EXP</span>
+        <strong>MM/YY</strong>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="font-size:17px; font-weight:800; letter-spacing:-0.3px; margin: 22px 0 8px;">
+    Card payments coming soon
+  </h2>
+  <p style="font-size:13.5px; color:var(--muted); max-width: 460px; margin: 0 auto 20px; line-height: 1.6;">
+    We're wiring up a card gateway. In the meantime, please use M-Pesa to complete this booking.
+  </p>
+
+  <div class="pay-actions" style="justify-content:center;">
+    <a href="{% url 'payments:initiate' booking.pk %}" class="mkt-btn ghost">Choose M-Pesa instead</a>
+
+    {% if sandbox %}
+      <form method="post" action="{% url 'payments:card_sandbox_confirm' attempt.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="mkt-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Simulate success (sandbox)
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block pay_extra_head %}
+<style>
+  .pay-card-center { text-align: center; }
+
+  .card-art {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1.58 / 1;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 0 auto;
+    background:
+      radial-gradient(300px 120px at 0% 0%, rgba(139,92,246,0.6), transparent 60%),
+      linear-gradient(135deg, #4f46e5, #7c3aed 60%, #22d3ee);
+    color: #fff;
+    display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: 0 20px 40px rgba(99,102,241,0.35);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-art::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(300px 200px at 90% -10%, rgba(255,255,255,0.20), transparent 60%);
+    pointer-events: none;
+  }
+  .card-strip {
+    width: 40px; height: 30px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+  }
+  .card-number {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 17px;
+    letter-spacing: 1.6px;
+    font-weight: 600;
+    opacity: 0.9;
+  }
+  .card-bottom {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    opacity: 0.85;
+  }
+  .card-bottom strong {
+    display: block;
+    font-size: 12.5px;
+    text-transform: none;
+    letter-spacing: 0.3px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .card-expiry { text-align: right; }
+</style>
+{% endblock %}

@@ -1,0 +1,662 @@
+{% extends 'bnb/base.html' %}
+{% load humanize %}
+{% block page_title %}Bookings{% endblock %}
+
+{% block subtabs %}
+<nav class="subtabs">
+  <div class="subtabs-inner">
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_bookings_home' %}active{% endif %}"
+       href="{% url 'bnb_bookings_home' %}">Overview</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_booking_list' %}active{% endif %}"
+       href="{% url 'bnb_booking_list' %}">All bookings</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_booking_add' %}active{% endif %}"
+       href="{% url 'bnb_booking_add' %}">New booking</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_booking_calendar' %}active{% endif %}"
+       href="{% url 'bnb_booking_calendar' %}">Calendar</a>
+    <a class="subtab {% if 'guest' in request.resolver_match.url_name %}active{% endif %}"
+       href="{% url 'bnb_guest_list' %}">Guests</a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="bh-head">
+  <div class="bh-head-main">
+    <h1>Bookings</h1>
+    <p class="muted">
+      {% if bookings_count %}
+        {{ bookings_count }} booking{{ bookings_count|pluralize }} across your properties —
+        {{ in_house_count }} in-house, {{ pending_count }} awaiting approval.
+      {% else %}
+        No bookings yet. They'll appear here as soon as guests book from the marketplace.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+{# ==================== STATS ==================== #}
+{% if bookings_count %}
+  <div class="bh-stats">
+    <div class="bh-stat">
+      <div class="bh-stat-label">Total bookings</div>
+      <div class="bh-stat-value">{{ bookings_count }}</div>
+      <div class="bh-stat-sub">All time</div>
+    </div>
+    <div class="bh-stat bh-stat-green">
+      <div class="bh-stat-label">In-house now</div>
+      <div class="bh-stat-value">{{ in_house_count }}</div>
+      <div class="bh-stat-sub">{{ checkouts_today }} checkout{{ checkouts_today|pluralize }} today</div>
+    </div>
+    <div class="bh-stat bh-stat-sky">
+      <div class="bh-stat-label">Arrivals today</div>
+      <div class="bh-stat-value">{{ arrivals_today }}</div>
+      <div class="bh-stat-sub">Pending or confirmed</div>
+    </div>
+    <div class="bh-stat bh-stat-amber">
+      <div class="bh-stat-label">Awaiting approval</div>
+      <div class="bh-stat-value">{{ pending_count }}</div>
+      <div class="bh-stat-sub">From the marketplace</div>
+    </div>
+  </div>
+{% endif %}
+
+{# ==================== QUICK ACTIONS ==================== #}
+<div class="bh-actions">
+  <a href="{% url 'bnb_booking_list' %}" class="bh-action bh-action-primary">
+    <span class="bh-action-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </span>
+    <span class="bh-action-body">
+      <strong>All bookings</strong>
+      <span>Search, filter, and manage every booking</span>
+    </span>
+    <svg class="bh-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+
+  <a href="{% url 'bnb_booking_calendar' %}" class="bh-action">
+    <span class="bh-action-ico bh-action-ico-violet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <path d="M8 14h.01"/>
+        <path d="M12 14h.01"/>
+        <path d="M16 14h.01"/>
+        <path d="M8 18h.01"/>
+        <path d="M12 18h.01"/>
+        <path d="M16 18h.01"/>
+      </svg>
+    </span>
+    <span class="bh-action-body">
+      <strong>Calendar</strong>
+      <span>See all stays at a glance</span>
+    </span>
+    <svg class="bh-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12"/>
+      <polyline points="12 5 19 12 12 19"/>
+    </svg>
+  </a>
+</div>
+
+{# ==================== TODAY'S ARRIVALS ==================== #}
+{% if arrivals %}
+  <div class="bh-block">
+    <div class="bh-block-head">
+      <div>
+        <h2>Arriving today</h2>
+        <p class="muted">{{ arrivals|length }} guest{{ arrivals|length|pluralize }} expected.</p>
+      </div>
+      <a href="{% url 'bnb_booking_list' %}?status=confirmed" class="bh-block-link">
+        View all confirmed
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+
+    <ul class="bh-list">
+      {% for b in arrivals %}
+        <li>
+          <a href="{% url 'bnb_booking_detail' b.id %}" class="bh-arrival">
+            <span class="bh-arrival-avatar">{{ b.guest_name|slice:":1"|upper }}</span>
+            <span class="bh-arrival-body">
+              <span class="bh-arrival-name">{{ b.guest_name }}</span>
+              <span class="bh-arrival-meta">
+                {{ b.property.name }}
+                {% if b.guest_phone %} · {{ b.guest_phone }}{% endif %}
+              </span>
+            </span>
+            <span class="bh-arrival-right">
+              <span class="bh-pill bh-pill-{{ b.status }}">
+                <span class="bh-pill-dot"></span>
+                {{ b.get_status_display }}
+              </span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{# ==================== RECENT BOOKINGS ==================== #}
+{% if recent_bookings %}
+  <div class="bh-block">
+    <div class="bh-block-head">
+      <div>
+        <h2>Recent bookings</h2>
+        <p class="muted">The 9 most recent reservations.</p>
+      </div>
+      <a href="{% url 'bnb_booking_list' %}" class="bh-block-link">
+        View all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="bh-grid">
+      {% for b in recent_bookings %}
+        <a href="{% url 'bnb_booking_detail' b.id %}" class="bh-card">
+
+          <div class="bh-card-cover">
+            {% if b.property.cover_image %}
+              <img src="{{ b.property.cover_image.url }}" alt="" loading="lazy">
+            {% else %}
+              <div class="bh-card-cover-fallback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+                </svg>
+              </div>
+            {% endif %}
+
+            <span class="bh-card-status bh-card-status-{{ b.status }}">
+              <span class="bh-card-status-dot"></span>
+              {{ b.get_status_display }}
+            </span>
+
+            {% if b.source %}
+              <span class="bh-card-src bh-card-src-{{ b.source }}">{{ b.get_source_display }}</span>
+            {% endif %}
+          </div>
+
+          <div class="bh-card-body">
+            <h3 class="bh-card-title">{{ b.guest_name|truncatechars:28 }}</h3>
+
+            <div class="bh-card-prop">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+              </svg>
+              {{ b.property.name|truncatechars:26 }}
+            </div>
+
+            <div class="bh-card-dates">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ b.check_in|date:"d M" }} → {{ b.check_out|date:"d M Y" }}
+            </div>
+
+            <div class="bh-card-foot">
+              <span class="bh-card-nights">{{ b.nights }} night{{ b.nights|pluralize }}</span>
+              <span class="bh-card-amount">KES {{ b.total_amount|floatformat:0|intcomma }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{# ==================== NEXT ARRIVALS ==================== #}
+{% if next_arrivals %}
+  <div class="bh-block">
+    <div class="bh-block-head">
+      <div>
+        <h2>Coming up</h2>
+        <p class="muted">Next arrivals after today.</p>
+      </div>
+    </div>
+
+    <ul class="bh-list">
+      {% for b in next_arrivals %}
+        <li>
+          <a href="{% url 'bnb_booking_detail' b.id %}" class="bh-arrival">
+            <span class="bh-arrival-avatar">{{ b.guest_name|slice:":1"|upper }}</span>
+            <span class="bh-arrival-body">
+              <span class="bh-arrival-name">{{ b.guest_name }}</span>
+              <span class="bh-arrival-meta">
+                {{ b.property.name }} · {{ b.check_in|date:"D, d M" }}
+              </span>
+            </span>
+            <span class="bh-arrival-right">
+              <span class="bh-pill bh-pill-{{ b.status }}">
+                <span class="bh-pill-dot"></span>
+                {{ b.get_status_display }}
+              </span>
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{# ==================== EMPTY STATE ==================== #}
+{% if not bookings_count %}
+  <div class="bh-empty">
+    <div class="bh-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <h3>No bookings yet</h3>
+    <p class="muted">
+      When a guest books one of your properties from the marketplace,
+      the reservation will appear here.
+    </p>
+    <a href="{% url 'bnb_property_list' %}" class="btn" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+      </svg>
+      View properties
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================ */
+  /*  BOOKINGS · OVERVIEW                                             */
+  /* ================================================================ */
+
+  .bh-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .bh-head-main { min-width: 0; flex: 1 1 auto; }
+  .bh-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .bh-head p { font-size: 13px; }
+
+  /* ---------- Stats ---------- */
+  .bh-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 22px;
+  }
+  @media (max-width: 1024px) { .bh-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px)  { .bh-stats { gap: 8px; } }
+
+  .bh-stat {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .bh-stat-label {
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .bh-stat-value {
+    font-size: 24px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .bh-stat-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+  .bh-stat-green .bh-stat-value { color: #047857; }
+  .bh-stat-sky   .bh-stat-value { color: #0369a1; }
+  .bh-stat-amber .bh-stat-value { color: #b45309; }
+  @media (max-width: 480px) {
+    .bh-stat-value { font-size: 21px; }
+  }
+
+  /* ---------- Quick actions ---------- */
+  .bh-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 640px) { .bh-actions { grid-template-columns: 1fr; } }
+
+  .bh-action {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+  }
+  .bh-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .bh-action-primary {
+    background: linear-gradient(135deg, #ecfeff, #e0f2fe);
+    border-color: #bae6fd;
+  }
+  .bh-action-primary:hover { border-color: #7dd3fc; }
+
+  .bh-action-ico {
+    flex: 0 0 44px;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+    color: #fff;
+    box-shadow: 0 6px 14px -4px rgba(14,165,233,0.45);
+  }
+  .bh-action-ico svg { width: 20px; height: 20px; }
+  .bh-action-ico-violet {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    box-shadow: 0 6px 14px -4px rgba(139,92,246,0.45);
+  }
+
+  .bh-action-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .bh-action-body strong {
+    font-size: 14px; font-weight: 800; color: var(--text);
+  }
+  .bh-action-body span {
+    font-size: 12px; color: var(--muted);
+  }
+
+  .bh-action-arrow {
+    flex: 0 0 18px;
+    width: 18px; height: 18px;
+    color: var(--muted-2);
+    transition: color .15s, transform .15s;
+  }
+  .bh-action:hover .bh-action-arrow {
+    color: var(--brand-1);
+    transform: translateX(3px);
+  }
+
+  /* ---------- Block ---------- */
+  .bh-block {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 20px 22px 22px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  @media (max-width: 640px) { .bh-block { padding: 16px; } }
+
+  .bh-block-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .bh-block-head h2 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.2px;
+    margin-bottom: 3px;
+  }
+  .bh-block-head p { font-size: 12.5px; }
+
+  .bh-block-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--brand-1, #0ea5e9);
+    padding: 6px 10px; border-radius: 8px;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .bh-block-link:hover { background: rgba(14,165,233,0.08); }
+  .bh-block-link svg { width: 12px; height: 12px; }
+
+  /* ---------- Arrivals list ---------- */
+  .bh-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .bh-arrival {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    color: inherit;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .bh-arrival:hover { background: #f8fafc; }
+
+  .bh-arrival-avatar {
+    flex: 0 0 36px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .bh-arrival-body { flex: 1; min-width: 0; }
+  .bh-arrival-name {
+    display: block;
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .bh-arrival-meta {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bh-arrival-right { flex-shrink: 0; }
+
+  /* ---------- Booking status pill ---------- */
+  .bh-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .bh-pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .bh-pill-pending     { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bh-pill-confirmed   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .bh-pill-checked_in  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .bh-pill-checked_out { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+  .bh-pill-cancelled   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+  .bh-pill-no_show     { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---------- Recent bookings grid ---------- */
+  .bh-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 1024px) { .bh-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px)  { .bh-grid { grid-template-columns: 1fr; } }
+
+  .bh-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .2s, border-color .2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .bh-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+
+  .bh-card-cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+  }
+  .bh-card-cover img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .35s ease;
+  }
+  .bh-card:hover .bh-card-cover img { transform: scale(1.05); }
+
+  .bh-card-cover-fallback {
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    color: rgba(14,165,233,0.55);
+  }
+  .bh-card-cover-fallback svg { width: 40px; height: 40px; }
+
+  .bh-card-status {
+    position: absolute;
+    top: 10px; left: 10px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 4px 10px rgba(15,23,42,0.18);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .bh-card-status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .bh-card-status-pending     { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+  .bh-card-status-confirmed   { color: #1e40af; background: #eff6ff; border-color: #bfdbfe; }
+  .bh-card-status-checked_in  { color: #065f46; background: #ecfdf5; border-color: #a7f3d0; }
+  .bh-card-status-checked_out { color: #334155; background: #f1f5f9; border-color: #e2e8f0; }
+  .bh-card-status-cancelled   { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+  .bh-card-status-no_show     { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+
+  .bh-card-src {
+    position: absolute;
+    top: 10px; right: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 9.5px; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(15,23,42,0.72);
+    color: #fff;
+  }
+
+  .bh-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .bh-card-title {
+    font-size: 13.5px; font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .bh-card-prop,
+  .bh-card-dates {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11.5px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bh-card-prop svg,
+  .bh-card-dates svg { width: 11px; height: 11px; flex-shrink: 0; color: var(--muted-2); }
+
+  .bh-card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 8px;
+    margin-top: auto;
+    border-top: 1px solid var(--line-2);
+  }
+  .bh-card-nights {
+    font-size: 11px; color: var(--muted-2);
+    font-weight: 600;
+  }
+  .bh-card-amount {
+    font-size: 13px; font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+
+  /* ---------- Empty state ---------- */
+  .bh-empty {
+    text-align: center;
+    padding: 54px 24px;
+    background:
+      radial-gradient(500px 220px at 50% 0%, rgba(14,165,233,0.06), transparent 60%),
+      #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .bh-empty-ico {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .bh-empty-ico svg { width: 30px; height: 30px; }
+  .bh-empty h3 {
+    font-size: 16px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .bh-empty p { font-size: 13px; max-width: 380px; margin: 0 auto; }
+
+  /* ---------- Compact mobile ---------- */
+  @media (max-width: 640px) {
+    .bh-head h1 { font-size: 19px; }
+    .bh-block-head h2 { font-size: 14px; }
+    .bh-card-title { font-size: 13px; }
+  }
+</style>
+{% endblock %}

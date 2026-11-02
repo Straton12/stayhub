@@ -1,0 +1,9 @@
+<p>Hi {{ booking.customer_name }},</p>
+<p>We've received your booking request for <b>{{ listing.title }}</b> with {{ org.name }}.</p>
+<ul>
+  <li>Reference: <b>{{ booking.reference }}</b></li>
+  <li>Total: <b>KES {{ booking.total_amount }}</b></li>
+</ul>
+<p><a href="{{ pay_url }}">Complete payment</a> to confirm your booking.</p>
+<p><a href="{{ view_url }}">View your booking</a></p>
+<p>— StayHub</p>

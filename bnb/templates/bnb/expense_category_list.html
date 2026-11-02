@@ -1,0 +1,166 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Expense categories — BnB{% endblock %}
+
+{% block content %}
+
+<div class="ec-head">
+  <div>
+    <h1>Expense categories</h1>
+    <p class="muted">
+      {% if total_count %}
+        {{ total_count }} categor{{ total_count|pluralize:"y,ies" }}.
+      {% else %}
+        Group your expenses so the dashboard shows clean, meaningful breakdowns.
+      {% endif %}
+    </p>
+  </div>
+  <div class="ec-head-actions">
+    <a href="{% url 'bnb_expense_list' %}" class="btn secondary sm">Back to expenses</a>
+    <a href="{% url 'bnb_expense_category_add' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add category
+    </a>
+  </div>
+</div>
+
+{% if categories %}
+  <div class="table-wrap ec-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Recurring</th>
+          <th class="ec-num">Expenses</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in categories %}
+          <tr>
+            <td data-label="Name">
+              <div class="ec-name">{{ c.name }}</div>
+            </td>
+            <td data-label="Description" class="ec-desc">
+              {{ c.description|default:"—"|truncatechars:60 }}
+            </td>
+            <td data-label="Recurring">
+              {% if c.is_recurring %}
+                <span class="ec-tag ec-tag-blue">Recurring</span>
+              {% else %}
+                <span class="ec-tag ec-tag-gray">One-off</span>
+              {% endif %}
+            </td>
+            <td data-label="Expenses" class="ec-num">{{ c.expense_count }}</td>
+            <td>
+              <div class="ec-actions">
+                <a href="{% url 'bnb_expense_category_edit' c.pk %}" class="btn sm secondary">Edit</a>
+                <form method="post"
+                      action="{% url 'bnb_expense_category_delete' c.pk %}"
+                      onsubmit="return confirm('Delete category &quot;{{ c.name|escapejs }}&quot;? Any expenses using it will become Uncategorised.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn sm danger-outline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="ec-empty">
+    <div class="ec-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7h18"/>
+        <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+        <rect x="3" y="7" width="18" height="14" rx="2"/>
+        <line x1="3" y1="11" x2="21" y2="11"/>
+      </svg>
+    </div>
+    <h4>No categories yet</h4>
+    <p class="muted">
+      Create a few like <strong>Cleaning</strong>, <strong>Utilities</strong>,
+      <strong>Maintenance</strong> or <strong>Salaries</strong>.
+    </p>
+    <a href="{% url 'bnb_expense_category_add' %}" class="btn" style="margin-top:14px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add your first category
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .ec-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .ec-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .ec-head p { font-size: 13px; }
+  .ec-head-actions {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+
+  .ec-table { margin-bottom: 20px; }
+  .ec-name { font-weight: 700; color: var(--text); }
+  .ec-desc { color: var(--muted); font-size: 13px; }
+  .ec-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ec-actions {
+    display: flex; gap: 6px;
+    justify-content: flex-end;
+    white-space: nowrap;
+  }
+
+  .ec-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .ec-tag-blue { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .ec-tag-gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  .ec-empty {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .ec-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: #e0f2fe; color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .ec-empty-ico svg { width: 26px; height: 26px; }
+  .ec-empty h4 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .ec-empty p {
+    font-size: 13px;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+</style>
+{% endblock %}

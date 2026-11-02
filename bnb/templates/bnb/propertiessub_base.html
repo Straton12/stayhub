@@ -1,0 +1,499 @@
+{% extends 'bnb/base.html' %}
+{% load humanize %}
+{% block page_title %}Properties{% endblock %}
+
+{% block subtabs %}
+<nav class="subtabs">
+  <div class="subtabs-inner">
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_properties_home' %}active{% endif %}"
+       href="{% url 'bnb_properties_home' %}">Overview</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_property_list' %}active{% endif %}"
+       href="{% url 'bnb_property_list' %}">All properties</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_property_add' %}active{% endif %}"
+       href="{% url 'bnb_property_add' %}">Add property</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_amenities' %}active{% endif %}"
+       href="{% url 'bnb_amenities' %}">Amenities</a>
+    <a class="subtab {% if request.resolver_match.url_name == 'bnb_pricing_rules' %}active{% endif %}"
+       href="{% url 'bnb_pricing_rules' %}">Pricing rules</a>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+<div class="ps-head">
+  <div>
+    <h1>Properties</h1>
+    <p class="muted">
+      {{ props_count }} propert{{ props_count|pluralize:"y,ies" }} in your inventory —
+      {{ active_props_count }} active, {{ inactive_props_count }} inactive.
+    </p>
+  </div>
+  <div class="ps-head-actions">
+    <a href="{% url 'bnb_property_list' %}" class="btn secondary sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      All properties
+    </a>
+    <a href="{% url 'bnb_property_add' %}" class="btn sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add property
+    </a>
+  </div>
+</div>
+
+{# ==================== INVENTORY KPIs ==================== #}
+<div class="ps-kpis">
+  <div class="ps-kpi">
+    <div class="ps-kpi-label">Total</div>
+    <div class="ps-kpi-value">{{ props_count }}</div>
+    <div class="ps-kpi-sub">In your organisation</div>
+  </div>
+  <div class="ps-kpi ps-kpi-green">
+    <div class="ps-kpi-label">Active</div>
+    <div class="ps-kpi-value">{{ active_props_count }}</div>
+    <div class="ps-kpi-sub">Accepting bookings</div>
+  </div>
+  <div class="ps-kpi ps-kpi-slate">
+    <div class="ps-kpi-label">Inactive</div>
+    <div class="ps-kpi-value">{{ inactive_props_count }}</div>
+    <div class="ps-kpi-sub">Temporarily off</div>
+  </div>
+  <div class="ps-kpi ps-kpi-amber">
+    <div class="ps-kpi-label">Not on marketplace</div>
+    <div class="ps-kpi-value">{{ unpublished_props_count }}</div>
+    <div class="ps-kpi-sub">Never published</div>
+  </div>
+</div>
+
+{# ==================== MARKETPLACE PUBLICATION STATUS ==================== #}
+<div class="ps-block">
+  <div class="ps-block-head">
+    <div>
+      <h2>Marketplace publication</h2>
+      <p class="muted">How your properties appear on the public marketplace.</p>
+    </div>
+    <a href="{% url 'marketplace:manage_home' %}" class="ps-block-link">
+      Manage listings
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+
+  <div class="ps-pub-grid">
+    <div class="ps-pub-card ps-pub-live">
+      <span class="ps-pub-dot" aria-hidden="true"></span>
+      <div class="ps-pub-body">
+        <div class="ps-pub-value">{{ listing_status.approved }}</div>
+        <div class="ps-pub-label">Live</div>
+      </div>
+    </div>
+
+    <div class="ps-pub-card ps-pub-pending">
+      <span class="ps-pub-dot" aria-hidden="true"></span>
+      <div class="ps-pub-body">
+        <div class="ps-pub-value">{{ listing_status.pending }}</div>
+        <div class="ps-pub-label">Pending review</div>
+      </div>
+    </div>
+
+    <div class="ps-pub-card ps-pub-off">
+      <span class="ps-pub-dot" aria-hidden="true"></span>
+      <div class="ps-pub-body">
+        <div class="ps-pub-value">{{ listing_status.unpublished }}</div>
+        <div class="ps-pub-label">Unpublished</div>
+      </div>
+    </div>
+
+    <div class="ps-pub-card ps-pub-draft">
+      <span class="ps-pub-dot" aria-hidden="true"></span>
+      <div class="ps-pub-body">
+        <div class="ps-pub-value">{{ listing_status.draft }}</div>
+        <div class="ps-pub-label">Draft</div>
+      </div>
+    </div>
+
+    <div class="ps-pub-card ps-pub-rejected">
+      <span class="ps-pub-dot" aria-hidden="true"></span>
+      <div class="ps-pub-body">
+        <div class="ps-pub-value">{{ listing_status.rejected }}</div>
+        <div class="ps-pub-label">Rejected</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ==================== CATEGORY BREAKDOWN ==================== #}
+{% if category_breakdown %}
+  <div class="ps-block">
+    <div class="ps-block-head">
+      <div>
+        <h2>By category</h2>
+        <p class="muted">How your inventory splits across marketplace categories.</p>
+      </div>
+    </div>
+
+    <ul class="ps-cat-list">
+      {% for cat in category_breakdown %}
+        <li class="ps-cat-item">
+          <span class="ps-cat-ico accent-{{ cat.category__accent|default:'indigo' }}">
+            {% if cat.category__icon == 'bed' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+            {% elif cat.category__icon == 'globe' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            {% elif cat.category__icon == 'utensils' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+            {% elif cat.category__icon == 'shirt' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+            {% elif cat.category__icon == 'car' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+            {% endif %}
+          </span>
+          <span class="ps-cat-name">{{ cat.category__name|default:"Uncategorised" }}</span>
+          <span class="ps-cat-count">{{ cat.n }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{# ==================== RECENT PROPERTIES ==================== #}
+{% if recent_properties %}
+  <div class="ps-block">
+    <div class="ps-block-head">
+      <div>
+        <h2>Recently added</h2>
+        <p class="muted">The 5 most recent properties in your inventory.</p>
+      </div>
+      <a href="{% url 'bnb_property_list' %}" class="ps-block-link">
+        View all
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+
+    <ul class="ps-recent">
+      {% for p in recent_properties %}
+        <li>
+          <a href="{% url 'bnb_property_detail' p.id %}" class="ps-recent-item">
+            <span class="ps-recent-thumb">
+              {% if p.cover_image %}
+                <img src="{{ p.cover_image.url }}" alt="">
+              {% else %}
+                <span class="ps-recent-thumb-fallback"></span>
+              {% endif %}
+            </span>
+
+            <span class="ps-recent-body">
+              <span class="ps-recent-title">{{ p.name|truncatechars:42 }}</span>
+              <span class="ps-recent-meta">
+                {% if p.category %}{{ p.category.name }}{% else %}Uncategorised{% endif %}
+                {% if p.location_label %} · {{ p.location_label }}{% endif %}
+              </span>
+            </span>
+
+            <span class="ps-recent-right">
+              {% if not p.is_active %}
+                <span class="ps-badge ps-badge-muted">Inactive</span>
+              {% elif p.listing_id %}
+                {% if p.listing.status == 'approved' and p.listing.is_active %}
+                  <span class="ps-badge ps-badge-live">Live</span>
+                {% else %}
+                  <span class="ps-badge ps-badge-off">{{ p.listing.get_status_display }}</span>
+                {% endif %}
+              {% else %}
+                <span class="ps-badge ps-badge-draft">Not published</span>
+              {% endif %}
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{# ==================== EMPTY STATE ==================== #}
+{% if not props_count %}
+  <div class="ps-empty">
+    <div class="ps-empty-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+      </svg>
+    </div>
+    <h3>No properties yet</h3>
+    <p class="muted">Add your first property to start taking bookings.</p>
+    <a href="{% url 'bnb_property_add' %}" class="btn" style="margin-top:16px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add property
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================================================================
+     PROPERTIES · OVERVIEW
+     Focus: inventory only — no revenue, no occupancy, no bookings.
+     ================================================================ */
+
+  /* ---------- Head ---------- */
+  .ps-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .ps-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .ps-head p { font-size: 13px; }
+  .ps-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ---------- Inventory KPIs ---------- */
+  .ps-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .ps-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ps-kpi-label {
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .ps-kpi-value {
+    font-size: 26px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .ps-kpi-sub {
+    font-size: 11.5px; color: var(--muted-2); margin-top: 4px;
+  }
+  .ps-kpi-green .ps-kpi-value { color: #047857; }
+  .ps-kpi-slate .ps-kpi-value { color: #475569; }
+  .ps-kpi-amber .ps-kpi-value { color: #b45309; }
+
+  /* ---------- Blocks ---------- */
+  .ps-block {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+  }
+  .ps-block-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .ps-block-head h2 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.2px;
+    margin-bottom: 3px;
+  }
+  .ps-block-head p { font-size: 12.5px; }
+  .ps-block-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; font-weight: 700;
+    color: var(--brand-1, #0ea5e9);
+    padding: 6px 10px; border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .ps-block-link:hover { background: rgba(14,165,233,0.08); }
+  .ps-block-link svg { width: 12px; height: 12px; }
+
+  /* ---------- Publication status grid ---------- */
+  .ps-pub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .ps-pub-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+  }
+  .ps-pub-dot {
+    flex: 0 0 10px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #94a3b8;
+  }
+  .ps-pub-body { min-width: 0; }
+  .ps-pub-value {
+    font-size: 20px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.4px;
+    line-height: 1.1;
+  }
+  .ps-pub-label {
+    font-size: 11px; color: var(--muted-2);
+    margin-top: 2px; font-weight: 600;
+  }
+
+  .ps-pub-live      { background: #ecfdf5; border-color: #a7f3d0; }
+  .ps-pub-live      .ps-pub-dot { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.18); }
+  .ps-pub-live      .ps-pub-value { color: #047857; }
+
+  .ps-pub-pending   { background: #fffbeb; border-color: #fde68a; }
+  .ps-pub-pending   .ps-pub-dot { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+  .ps-pub-pending   .ps-pub-value { color: #b45309; }
+
+  .ps-pub-off       { background: #f1f5f9; border-color: #e2e8f0; }
+  .ps-pub-off       .ps-pub-dot { background: #94a3b8; }
+  .ps-pub-off       .ps-pub-value { color: #475569; }
+
+  .ps-pub-draft     { background: #eef2ff; border-color: #c7d2fe; }
+  .ps-pub-draft     .ps-pub-dot { background: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.18); }
+  .ps-pub-draft     .ps-pub-value { color: #4338ca; }
+
+  .ps-pub-rejected  { background: #fef2f2; border-color: #fecaca; }
+  .ps-pub-rejected  .ps-pub-dot { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.18); }
+  .ps-pub-rejected  .ps-pub-value { color: #991b1b; }
+
+  /* ---------- Category breakdown ---------- */
+  .ps-cat-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ps-cat-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid var(--line-2);
+    border-radius: 11px;
+  }
+  .ps-cat-ico {
+    flex: 0 0 34px;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid #e0e7ff;
+  }
+  .ps-cat-ico svg { width: 16px; height: 16px; }
+  .ps-cat-ico.accent-sky     { background: #eff6ff; color: #0369a1; border-color: #bae6fd; }
+  .ps-cat-ico.accent-emerald { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .ps-cat-ico.accent-amber   { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .ps-cat-ico.accent-violet  { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+  .ps-cat-ico.accent-rose    { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+  .ps-cat-name {
+    flex: 1; min-width: 0;
+    font-size: 13.5px; font-weight: 700;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ps-cat-count {
+    font-size: 14px; font-weight: 800;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--line-2);
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: -0.2px;
+  }
+
+  /* ---------- Recent properties ---------- */
+  .ps-recent {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ps-recent-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .ps-recent-item:hover { background: #f8fafc; }
+
+  .ps-recent-thumb {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    display: grid; place-items: center;
+  }
+  .ps-recent-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .ps-recent-thumb-fallback {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #c7d2fe, #a5f3fc);
+  }
+
+  .ps-recent-body { flex: 1; min-width: 0; }
+  .ps-recent-title {
+    display: block;
+    font-size: 13px; font-weight: 700;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .ps-recent-meta {
+    display: block;
+    font-size: 11.5px; color: var(--muted-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .ps-recent-right { flex-shrink: 0; }
+
+  .ps-badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .ps-badge-live   { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .ps-badge-off    { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .ps-badge-muted  { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+  .ps-badge-draft  { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+
+  /* ---------- Empty state ---------- */
+  .ps-empty {
+    text-align: center;
+    padding: 54px 24px;
+    background:
+      radial-gradient(500px 220px at 50% 0%, rgba(14,165,233,0.06), transparent 60%),
+      #fff;
+    border: 1px dashed var(--line-2);
+    border-radius: 18px;
+  }
+  .ps-empty-ico {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .ps-empty-ico svg { width: 30px; height: 30px; }
+  .ps-empty h3 {
+    font-size: 16px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .ps-empty p { font-size: 13px; max-width: 340px; margin: 0 auto; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 640px) {
+    .ps-head h1 { font-size: 19px; }
+    .ps-block { padding: 16px 16px; }
+    .ps-kpi-value { font-size: 22px; }
+    .ps-pub-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+{% endblock %}

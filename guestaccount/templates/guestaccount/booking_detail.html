@@ -1,0 +1,589 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}{{ booking.reference }} — Booking{% endblock %}
+
+{% block ga_content %}
+
+<div class="bd-crumb">
+  <a href="{% url 'guestaccount:home' %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    My bookings
+  </a>
+</div>
+
+<div class="bd-header">
+  <div class="bd-header-left">
+    <div class="bd-ref">{{ booking.reference }}</div>
+    <h1>{{ booking.listing.title }}</h1>
+    <p>Booked {{ booking.created_at|date:"d M Y" }}</p>
+  </div>
+  <span class="ga-status {{ booking.status }}">
+    <span class="dot"></span>
+    {{ booking.get_status_display }}
+  </span>
+</div>
+
+<div class="bd-layout">
+
+  <section class="bd-main">
+
+    <!-- Listing card -->
+    <div class="bd-block">
+      <h3>What you booked</h3>
+      <div class="bd-listing">
+        <div class="bd-listing-cover">
+          {% if booking.listing.cover_image %}
+            <img src="{{ booking.listing.cover_image.url }}" alt="{{ booking.listing.title }}">
+          {% elif booking.listing.cover_image_url %}
+            <img src="{{ booking.listing.cover_image_url }}" alt="{{ booking.listing.title }}">
+          {% else %}
+            <div class="bd-listing-fallback">
+              {% if booking.listing.category.icon == 'bed' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20v-8a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4z"/><path d="M6 16h.01"/><path d="M10 16h.01"/></svg>
+              {% elif booking.listing.category.icon == 'globe' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              {% elif booking.listing.category.icon == 'utensils' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/></svg>
+              {% elif booking.listing.category.icon == 'shirt' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4"/></svg>
+              {% elif booking.listing.category.icon == 'car' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14"/><path d="M5 17l-1.5-6.5a2 2 0 0 1 1.5-2.5h10a2 2 0 0 1 1.5 2.5L15 17"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          {% if booking.billing_unit == 'per_night' and booking.nights %}
+            <span class="bd-cover-nights">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+              {{ booking.nights }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="bd-listing-body">
+          <span class="bd-cat">{{ booking.listing.category.name }}</span>
+          <div class="bd-listing-title">{{ booking.listing.title }}</div>
+          {% if booking.listing.location %}
+            <div class="bd-loc">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ booking.listing.location }}
+            </div>
+          {% endif %}
+          <a href="{% url 'marketplace:listing_detail' booking.listing.slug %}" class="bd-link">
+            View listing
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="bd-block">
+      <h3>Booking details</h3>
+      <dl class="bd-details">
+        <div class="bd-detail">
+          <dt>Customer</dt>
+          <dd>{{ booking.customer_name }}</dd>
+        </div>
+        {% if booking.customer_email %}
+        <div class="bd-detail"><dt>Email</dt><dd>{{ booking.customer_email }}</dd></div>
+        {% endif %}
+        {% if booking.customer_phone %}
+        <div class="bd-detail"><dt>Phone</dt><dd>{{ booking.customer_phone }}</dd></div>
+        {% endif %}
+        {% if booking.start_date %}
+        <div class="bd-detail"><dt>Start</dt><dd>{{ booking.start_date|date:"D, d M Y" }}</dd></div>
+        {% endif %}
+        {% if booking.end_date %}
+        <div class="bd-detail"><dt>End</dt><dd>{{ booking.end_date|date:"D, d M Y" }}</dd></div>
+        {% endif %}
+        <div class="bd-detail"><dt>Quantity</dt><dd>{{ booking.quantity }}</dd></div>
+        {% if booking.guest_note %}
+        <div class="bd-detail bd-detail-full">
+          <dt>Your note</dt><dd>{{ booking.guest_note }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- Payment attempts -->
+    {% if attempts %}
+    <div class="bd-block">
+      <h3>Payment attempts</h3>
+      <div class="bd-attempts">
+        {% for a in attempts %}
+          <div class="bd-attempt">
+            <div class="bd-attempt-left">
+              <strong>{{ a.get_method_display }}</strong>
+              <span>{{ a.created_at|date:"d M Y, H:i" }}</span>
+            </div>
+            <div class="bd-attempt-right">
+              <span class="ga-status {{ a.status }}"><span class="dot"></span>{{ a.get_status_display }}</span>
+              <span class="bd-attempt-amount">KES {{ a.amount|floatformat:0 }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Review CTA -->
+    {% if booking.can_be_reviewed %}
+      <div class="bd-block bd-review-block">
+        <div class="bd-review-inner">
+          <div class="bd-review-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2 15 9l7 .5-5.3 4.6L18.3 21 12 17.3 5.7 21l1.6-6.9L2 9.5 9 9z"/>
+            </svg>
+          </div>
+          <div class="bd-review-text">
+            <h3>How was your stay?</h3>
+            <p>Share a quick rating so other guests know what to expect.</p>
+          </div>
+          <a href="{% url 'guestaccount:booking_review' booking.pk %}" class="bd-review-cta">
+            Leave a review
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    {% elif booking.has_review %}
+      <div class="bd-block bd-review-block bd-review-done">
+        <div class="bd-review-inner">
+          <div class="bd-review-icon bd-review-icon-done" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="bd-review-text">
+            <h3>Thanks for your review</h3>
+            <p>Your feedback helps other guests and the host.</p>
+          </div>
+          <a href="{% url 'marketplace:listing_detail' booking.listing.slug %}#reviews" class="bd-review-link">
+            See it
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Sidebar -->
+  <aside class="bd-aside">
+    <div class="bd-pay">
+      <h4>Payment summary</h4>
+
+      {# Date-range aware breakdown #}
+      {% if booking.billing_unit == 'per_night' %}
+        <div class="bd-sum-row">
+          <span>KES {{ booking.unit_price|floatformat:0 }} × {{ booking.nights }} night{{ booking.nights|pluralize }}</span>
+          <strong>KES {{ booking.subtotal|floatformat:0 }}</strong>
+        </div>
+      {% else %}
+        <div class="bd-sum-row">
+          <span>KES {{ booking.unit_price|floatformat:0 }} × {{ booking.quantity }}</span>
+          <strong>KES {{ booking.subtotal|floatformat:0 }}</strong>
+        </div>
+      {% endif %}
+
+      <div class="bd-sum-divider"></div>
+
+      <div class="bd-sum-row bd-sum-total">
+        <span>Total</span>
+        <strong>KES {{ booking.total_amount|floatformat:0 }}</strong>
+      </div>
+
+      <div class="bd-sum-row">
+        <span>Paid</span>
+        <strong>KES {{ booking.amount_paid|floatformat:0 }}</strong>
+      </div>
+
+      {% if booking.balance > 0 %}
+        <div class="bd-sum-row bd-sum-balance">
+          <span>Balance due</span>
+          <strong>KES {{ booking.balance|floatformat:0 }}</strong>
+        </div>
+      {% endif %}
+
+      {# Payment policy chip #}
+      {% if booking.payment_policy %}
+        <div class="bd-policy-wrap">
+          <span class="bd-policy policy-{{ booking.payment_policy }}">
+            {% if booking.payment_policy == 'pay_now' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/>
+              </svg>
+              Pay now
+            {% elif booking.payment_policy == 'pay_on_arrival' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12h18"/><path d="m15 6 6 6-6 6"/><circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/>
+              </svg>
+              Pay on arrival
+            {% elif booking.payment_policy == 'pay_on_delivery' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+              </svg>
+              Pay on delivery
+            {% elif booking.payment_policy == 'pay_on_completion' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+              </svg>
+              Pay on completion
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Deposit
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+
+      {% if booking.status == 'pending' %}
+        <a href="{% url 'guestaccount:booking_confirm' booking.pk %}" class="bd-btn bd-btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Complete payment
+        </a>
+      {% endif %}
+
+      {% if receipt %}
+        <a href="{% url 'payments:receipt_detail' receipt.pk %}" class="bd-btn bd-btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          View receipt
+        </a>
+      {% endif %}
+
+      {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+        <a href="{% url 'guestaccount:booking_cancel' booking.pk %}" class="bd-cancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Cancel this booking
+        </a>
+      {% endif %}
+    </div>
+  </aside>
+
+</div>
+
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     BOOKING DETAIL
+     ================================================================ */
+
+  .bd-crumb { padding: 18px 0 0; font-size: 12.5px; }
+  .bd-crumb a {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--muted, #5b657a); text-decoration: none; font-weight: 600;
+    padding: 4px 8px; margin-left: -8px; border-radius: 8px;
+    transition: color 0.15s cubic-bezier(0.4,0,0.2,1), background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bd-crumb a:hover { color: var(--brand-1, #6366f1); background: rgba(99,102,241,0.06); }
+  .bd-crumb svg { width: 13px; height: 13px; }
+
+  .bd-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; padding: 14px 0 22px;
+  }
+  .bd-header-left { min-width: 0; }
+  .bd-ref {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; font-weight: 700;
+    color: #334155; background: #f1f5f9; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 2px 8px; letter-spacing: 0.02em;
+    margin-bottom: 10px;
+  }
+  .bd-header h1 {
+    font-size: 24px; font-weight: 800; color: var(--text, #0b1220);
+    letter-spacing: -0.4px; margin-bottom: 4px; line-height: 1.2;
+  }
+  .bd-header p { font-size: 13px; color: var(--muted, #5b657a); }
+
+  .bd-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px; align-items: start; padding-bottom: 60px;
+  }
+  @media (max-width: 900px) { .bd-layout { grid-template-columns: 1fr; } }
+  .bd-main { display: flex; flex-direction: column; gap: 16px; }
+
+  .bd-block {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px; padding: 22px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.03);
+  }
+  .bd-block h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted, #5b657a); font-weight: 800; margin-bottom: 16px;
+  }
+
+  .bd-listing { display: flex; gap: 14px; align-items: center; }
+  .bd-listing-cover {
+    position: relative; flex: 0 0 92px;
+    width: 92px; height: 92px; border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+    display: grid; place-items: center; color: #6366f1;
+    border: 1px solid var(--line, #eaedf4);
+  }
+  .bd-listing-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bd-listing-fallback svg { width: 34px; height: 34px; opacity: 0.85; }
+
+  .bd-cover-nights {
+    position: absolute; bottom: 6px; left: 6px;
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px 2px 5px; border-radius: 999px;
+    background: rgba(15,23,42,0.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    color: #fff; font-size: 10px; font-weight: 800;
+    line-height: 1; letter-spacing: 0.02em;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+  }
+  .bd-cover-nights svg { width: 9px; height: 9px; color: #c4b5fd; }
+  .bd-listing-body { min-width: 0; }
+
+  .bd-cat {
+    display: inline-block; padding: 3px 8px; border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+    text-transform: uppercase; margin-bottom: 6px;
+    border: 1px solid #e0e7ff;
+  }
+  .bd-listing-title {
+    font-size: 15px; font-weight: 700; color: var(--text, #0b1220);
+    letter-spacing: -0.2px; margin-bottom: 5px;
+  }
+  .bd-loc {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--muted, #5b657a); margin-bottom: 4px;
+  }
+  .bd-loc svg { width: 12px; height: 12px; color: var(--muted-2, #8b94a8); flex-shrink: 0; }
+
+  .bd-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px; font-size: 12.5px; font-weight: 700;
+    color: var(--brand-1, #6366f1); text-decoration: none;
+    padding: 4px 8px; margin-left: -8px; border-radius: 8px;
+    transition: color 0.15s cubic-bezier(0.4,0,0.2,1), background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bd-link:hover { color: var(--brand-2, #8b5cf6); background: rgba(99,102,241,0.06); }
+  .bd-link svg { width: 12px; height: 12px; transition: transform 0.2s cubic-bezier(0.4,0,0.2,1); }
+  .bd-link:hover svg { transform: translateX(3px); }
+
+  .bd-details {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+  }
+  @media (max-width: 520px) { .bd-details { grid-template-columns: 1fr; } }
+  .bd-detail { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .bd-detail-full { grid-column: 1 / -1; }
+  .bd-detail dt {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted-2, #8b94a8); font-weight: 700;
+  }
+  .bd-detail dd {
+    font-size: 13.5px; color: var(--text, #0b1220); font-weight: 500;
+    word-break: break-word; line-height: 1.5;
+  }
+
+  .bd-attempts { display: flex; flex-direction: column; gap: 10px; }
+  .bd-attempt {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; background: #f8fafc;
+    border: 1px solid var(--line-2, #f2f4fa);
+    border-radius: 12px; font-size: 13px;
+  }
+  .bd-attempt-left { min-width: 0; }
+  .bd-attempt-left strong {
+    display: block; color: var(--text, #0b1220);
+    font-weight: 700; font-size: 13px;
+  }
+  .bd-attempt-left span {
+    display: block; font-size: 11.5px;
+    color: var(--muted-2, #8b94a8); margin-top: 2px;
+  }
+  .bd-attempt-right {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .bd-attempt-amount {
+    font-weight: 800; color: var(--text, #0b1220);
+    font-size: 13.5px; letter-spacing: -0.2px; white-space: nowrap;
+  }
+
+  .bd-review-block {
+    background:
+      radial-gradient(400px 180px at 100% 0%, rgba(99,102,241,0.06), transparent 60%),
+      #fff;
+    border-color: #e0e7ff;
+  }
+  .bd-review-inner {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .bd-review-icon {
+    flex: 0 0 52px; width: 52px; height: 52px;
+    border-radius: 15px; display: grid; place-items: center;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    color: #b45309; border: 1px solid #fde68a;
+    box-shadow: 0 10px 24px -8px rgba(245,158,11,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .bd-review-icon svg { width: 24px; height: 24px; }
+  .bd-review-icon-done {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    color: #047857; border-color: #a7f3d0;
+    box-shadow: 0 10px 24px -8px rgba(16,185,129,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .bd-review-text { flex: 1; min-width: 200px; }
+  .bd-review-text h3 {
+    font-size: 15px; font-weight: 800; color: var(--text, #0b1220);
+    letter-spacing: 0; text-transform: none; margin-bottom: 3px;
+  }
+  .bd-review-text p {
+    font-size: 12.5px; color: var(--muted, #5b657a); line-height: 1.5;
+  }
+  .bd-review-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 18px; border-radius: 999px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; font-size: 13.5px; font-weight: 800;
+    text-decoration: none; white-space: nowrap;
+    box-shadow: 0 12px 26px -8px rgba(245,158,11,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: filter 0.15s cubic-bezier(0.4,0,0.2,1),
+                transform 0.08s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bd-review-cta:hover { filter: brightness(1.05); box-shadow: 0 16px 34px -8px rgba(245,158,11,0.65); }
+  .bd-review-cta:active { transform: translateY(1px); }
+  .bd-review-cta svg { width: 14px; height: 14px; }
+
+  .bd-review-link {
+    display: inline-flex; align-items: center;
+    padding: 6px 12px; border-radius: 999px;
+    background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+    font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .bd-review-link:hover { background: #d1fae5; border-color: #6ee7b7; }
+
+  .bd-aside { position: sticky; top: 88px; }
+  @media (max-width: 900px) { .bd-aside { position: static; } }
+
+  .bd-pay {
+    background: #fff; border: 1px solid var(--line, #eaedf4);
+    border-radius: 18px; padding: 22px;
+    box-shadow: 0 20px 48px -16px rgba(15,23,42,0.10),
+                0 8px 18px -10px rgba(15,23,42,0.05);
+  }
+  .bd-pay h4 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted, #5b657a); font-weight: 800; margin-bottom: 14px;
+  }
+  .bd-sum-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 0; font-size: 13px; color: var(--muted, #5b657a);
+  }
+  .bd-sum-row span { min-width: 0; }
+  .bd-sum-row strong {
+    color: var(--text, #0b1220); font-weight: 600; white-space: nowrap;
+  }
+  .bd-sum-divider { height: 1px; background: var(--line-2, #f2f4fa); margin: 10px 0; }
+  .bd-sum-total {
+    padding-top: 12px; border-top: 1px dashed var(--line, #eaedf4);
+    margin-top: 6px; font-size: 13.5px;
+    color: var(--text, #0b1220); font-weight: 700;
+  }
+  .bd-sum-total strong {
+    font-size: 18px; color: var(--brand-1, #6366f1);
+    font-weight: 800; letter-spacing: -0.4px;
+  }
+  .bd-sum-balance strong { color: #b45309; font-weight: 800; }
+
+  .bd-policy-wrap { margin-top: 14px; display: flex; }
+  .bd-policy {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px 5px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    border: 1px solid transparent;
+  }
+  .bd-policy svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .bd-policy.policy-pay_now           { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+  .bd-policy.policy-pay_deposit       { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .bd-policy.policy-pay_on_arrival    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .bd-policy.policy-pay_on_delivery   { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .bd-policy.policy-pay_on_completion { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+
+  .bd-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px 16px; border-radius: 12px;
+    font-size: 13.5px; font-weight: 700; text-decoration: none;
+    margin-top: 14px; border: 1px solid transparent;
+    font-family: inherit; cursor: pointer;
+    transition: filter 0.15s cubic-bezier(0.4,0,0.2,1),
+                transform 0.08s cubic-bezier(0.4,0,0.2,1),
+                box-shadow 0.2s cubic-bezier(0.4,0,0.2,1),
+                background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bd-btn svg { width: 15px; height: 15px; }
+  .bd-btn:active { transform: translateY(1px); }
+  .bd-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+
+  .bd-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 12px 26px -8px rgba(99,102,241,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .bd-btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 16px 34px -8px rgba(99,102,241,0.65);
+  }
+
+  .bd-btn-ghost {
+    background: #fff; color: var(--text-2, #334155);
+    border-color: var(--line, #eaedf4);
+  }
+  .bd-btn-ghost:hover {
+    background: #f8fafc; border-color: #cbd5e1; color: var(--text, #0b1220);
+  }
+
+  .bd-cancel {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; width: 100%; margin-top: 12px; padding: 9px 12px;
+    border-radius: 10px; font-size: 12.5px; font-weight: 600;
+    color: #991b1b; text-decoration: none;
+    transition: color 0.15s cubic-bezier(0.4,0,0.2,1),
+                background 0.15s cubic-bezier(0.4,0,0.2,1);
+  }
+  .bd-cancel:hover { color: #7f1d1d; background: #fef2f2; }
+  .bd-cancel svg { width: 12px; height: 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}

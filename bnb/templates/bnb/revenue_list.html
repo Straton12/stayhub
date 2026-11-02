@@ -1,0 +1,376 @@
+{% extends 'bnb/financesub_base.html' %}
+{% load humanize %}
+{% block title %}Revenue — BnB{% endblock %}
+
+{% block content %}
+
+{# ==================== HEAD ==================== #}
+<div class="rev-head">
+  <div>
+    <h1>Revenue</h1>
+    <p class="muted">
+      {% if total_all %}
+        {{ filtered_count }} booking{{ filtered_count|pluralize }} · KES {{ total_all|floatformat:0|intcomma }} total.
+      {% else %}
+        No booking revenue recorded yet.
+      {% endif %}
+    </p>
+  </div>
+  <div class="rev-head-actions">
+    <a href="{% url 'bnb_finance_ledger' %}?range=month" class="btn secondary sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <line x1="4" y1="18" x2="14" y2="18"/>
+      </svg>
+      View ledger
+    </a>
+    <a href="{% url 'bnb_booking_list' %}" class="btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Manage bookings
+    </a>
+  </div>
+</div>
+
+{# ==================== KPI ROW ==================== #}
+{% if total_all %}
+<div class="rev-kpis">
+  <div class="rev-kpi rev-kpi-all">
+    <div class="rev-kpi-label">Total Revenue</div>
+    <div class="rev-kpi-value">KES {{ total_all|floatformat:0|intcomma }}</div>
+    <div class="rev-kpi-sub">All time</div>
+  </div>
+  <div class="rev-kpi rev-kpi-month">
+    <div class="rev-kpi-label">This month</div>
+    <div class="rev-kpi-value">KES {{ total_month|floatformat:0|intcomma }}</div>
+    <div class="rev-kpi-sub">Rolling since month start</div>
+  </div>
+  <div class="rev-kpi rev-kpi-prop">
+    <div class="rev-kpi-label">Top Property</div>
+    <div class="rev-kpi-value">
+      {% if by_property %}
+        {{ by_property.0.label|truncatechars:15 }}
+      {% else %}
+        —
+      {% endif %}
+    </div>
+    <div class="rev-kpi-sub">
+      {% if by_property %}
+        KES {{ by_property.0.total|floatformat:0|intcomma }}
+      {% else %}
+        No data
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ==================== TOOLBAR ==================== #}
+<form method="get" class="rev-toolbar">
+  <div class="rev-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" value="{{ q|default:'' }}"
+           placeholder="Search by guest name, property, or booking #…"
+           autocomplete="off">
+    {% if q %}
+      <a href="?sort={{ sort }}" class="rev-search-reset" aria-label="Reset search">×</a>
+    {% endif %}
+  </div>
+
+  <select name="sort" class="rev-select" aria-label="Sort by" onchange="this.form.submit()">
+    <option value="newest"     {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+    <option value="oldest"     {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+    <option value="amount"     {% if sort == 'amount' %}selected{% endif %}>Highest amount</option>
+    <option value="amount_asc" {% if sort == 'amount_asc' %}selected{% endif %}>Lowest amount</option>
+  </select>
+</form>
+
+{# ==================== TABLE OR EMPTY ==================== #}
+{% if revenues %}
+
+  <div class="rev-count-row">
+    <span class="rev-count">
+      Showing {{ filtered_count }} entr{{ filtered_count|pluralize:"y,ies" }} · KES {{ filtered_total|floatformat:0|intcomma }} total
+    </span>
+  </div>
+
+  <div class="table-wrap rev-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Booking / Guest</th>
+          <th>Property</th>
+          <th>Details</th>
+          <th class="rev-num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in revenues %}
+          <tr>
+            <td data-label="Date" class="rev-date">
+              {{ r.occurred_at|date:"d M Y" }}
+              <span class="rev-ledger-dot" title="Posted to ledger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+            </td>
+            <td data-label="Booking / Guest">
+              <div class="rev-title">{{ r.booking.guest_name|default:r.reason }}</div>
+              {% if r.booking %}
+                <div class="rev-sub">Booking #{{ r.booking.id }}</div>
+              {% endif %}
+            </td>
+            <td data-label="Property">{{ r.property.name|default:"—" }}</td>
+            <td data-label="Details">
+              <span class="rev-tag rev-tag-gray">{{ r.get_source_display }}</span>
+            </td>
+            <td data-label="Amount" class="rev-num">
+              <strong class="text-green">+ KES {{ r.amount|floatformat:0|intcomma }}</strong>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% else %}
+
+  {# ==================== EMPTY ==================== #}
+  {% if q %}
+    <div class="rev-empty">
+      <div class="rev-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h4>No revenue matches your search</h4>
+      <p class="muted">Try clearing the search term.</p>
+      <a href="{% url 'bnb_revenue_list' %}" class="btn secondary" style="margin-top:14px;">
+        Clear search
+      </a>
+    </div>
+  {% else %}
+    <div class="rev-empty">
+      <div class="rev-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <h4>No revenue recorded</h4>
+      <p class="muted">Revenue is automatically posted here when you confirm a booking.</p>
+      <a href="{% url 'bnb_booking_list' %}" class="btn" style="margin-top:14px;">
+        Go to Bookings
+      </a>
+    </div>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ============================================================ */
+  /*  HEAD                                                        */
+  /* ============================================================ */
+  .rev-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .rev-head h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .rev-head p { font-size: 13px; }
+  .rev-head-actions {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+
+  /* ============================================================ */
+  /*  KPI ROW                                                     */
+  /* ============================================================ */
+  .rev-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 14px;
+  }
+  @media (max-width: 720px) { .rev-kpis { grid-template-columns: 1fr; } }
+
+  .rev-kpi {
+    position: relative; padding: 14px 18px;
+    background: #fff; border: 1px solid var(--line-2);
+    border-radius: 14px; box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .rev-kpi::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .rev-kpi-all::before    { background: #047857; }
+  .rev-kpi-month::before  { background: #0ea5e9; }
+  .rev-kpi-prop::before   { background: #8b5cf6; }
+
+  .rev-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .rev-kpi-value {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.5px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .rev-kpi-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 4px; }
+
+  /* ============================================================ */
+  /*  TOOLBAR                                                     */
+  /* ============================================================ */
+  .rev-toolbar {
+    display: flex; gap: 8px; align-items: center;
+    margin-bottom: 16px; flex-wrap: nowrap; width: 100%;
+  }
+  .rev-search {
+    position: relative; flex: 1 1 auto; min-width: 180px;
+  }
+  .rev-search svg {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--muted-2); pointer-events: none;
+  }
+  .rev-search input {
+    width: 100%;
+    padding: 10px 34px 10px 38px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    font-size: 13.5px;
+    background: #fff; color: var(--text);
+    outline: none; font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rev-search input::placeholder { color: var(--muted-2); }
+  .rev-search input:hover { border-color: #cbd5e1; }
+  .rev-search input:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+  .rev-search-reset {
+    position: absolute; right: 8px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #e2e8f0; color: #475569;
+    text-decoration: none; font-size: 14px; font-weight: 700;
+    line-height: 1;
+  }
+  .rev-search-reset:hover { background: #cbd5e1; }
+
+  .rev-select {
+    flex: 0 1 auto; padding: 10px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px; font-size: 13px;
+    background: #fff; color: var(--text);
+    cursor: pointer; font-family: inherit;
+    outline: none; min-width: 0; max-width: 160px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rev-select:hover { border-color: #cbd5e1; }
+  .rev-select:focus {
+    border-color: var(--brand-1);
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.13);
+  }
+
+  /* ============================================================ */
+  /*  COUNT ROW                                                   */
+  /* ============================================================ */
+  .rev-count-row { margin-bottom: 10px; }
+  .rev-count {
+    font-size: 12.5px; font-weight: 700;
+    color: var(--muted-2);
+  }
+
+  /* ============================================================ */
+  /*  TABLE                                                       */
+  /* ============================================================ */
+  .rev-table { margin-bottom: 20px; }
+  .rev-date {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+  .rev-title { font-weight: 700; color: var(--text); }
+  .rev-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 1px; }
+  .rev-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  
+  .rev-ledger-dot {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    margin-left: 6px; border-radius: 50%;
+    background: #ecfdf5; color: #047857;
+    vertical-align: middle; flex-shrink: 0;
+    border: 1px solid #a7f3d0;
+  }
+  .rev-ledger-dot svg { width: 9px; height: 9px; }
+
+  .rev-tag {
+    display: inline-flex; align-items: center;
+    padding: 2px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .rev-tag-gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  
+  .text-green { color: #047857; }
+
+  /* ============================================================ */
+  /*  EMPTY                                                       */
+  /* ============================================================ */
+  .rev-empty {
+    text-align: center; padding: 56px 24px;
+    background: #fff; border: 1px dashed var(--line-2);
+    border-radius: 18px; margin-bottom: 24px;
+  }
+  .rev-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px; border-radius: 14px;
+    display: grid; place-items: center;
+    background: #ecfdf5; color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .rev-empty-ico svg { width: 26px; height: 26px; }
+  .rev-empty h4 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .rev-empty p {
+    font-size: 13px; max-width: 320px; margin: 0 auto;
+  }
+
+  @media (max-width: 720px) {
+    .rev-toolbar { gap: 6px; }
+    .rev-search { min-width: 120px; }
+    .rev-select { padding: 10px 8px; font-size: 12.5px; max-width: 110px; }
+    .rev-search input { padding: 10px 30px 10px 34px; font-size: 12.5px; }
+  }
+  @media (max-width: 480px) {
+    .rev-search { min-width: 100px; }
+    .rev-search input::placeholder { color: transparent; }
+    .rev-select { max-width: 90px; font-size: 12px; padding: 10px 6px; }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,1003 @@
+{% extends 'network/base.html' %}
+{% block title %}Network & Referrals — StayHub{% endblock %}
+{% block page_title %}Network & Referrals{% endblock %}
+
+{% block content %}
+
+<!-- ============ Membership hero ============ -->
+<div class="nd-hero {% if joined %}nd-joined{% endif %}">
+  <div class="nd-hero-left">
+    <div class="nd-hero-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <line x1="7" y1="7" x2="10" y2="10"/>
+        <line x1="17" y1="7" x2="14" y2="10"/>
+        <line x1="7" y1="17" x2="10" y2="14"/>
+        <line x1="17" y1="17" x2="14" y2="14"/>
+      </svg>
+    </div>
+    <div class="nd-hero-text">
+      <h1>{% if joined %}You're in the network{% else %}Join the network{% endif %}</h1>
+      <p>
+        {% if joined %}
+          Your business is visible to trusted partners. Send referrals, receive them, and track commissions in one place.
+        {% else %}
+          Opt in to collaborate with other StayHub businesses — share referrals, offer services to shared guests, and grow together.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="nd-hero-actions">
+    <button type="button"
+            class="btn {% if joined %}danger{% else %}success{% endif %}"
+            id="ndToggleBtn"
+            data-joined="{{ joined|yesno:'1,0' }}"
+            data-url="{% url 'network_toggle' %}"
+            data-org="{% if user.organization %}{{ user.organization.name }}{% endif %}">
+      {% if joined %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Leave Network
+      {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        Join Network
+      {% endif %}
+    </button>
+    {% if joined %}
+      <a href="{% url 'network_referral_create' %}" class="btn secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Referral
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============ KPI strip ============ -->
+<div class="nd-kpis">
+  <div class="nd-kpi">
+    <div class="nd-kpi-icon k-purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nd-kpi-value">{{ sent|length }}</div>
+      <div class="nd-kpi-label">Referrals sent</div>
+    </div>
+  </div>
+
+  <div class="nd-kpi">
+    <div class="nd-kpi-icon k-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nd-kpi-value">{{ received|length }}</div>
+      <div class="nd-kpi-label">Referrals received</div>
+    </div>
+  </div>
+
+  <div class="nd-kpi">
+    <div class="nd-kpi-icon k-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nd-kpi-value">{{ partners|length }}</div>
+      <div class="nd-kpi-label">Partners</div>
+    </div>
+  </div>
+
+  <div class="nd-kpi">
+    <div class="nd-kpi-icon k-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nd-kpi-value" id="kpiPendingCommission">KES 0</div>
+      <div class="nd-kpi-label">Commission due</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Tabs ============ -->
+<div class="nd-tabs" role="tablist" aria-label="Referral views">
+  <button type="button" class="nd-tab active" data-panel="panel-sent">
+    Referrals Sent
+    <span class="nd-tab-count">{{ sent|length }}</span>
+  </button>
+  <button type="button" class="nd-tab" data-panel="panel-received">
+    Referrals Received
+    <span class="nd-tab-count">{{ received|length }}</span>
+  </button>
+  <button type="button" class="nd-tab" data-panel="panel-partners">
+    Partners
+    <span class="nd-tab-count">{{ partners|length }}</span>
+  </button>
+</div>
+
+<!-- ============ Panel: Sent ============ -->
+<section class="nd-panel active" id="panel-sent" role="tabpanel">
+  <div class="section-head">
+    <div>
+      <h3 class="section-title">Referrals you've sent</h3>
+      <p class="muted" style="margin-top:4px;">Track what happened and whether commission is due.</p>
+    </div>
+    <a href="{% url 'network_referral_create' %}" class="btn sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New Referral
+    </a>
+  </div>
+
+  {% if sent %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>To partner</th>
+          <th>Guest</th>
+          <th>Service</th>
+          <th>Value</th>
+          <th>Commission</th>
+          <th>Status</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in sent %}
+        <tr>
+          <td>
+            <div class="nd-partner">
+              <span class="nd-partner-avatar">{{ r.to_org.name|slice:":1"|upper }}</span>
+              <span class="nd-partner-name">{{ r.to_org.name }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="nd-guest">
+              <span class="nd-guest-name">{{ r.guest_name }}</span>
+              {% if r.guest_phone %}<span class="nd-guest-sub">{{ r.guest_phone }}</span>{% endif %}
+            </div>
+          </td>
+          <td class="nd-service">{{ r.service_needed }}</td>
+          <td class="nd-money">KES {{ r.value|floatformat:2 }}</td>
+          <td class="nd-money">
+            <div class="nd-commission">
+              <span>KES {{ r.commission|floatformat:2 }}</span>
+              {% if r.commission_paid %}
+                <span class="tag green"><span class="dot"></span> Paid</span>
+              {% elif r.status == 'completed' %}
+                <span class="tag yellow"><span class="dot"></span> Due</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <span class="nd-status nd-status-{{ r.status }}">
+              <span class="dot"></span>
+              {{ r.get_status_display }}
+            </span>
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            {% if r.status == 'completed' and not r.commission_paid %}
+              <a href="{% url 'network_referral_paid' r.id %}" class="btn sm success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                Mark Paid
+              </a>
+            {% elif r.commission_paid %}
+              <span class="muted">Settled</span>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="nd-empty">
+    <div class="nd-empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </div>
+    <h4>No referrals sent yet</h4>
+    <p class="muted">Share a guest with a partner business to get started.</p>
+    <a href="{% url 'network_referral_create' %}" class="btn" style="margin-top:14px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Create Referral
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============ Panel: Received ============ -->
+<section class="nd-panel" id="panel-received" role="tabpanel" hidden>
+  <div class="section-head">
+    <div>
+      <h3 class="section-title">Referrals you've received</h3>
+      <p class="muted" style="margin-top:4px;">Accept, complete, or decline incoming referrals.</p>
+    </div>
+  </div>
+
+  {% if received %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>From partner</th>
+          <th>Guest</th>
+          <th>Service</th>
+          <th>Value</th>
+          <th>Status</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in received %}
+        <tr>
+          <td>
+            <div class="nd-partner">
+              <span class="nd-partner-avatar nd-partner-avatar-blue">{{ r.from_org.name|slice:":1"|upper }}</span>
+              <span class="nd-partner-name">{{ r.from_org.name }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="nd-guest">
+              <span class="nd-guest-name">{{ r.guest_name }}</span>
+              {% if r.guest_phone %}<span class="nd-guest-sub">{{ r.guest_phone }}</span>{% endif %}
+            </div>
+          </td>
+          <td class="nd-service">{{ r.service_needed }}</td>
+          <td class="nd-money">KES {{ r.value|floatformat:2 }}</td>
+          <td>
+            <span class="nd-status nd-status-{{ r.status }}">
+              <span class="dot"></span>
+              {{ r.get_status_display }}
+            </span>
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            {% if r.status == 'pending' %}
+              <a href="{% url 'network_referral_update' r.id 'accepted' %}" class="btn sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                Accept
+              </a>
+              <a href="{% url 'network_referral_update' r.id 'rejected' %}" class="btn sm danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Reject
+              </a>
+            {% elif r.status == 'accepted' %}
+              <a href="{% url 'network_referral_update' r.id 'completed' %}" class="btn sm success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Mark Complete
+              </a>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="nd-empty">
+    <div class="nd-empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <h4>No referrals received yet</h4>
+    <p class="muted">Once partners start sending you guests, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============ Panel: Partners ============ -->
+<section class="nd-panel" id="panel-partners" role="tabpanel" hidden>
+  <div class="section-head">
+    <div>
+      <h3 class="section-title">Network partners</h3>
+      <p class="muted" style="margin-top:4px;">Businesses you can send referrals to.</p>
+    </div>
+  </div>
+
+  {% if partners %}
+  <div class="nd-partners-grid">
+    {% for p in partners %}
+    <div class="nd-partner-card">
+      <div class="nd-partner-card-top">
+        <div class="nd-partner-avatar-lg" data-type="{{ p.org_type }}">
+          {{ p.name|slice:":1"|upper }}
+        </div>
+        <span class="type-pill type-{{ p.org_type }}">{{ p.get_org_type_display }}</span>
+      </div>
+      <div class="nd-partner-card-body">
+        <h4>{{ p.name }}</h4>
+        <div class="nd-partner-card-meta">
+          {% if p.location %}
+            <span class="nd-inline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ p.location }}
+            </span>
+          {% else %}
+            <span class="muted">Location unknown</span>
+          {% endif %}
+          {% if p.email %}
+            <span class="nd-inline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              {{ p.email }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="nd-empty">
+    <div class="nd-empty-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+      </svg>
+    </div>
+    <h4>No partners in the network yet</h4>
+    <p class="muted">When other businesses join the network, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= Network dashboard ================= */
+
+  /* ---- Hero / membership ---- */
+  .nd-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 22px 24px;
+    border-radius: 16px;
+    margin-bottom: 18px;
+    color: #e2e8f0;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(500px 200px at 0% 0%, rgba(139,92,246,0.28), transparent 60%),
+      radial-gradient(500px 200px at 100% 100%, rgba(34,211,238,0.18), transparent 60%),
+      linear-gradient(135deg, #2e1065 0%, #4c1d95 55%, #5b21b6 100%);
+    box-shadow: 0 20px 50px rgba(46,16,101,0.28);
+  }
+  .nd-hero.nd-joined::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(700px 300px at 80% -20%, rgba(34,211,238,0.28), transparent 60%);
+    pointer-events: none;
+  }
+  .nd-hero-left {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 16px;
+    min-width: 240px;
+  }
+  .nd-hero-icon {
+    flex: 0 0 52px;
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #a78bfa, #22d3ee);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(139,92,246,0.45);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .nd-hero-icon svg { width: 24px; height: 24px; }
+  .nd-hero-text h1 {
+    font-size: 20px; font-weight: 800; color: #fff;
+    letter-spacing: -0.4px; margin-bottom: 4px;
+  }
+  .nd-hero-text p {
+    font-size: 13px; color: #ddd6fe; line-height: 1.55; max-width: 560px;
+  }
+  .nd-hero-actions {
+    position: relative; z-index: 1;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .nd-hero-actions .btn.secondary {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: none;
+  }
+  .nd-hero-actions .btn.secondary:hover {
+    background: rgba(255,255,255,0.14);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+    filter: none;
+  }
+
+  /* ---- KPI strip ---- */
+  .nd-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .nd-kpi {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .nd-kpi-icon {
+    flex: 0 0 40px;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe;
+  }
+  .nd-kpi-icon svg { width: 18px; height: 18px; }
+  .nd-kpi-icon.k-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .nd-kpi-icon.k-green  { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .nd-kpi-icon.k-amber  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+  .nd-kpi-value {
+    font-size: 18px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.3px; line-height: 1.15;
+  }
+  .nd-kpi-label {
+    font-size: 11.5px; color: var(--muted-2);
+    text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 600; margin-top: 3px;
+  }
+
+  /* ---- Tabs ---- */
+  .nd-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .nd-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .nd-tab:hover { background: #f5f3ff; color: #5b21b6; }
+  .nd-tab.active {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(139,92,246,0.30);
+  }
+  .nd-tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 20px;
+    padding: 0 6px;
+    font-size: 11px; font-weight: 700;
+    border-radius: 999px;
+    background: rgba(139,92,246,0.12);
+    color: #5b21b6;
+  }
+  .nd-tab.active .nd-tab-count {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+  }
+
+  /* ---- Panels ---- */
+  .nd-panel { display: none; }
+  .nd-panel.active { display: block; }
+
+  .section-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  /* ---- Partner cell ---- */
+  .nd-partner { display: flex; align-items: center; gap: 10px; }
+  .nd-partner-avatar {
+    width: 32px; height: 32px; flex: 0 0 32px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    color: #fff; font-weight: 700; font-size: 13px;
+    box-shadow: 0 4px 10px rgba(139,92,246,0.30);
+  }
+  .nd-partner-avatar-blue {
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    box-shadow: 0 4px 10px rgba(14,165,233,0.30);
+  }
+  .nd-partner-name { font-weight: 600; color: var(--text); font-size: 13px; }
+
+  /* ---- Guest cell ---- */
+  .nd-guest { display: flex; flex-direction: column; }
+  .nd-guest-name { font-weight: 600; color: var(--text); font-size: 13px; }
+  .nd-guest-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 2px; }
+
+  .nd-service { color: var(--text-2); font-size: 12.5px; max-width: 240px; }
+  .nd-money { font-variant-numeric: tabular-nums; font-size: 12.5px; white-space: nowrap; }
+  .nd-commission { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  /* ---- Status pills ---- */
+  .nd-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #f1f5f9; color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .nd-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .nd-status-pending   { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .nd-status-accepted  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .nd-status-completed { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .nd-status-rejected  { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* ---- Partners grid ---- */
+  .nd-partners-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .nd-partner-card {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+  }
+  .nd-partner-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px rgba(15,23,42,0.08);
+    border-color: #dbe2f0;
+  }
+  .nd-partner-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 6px;
+  }
+  .nd-partner-avatar-lg {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: 18px;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    box-shadow: 0 8px 18px rgba(139,92,246,0.35);
+  }
+  .nd-partner-avatar-lg[data-type="bnb"]        { background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 8px 18px rgba(14,165,233,0.35); }
+  .nd-partner-avatar-lg[data-type="tours"]      { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 8px 18px rgba(16,185,129,0.35); }
+  .nd-partner-avatar-lg[data-type="restaurant"] { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 18px rgba(245,158,11,0.35); }
+  .nd-partner-avatar-lg[data-type="laundry"]    { background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 8px 18px rgba(99,102,241,0.35); }
+  .nd-partner-avatar-lg[data-type="mixed"]      { background: linear-gradient(135deg, #ec4899, #8b5cf6); box-shadow: 0 8px 18px rgba(236,72,153,0.35); }
+
+  .nd-partner-card-body { padding: 8px 18px 18px; }
+  .nd-partner-card-body h4 {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.2px; margin-bottom: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nd-partner-card-meta {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .nd-inline {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nd-inline svg { width: 12px; height: 12px; color: var(--muted-2); flex: 0 0 12px; }
+
+  /* ---- Type pills ---- */
+  .type-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe;
+    white-space: nowrap;
+  }
+  .type-pill.type-bnb        { background: #eff6ff; color: #075985; border-color: #bae6fd; }
+  .type-pill.type-tours      { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .type-pill.type-restaurant { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .type-pill.type-laundry    { background: #eef2ff; color: #3730a3; border-color: #e0e7ff; }
+  .type-pill.type-mixed      { background: #fdf2f8; color: #9d174d; border-color: #fbcfe8; }
+
+  /* ---- Empty state ---- */
+  .nd-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fff;
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .nd-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: #ede9fe; color: #5b21b6;
+    border: 1px solid #ddd6fe;
+  }
+  .nd-empty-ico svg { width: 26px; height: 26px; }
+  .nd-empty h4 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 720px) {
+    .nd-hero { padding: 18px; }
+    .nd-hero-text h1 { font-size: 17px; }
+    .nd-hero-icon { width: 42px; height: 42px; flex-basis: 42px; }
+    .nd-kpi-value { font-size: 15px; }
+    .nd-service { max-width: 140px; }
+    th:nth-child(3), td:nth-child(3) { display: none; } /* hide service column */
+    .nd-partners-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ================= Custom confirm modal ================= */
+  .nd-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    animation: ndFadeIn 0.18s ease forwards;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @keyframes ndFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .nd-modal {
+    background: #fff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow:
+      0 24px 60px rgba(15,23,42,0.30),
+      0 2px 0 rgba(255,255,255,0.06) inset;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.96) translateY(6px);
+    opacity: 0;
+    animation: ndPop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.05s forwards;
+  }
+  @keyframes ndPop {
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .nd-modal-top {
+    height: 6px;
+    background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+  }
+  .nd-modal.leave .nd-modal-top {
+    background: linear-gradient(90deg, #ef4444, #f59e0b);
+  }
+
+  .nd-modal-body {
+    padding: 26px 24px 8px;
+    text-align: center;
+  }
+
+  .nd-modal-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: grid; place-items: center;
+    background: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #ddd6fe;
+    position: relative;
+  }
+  .nd-modal.leave .nd-modal-icon {
+    background: #fef2f2; color: #b91c1c; border-color: #fecaca;
+  }
+  .nd-modal-icon::after {
+    content: "";
+    position: absolute; inset: -6px;
+    border-radius: 22px;
+    background: radial-gradient(closest-side, rgba(139,92,246,0.18), transparent);
+    z-index: -1;
+  }
+  .nd-modal.leave .nd-modal-icon::after {
+    background: radial-gradient(closest-side, rgba(239,68,68,0.18), transparent);
+  }
+  .nd-modal-icon svg { width: 30px; height: 30px; }
+
+  .nd-modal h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  .nd-modal p {
+    font-size: 13.5px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .nd-modal p strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .nd-modal p .nd-em {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .nd-modal.leave p .nd-em {
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .nd-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 18px 20px 20px;
+  }
+  .nd-modal-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter 0.15s, transform 0.05s, box-shadow 0.15s, background 0.15s;
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .nd-modal-btn:active { transform: translateY(1px); }
+
+  .nd-modal-btn.cancel {
+    background: #fff;
+    color: #334155;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+  .nd-modal-btn.cancel:hover { background: #f8fafc; }
+
+  .nd-modal-btn.confirm {
+    color: #fff;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 6px 16px rgba(139,92,246,0.35);
+  }
+  .nd-modal-btn.confirm:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 8px 20px rgba(139,92,246,0.45);
+  }
+  .nd-modal.leave .nd-modal-btn.confirm {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 6px 16px rgba(239,68,68,0.35);
+  }
+  .nd-modal.leave .nd-modal-btn.confirm:hover {
+    box-shadow: 0 8px 20px rgba(239,68,68,0.45);
+  }
+
+  @media (max-width: 480px) {
+    .nd-modal-body { padding: 22px 20px 6px; }
+    .nd-modal-actions { grid-template-columns: 1fr; padding: 14px 16px 16px; }
+    .nd-modal h3 { font-size: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nd-modal-backdrop,
+    .nd-modal {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // ============== Custom confirm modal for network toggle ==============
+  (function () {
+    var btn = document.getElementById('ndToggleBtn');
+    if (!btn) return;
+
+    var joined   = btn.dataset.joined === '1';
+    var url      = btn.dataset.url;
+    var orgName  = btn.dataset.org || 'your organization';
+
+    var modalHTML =
+      '<div class="nd-modal-backdrop" id="ndModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="ndModalTitle">' +
+        '<div class="nd-modal ' + (joined ? 'leave' : 'join') + '">' +
+          '<div class="nd-modal-top"></div>' +
+          '<div class="nd-modal-body">' +
+            '<div class="nd-modal-icon" aria-hidden="true">' +
+              (joined
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="7" y1="7" x2="10" y2="10"/><line x1="17" y1="7" x2="14" y2="10"/><line x1="7" y1="17" x2="10" y2="14"/><line x1="17" y1="17" x2="14" y2="14"/></svg>'
+              ) +
+            '</div>' +
+            '<h3 id="ndModalTitle">' +
+              (joined ? 'Leave the network?' : 'Join the network?') +
+            '</h3>' +
+            '<p>' +
+              (joined
+                ? 'You will no longer receive new referrals from partners, and your business will not appear in the partner directory. <span class="nd-em">You can rejoin any time.</span>'
+                : '<strong>' + orgName + '</strong> will become visible to other StayHub businesses and can send or receive referrals. <span class="nd-em">You control what you share.</span>'
+              ) +
+            '</p>' +
+          '</div>' +
+          '<div class="nd-modal-actions">' +
+            '<button type="button" class="nd-modal-btn cancel" data-action="cancel">Cancel</button>' +
+            '<button type="button" class="nd-modal-btn confirm" data-action="confirm">' +
+              (joined ? 'Yes, leave' : 'Yes, join') +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (document.getElementById('ndModalBackdrop')) return;
+
+      var wrap = document.createElement('div');
+      wrap.innerHTML = modalHTML;
+      var backdrop = wrap.firstChild;
+      document.body.appendChild(backdrop);
+
+      var confirmBtn = backdrop.querySelector('[data-action="confirm"]');
+      var cancelBtn  = backdrop.querySelector('[data-action="cancel"]');
+
+      function close() {
+        backdrop.style.transition = 'opacity 0.15s ease';
+        backdrop.style.opacity = '0';
+        setTimeout(function () {
+          if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+          document.body.style.overflow = '';
+        }, 150);
+      }
+
+      document.body.style.overflow = 'hidden';
+
+      cancelBtn.addEventListener('click', close);
+
+      confirmBtn.addEventListener('click', function () {
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.75';
+        confirmBtn.textContent = joined ? 'Leaving…' : 'Joining…';
+        window.location.href = url;
+      });
+
+      backdrop.addEventListener('click', function (ev) {
+        if (ev.target === backdrop) close();
+      });
+
+      document.addEventListener('keydown', function esc(ev) {
+        if (ev.key === 'Escape') {
+          close();
+          document.removeEventListener('keydown', esc);
+        }
+      });
+
+      setTimeout(function () { confirmBtn.focus(); }, 60);
+    });
+  })();
+
+  // ============== Tabs ==============
+  (function () {
+    var tabs = document.querySelectorAll('.nd-tab');
+    var panels = document.querySelectorAll('.nd-panel');
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+
+        panels.forEach(function (p) {
+          p.classList.remove('active');
+          p.hidden = true;
+        });
+        var target = document.getElementById(tab.dataset.panel);
+        if (target) {
+          target.classList.add('active');
+          target.hidden = false;
+        }
+      });
+    });
+  })();
+
+  // ============== KPI: pending commission due ==============
+  (function () {
+    var el = document.getElementById('kpiPendingCommission');
+    if (!el) return;
+    var rows = document.querySelectorAll('#panel-sent tbody tr');
+    var total = 0;
+    rows.forEach(function (r) {
+      var paid = r.querySelector('.tag.green');
+      if (paid) return;
+      var cells = r.querySelectorAll('.nd-money');
+      if (cells.length >= 2) {
+        var txt = (cells[cells.length - 1].textContent || '').replace(/[^0-9.]/g, '');
+        var n = parseFloat(txt);
+        if (!isNaN(n)) total += n;
+      }
+    });
+    el.textContent = 'KES ' + total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  })();
+</script>
+{% endblock %}

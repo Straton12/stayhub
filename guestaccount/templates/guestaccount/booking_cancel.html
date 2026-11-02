@@ -1,0 +1,283 @@
+{% extends 'guestaccount/base.html' %}
+{% block page_title %}Cancel booking{% endblock %}
+
+{% block ga_content %}
+<div class="gac-wrap">
+  <div class="gac-card">
+
+    <div class="gac-icon gac-icon-warn" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+
+    <h1>Cancel this booking?</h1>
+
+    <p>
+      You're about to cancel
+      <span class="gac-ref">{{ booking.reference }}</span>
+      for <strong>{{ booking.listing.title }}</strong>.
+      This can't be undone.
+    </p>
+
+    {% if booking.amount_paid and booking.amount_paid > 0 %}
+      <div class="gac-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>This booking has already been paid. Contact the business to cancel and request a refund.</span>
+      </div>
+    {% endif %}
+
+    <form method="post" class="gac-actions">
+      {% csrf_token %}
+      <a href="{% url 'guestaccount:booking_detail' booking.pk %}" class="gac-btn gac-btn-ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Keep booking
+      </a>
+      <button type="submit" class="gac-btn gac-btn-danger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Yes, cancel it
+      </button>
+    </form>
+
+    <p class="gac-foot">
+      Changed your mind? <a href="{% url 'guestaccount:booking_detail' booking.pk %}">Return to booking</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block ga_extra_head %}
+<style>
+  /* ================================================================
+     CANCEL BOOKING · CONFIRMATION CARD
+     ================================================================ */
+
+  .gac-wrap {
+    padding: 44px 0 60px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Soft ambient glow behind the card */
+  .gac-wrap::before {
+    content: "";
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px; height: 220px;
+    background: radial-gradient(circle, rgba(245,158,11,0.10), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .gac-card {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    border: 1px solid var(--line, #eaedf4);
+    border-radius: 20px;
+    padding: 34px 28px 26px;
+    box-shadow:
+      0 24px 60px -16px rgba(15,23,42,0.12),
+      0 12px 24px -12px rgba(15,23,42,0.06);
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ---- Icon ---- */
+  .gac-icon {
+    width: 68px; height: 68px;
+    margin: 0 auto 18px;
+    border-radius: 20px;
+    display: grid; place-items: center;
+    position: relative;
+    box-shadow:
+      0 12px 28px -8px rgba(180,83,9,0.28),
+      inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .gac-icon::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    border-radius: 32px;
+    background: radial-gradient(closest-side, rgba(245,158,11,0.18), transparent);
+    z-index: -1;
+    pointer-events: none;
+  }
+  .gac-icon-warn {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+  .gac-icon svg { width: 30px; height: 30px; }
+
+  /* ---- Copy ---- */
+  .gac-card h1 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.35px;
+    color: var(--text, #0b1220);
+    margin-bottom: 10px;
+  }
+  .gac-card p {
+    font-size: 13.5px;
+    color: var(--muted, #5b657a);
+    line-height: 1.65;
+    margin-bottom: 22px;
+  }
+  .gac-card strong {
+    color: var(--text, #0b1220);
+    font-weight: 700;
+  }
+
+  /* Booking reference chip */
+  .gac-ref {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 0 2px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  /* Already-paid safety note */
+  .gac-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    text-align: left;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .gac-note svg {
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #d97706;
+  }
+
+  /* ---- Actions ---- */
+  .gac-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .gac-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition:
+      filter 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gac-btn svg { width: 14px; height: 14px; }
+  .gac-btn:active { transform: translateY(1px); }
+  .gac-btn:focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+  }
+
+  /* Ghost — "safe" action */
+  .gac-btn-ghost {
+    background: #fff;
+    color: var(--text-2, #334155);
+    border-color: var(--line, #eaedf4);
+  }
+  .gac-btn-ghost:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text, #0b1220);
+  }
+
+  /* Danger — destructive */
+  .gac-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+    box-shadow:
+      0 10px 22px -6px rgba(239,68,68,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .gac-btn-danger:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 14px 30px -6px rgba(239,68,68,0.55);
+  }
+
+  /* ---- Foot link ---- */
+  .gac-foot {
+    margin-top: 22px;
+    font-size: 12.5px;
+    color: var(--muted-2, #8b94a8);
+    text-align: center;
+  }
+  .gac-foot a {
+    color: var(--brand-1, #6366f1);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gac-foot a:hover { color: var(--brand-2, #8b5cf6); text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    .gac-wrap { padding: 28px 0 40px; }
+    .gac-card { padding: 26px 20px 20px; border-radius: 18px; }
+    .gac-card h1 { font-size: 19px; }
+    .gac-actions { flex-direction: column; }
+    .gac-btn { width: 100%; }
+  }
+
+  /* ---- Reduced motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
+{% endblock %}

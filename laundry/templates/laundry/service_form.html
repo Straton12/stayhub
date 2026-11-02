@@ -1,0 +1,243 @@
+{% extends 'laundry/base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit service{% else %}Add service{% endif %} — Laundry{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit service{% else %}Add service{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="pf-header">
+  <a href="{% url 'laundry_service_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to services
+  </a>
+  <h1>{% if mode == 'edit' %}Edit "{{ service.name }}"{% else %}Add a laundry service{% endif %}</h1>
+  <p>Describe what you offer so customers know exactly what to expect.</p>
+</div>
+
+<form method="post" class="pf-form">
+  {% csrf_token %}
+
+  <div class="pf-layout">
+    <div class="pf-main">
+
+      <section class="pf-section">
+        <header class="pf-section-head">
+          <span class="pf-step">1</span>
+          <div>
+            <h2>Service basics</h2>
+            <p>Name, type and pricing.</p>
+          </div>
+        </header>
+
+        <div class="pf-grid">
+          <div class="pf-field pf-full">
+            <label for="id_name">Service name <span class="req">*</span></label>
+            <input class="input" type="text" id="id_name" name="name"
+                   value="{{ service.name|default:'' }}"
+                   placeholder="e.g. Wash & Fold — Standard" required>
+          </div>
+
+          <div class="pf-field">
+            <label for="id_service_type">Service type</label>
+            <select class="input" id="id_service_type" name="service_type">
+              <option value="wash_fold"  {% if service.service_type == 'wash_fold'  %}selected{% endif %}>Wash &amp; Fold</option>
+              <option value="wash_iron"  {% if service.service_type == 'wash_iron'  %}selected{% endif %}>Wash &amp; Iron</option>
+              <option value="dry_clean"  {% if service.service_type == 'dry_clean'  %}selected{% endif %}>Dry Cleaning</option>
+              <option value="iron_only"  {% if service.service_type == 'iron_only'  %}selected{% endif %}>Iron Only</option>
+              <option value="bedding"    {% if service.service_type == 'bedding'    %}selected{% endif %}>Bedding &amp; Duvets</option>
+              <option value="curtains"   {% if service.service_type == 'curtains'   %}selected{% endif %}>Curtains</option>
+              <option value="shoes"      {% if service.service_type == 'shoes'      %}selected{% endif %}>Shoe Cleaning</option>
+              <option value="other"      {% if service.service_type == 'other'      %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+
+          <div class="pf-field">
+            <label for="id_price_unit">Price unit</label>
+            <select class="input" id="id_price_unit" name="price_unit">
+              <option value="per_kg"   {% if service.price_unit == 'per_kg'   %}selected{% endif %}>Per kg</option>
+              <option value="per_item" {% if service.price_unit == 'per_item' %}selected{% endif %}>Per item</option>
+              <option value="per_load" {% if service.price_unit == 'per_load' %}selected{% endif %}>Per load</option>
+              <option value="per_set"  {% if service.price_unit == 'per_set'  %}selected{% endif %}>Per set</option>
+            </select>
+          </div>
+
+          <div class="pf-field">
+            <label for="id_price">Price (KES)</label>
+            <input class="input" type="number" step="0.01" min="0" id="id_price"
+                   name="price" value="{{ service.price|default:'' }}">
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="id_short_description">Short description</label>
+            <input class="input" type="text" maxlength="280" id="id_short_description"
+                   name="short_description" value="{{ service.short_description|default:'' }}"
+                   placeholder="One line shown on marketplace cards.">
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="id_description">Full description</label>
+            <textarea class="input" id="id_description" name="description" rows="5"
+                      placeholder="What's included, turnaround, special care for delicate items…">{{ service.description|default:'' }}</textarea>
+          </div>
+
+          <div class="pf-field pf-full">
+            <label for="id_cover_image_url">Cover image URL</label>
+            <input class="input" type="url" id="id_cover_image_url" name="cover_image_url"
+                   value="{{ service.cover_image_url|default:'' }}"
+                   placeholder="https://…">
+          </div>
+        </div>
+      </section>
+
+      <section class="pf-section">
+        <header class="pf-section-head">
+          <span class="pf-step">2</span>
+          <div>
+            <h2>Logistics &amp; availability</h2>
+            <p>When and how you deliver.</p>
+          </div>
+        </header>
+
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label for="id_turnaround_hours">Turnaround (hours)</label>
+            <input class="input" type="number" min="1" id="id_turnaround_hours"
+                   name="turnaround_hours" value="{{ service.turnaround_hours|default:24 }}">
+          </div>
+
+          <div class="pf-field pf-full">
+            <label class="pf-check">
+              <input type="checkbox" name="pickup_available"
+                     {% if service.pickup_available or mode == 'create' %}checked{% endif %}>
+              <span>Offer pickup</span>
+            </label>
+          </div>
+          <div class="pf-field pf-full">
+            <label class="pf-check">
+              <input type="checkbox" name="delivery_available"
+                     {% if service.delivery_available or mode == 'create' %}checked{% endif %}>
+              <span>Offer delivery</span>
+            </label>
+          </div>
+          <div class="pf-field pf-full">
+            <label class="pf-check">
+              <input type="checkbox" name="same_day"
+                     {% if service.same_day %}checked{% endif %}>
+              <span>Same-day service available</span>
+            </label>
+          </div>
+          <div class="pf-field pf-full">
+            <label class="pf-check">
+              <input type="checkbox" name="is_active"
+                     {% if service.is_active or mode == 'create' %}checked{% endif %}>
+              <span>Service is active</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="pf-actions">
+        <a href="{% url 'laundry_service_list' %}" class="btn secondary">Cancel</a>
+        <button type="submit" class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          {% if mode == 'edit' %}Save changes{% else %}Add service{% endif %}
+        </button>
+      </div>
+
+    </div>
+
+    <aside class="pf-aside">
+      <div class="pf-tip">
+        <span class="pf-tip-icon tip-indigo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </span>
+        <div>
+          <strong>What happens next?</strong>
+          <ol class="pf-list">
+            <li>Service is added to your laundry catalogue.</li>
+            <li>Customers can select it when placing orders.</li>
+            <li>Publish to the marketplace for online pickups.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="pf-tip">
+        <span class="pf-tip-icon tip-indigo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+            <path d="m2 17 10 5 10-5"/>
+            <path d="m2 12 10 5 10-5"/>
+          </svg>
+        </span>
+        <div>
+          <strong>Tips</strong>
+          <ul class="pf-list">
+            <li>Be realistic about turnaround time.</li>
+            <li>List pickup / delivery separately.</li>
+            <li>Add services for different categories — bedding, curtains, shoes.</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .pf-header { margin-bottom: 20px; max-width: 800px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-weight: 700;
+               margin-bottom: 10px; padding: 4px 8px 4px 4px; border-radius: 8px; }
+  .back-link:hover { color: var(--brand-1); background: rgba(99,102,241,0.06); }
+  .back-link svg { width: 14px; height: 14px; }
+  .pf-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; }
+  .pf-header p  { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  .pf-form { width: 100%; }
+  .pf-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+  @media (max-width: 1000px) { .pf-layout { grid-template-columns: 1fr; } }
+  .pf-main { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 6px 26px 24px; }
+  .pf-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .pf-section:last-of-type { border-bottom: none; }
+  .pf-section-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .pf-step { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+             background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; font-size: 13px; font-weight: 700;
+             box-shadow: 0 6px 14px rgba(99,102,241,0.35); }
+  .pf-section-head h2 { font-size: 15.5px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; margin-bottom: 3px; }
+  .pf-section-head p { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .pf-field.pf-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .pf-grid { grid-template-columns: 1fr; } }
+  .pf-field { display: flex; flex-direction: column; }
+  .pf-field label { font-size: 12.5px; font-weight: 700; color: var(--text-2); letter-spacing: 0.2px; margin-bottom: 6px; }
+  .pf-field .req { color: #ef4444; margin-left: 2px; }
+  .pf-field .input { margin-bottom: 0; }
+  .pf-check { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); font-weight: 500; cursor: pointer; user-select: none; }
+  .pf-check input[type="checkbox"] { appearance: none; width: 18px; height: 18px; border: 1.5px solid #cbd5e1; border-radius: 5px;
+                                      background: #fff; position: relative; cursor: pointer; flex: 0 0 18px; transition: all 0.15s; }
+  .pf-check input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); border-color: transparent; }
+  .pf-check input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 1px; width: 6px; height: 10px;
+                                                     border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .pf-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 22px; margin-top: 6px;
+                border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+  .pf-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+  @media (max-width: 1000px) { .pf-aside { position: static; } }
+  .pf-tip { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line-2);
+            border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .pf-tip-icon { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .pf-tip-icon svg { width: 16px; height: 16px; }
+  .tip-indigo { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+  .pf-tip strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .pf-list { font-size: 12.5px; color: var(--muted); line-height: 1.6; padding-left: 18px; }
+  .pf-list li { margin-bottom: 4px; }
+</style>
+{% endblock %}

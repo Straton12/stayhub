@@ -1,0 +1,327 @@
+{% extends 'bnb/reportssub_base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+<div class="rf-head">
+  <h1 class="rf-title">Performance</h1>
+  <p class="muted">Per-property stats — occupancy, bookings, revenue and ratings.</p>
+</div>
+
+<div class="rf-kpis">
+  <div class="rf-kpi rf-kpi-cyan">
+    <div class="rf-kpi-label">Bookings</div>
+    <div class="rf-kpi-value">{{ bookings_count|default:0 }}</div>
+    <div class="rf-kpi-sub">All time</div>
+  </div>
+  <div class="rf-kpi rf-kpi-green">
+    <div class="rf-kpi-label">Total revenue</div>
+    <div class="rf-kpi-value">KES {{ total_revenue|default:0|floatformat:0|intcomma }}</div>
+    <div class="rf-kpi-sub">{{ properties_count|default:0 }} propert{{ properties_count|default:0|pluralize:"y,ies" }}</div>
+  </div>
+  <div class="rf-kpi rf-kpi-amber">
+    <div class="rf-kpi-label">Avg rating</div>
+    <div class="rf-kpi-value">{{ avg_rating|default:0 }}<span class="rf-star">★</span></div>
+    <div class="rf-kpi-sub">{{ reviews_count|default:0 }} review{{ reviews_count|default:0|pluralize }}</div>
+  </div>
+  <div class="rf-kpi rf-kpi-violet">
+    <div class="rf-kpi-label">Open issues</div>
+    <div class="rf-kpi-value">{{ open_maintenance|default:0 }}<span class="rf-sep">·</span>{{ open_tasks|default:0 }}</div>
+    <div class="rf-kpi-sub">Maintenance · tasks</div>
+  </div>
+</div>
+
+<div class="rf-panel">
+  <div class="rf-panel-head">
+    <h3 class="rf-panel-title">Property breakdown</h3>
+    <span class="rf-panel-meta">{{ property_stats|length }} propert{{ property_stats|length|pluralize:"y,ies" }}</span>
+  </div>
+
+  {% if property_stats %}
+    <div class="table-wrap rf-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Status</th>
+            <th class="rf-num">Bookings</th>
+            <th class="rf-num">Revenue</th>
+            <th class="rf-num">Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in property_stats %}
+            <tr>
+              <td data-label="Property">
+                <a href="{% url 'bnb_property_detail' p.id %}" class="rf-prop-link">{{ p.name }}</a>
+              </td>
+              <td data-label="Status">
+                {% if p.is_occupied %}
+                  <span class="rf-tag rf-tag-occupied">Occupied</span>
+                {% else %}
+                  <span class="rf-tag rf-tag-free">Free</span>
+                {% endif %}
+              </td>
+              <td data-label="Bookings" class="rf-num">{{ p.booking_count|default:0 }}</td>
+              <td data-label="Revenue" class="rf-num">
+                <div class="rf-rev-cell">
+                  <div class="rf-rev-bar">
+                    <div class="rf-rev-bar-fill" style="width: {{ p.rev_pct|default:0 }}%;"></div>
+                  </div>
+                  <strong>KES {{ p.revenue|default:0|floatformat:0|intcomma }}</strong>
+                </div>
+              </td>
+              <td data-label="Rating" class="rf-num">
+                {% if p.avg_rating %}
+                  <span class="rf-rating">{{ p.avg_rating }}<span class="rf-star">★</span></span>
+                {% else %}
+                  <span class="rf-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="rf-empty">
+      <div class="rf-empty-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+        </svg>
+      </div>
+      <h4>No properties yet</h4>
+      <p class="muted">Add a property to see performance.</p>
+      <a href="{% url 'bnb_property_add' %}" class="btn" style="margin-top:12px;">
+        Add property
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  .rf-head { margin-bottom: 20px; }
+  .rf-title {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .rf-head p { font-size: 13px; }
+
+  .rf-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 900px) { .rf-kpis { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .rf-kpis { grid-template-columns: 1fr; } }
+
+  .rf-kpi {
+    position: relative;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .rf-kpi::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+  .rf-kpi-cyan::before   { background: #06b6d4; }
+  .rf-kpi-green::before  { background: #10b981; }
+  .rf-kpi-amber::before  { background: #f59e0b; }
+  .rf-kpi-violet::before { background: #8b5cf6; }
+
+  .rf-kpi-label {
+    font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    color: var(--muted-2); margin-bottom: 6px;
+  }
+  .rf-kpi-value {
+    font-size: 22px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .rf-kpi-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 4px; }
+
+  .rf-sep {
+    margin: 0 3px;
+    color: var(--muted-2);
+    font-weight: 400;
+    font-size: 16px;
+  }
+  .rf-star {
+    font-size: 14px;
+    color: #f59e0b;
+    margin-left: 2px;
+    vertical-align: 3px;
+  }
+
+  .rf-panel {
+    background: #fff;
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .rf-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: linear-gradient(180deg, #fbfdff, #f8fafc);
+  }
+  .rf-panel-title {
+    font-size: 13.5px; font-weight: 800;
+    color: var(--text); margin: 0;
+  }
+  .rf-panel-meta {
+    font-size: 11px; font-weight: 700;
+    color: var(--muted-2);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+  }
+
+  .rf-table { margin: 0; }
+  .rf-table table { width: 100%; }
+  .rf-table thead th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted-2);
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--line-2);
+    background: #f8fafc;
+    white-space: nowrap;
+  }
+  .rf-table thead th.rf-num { text-align: right; }
+  .rf-table tbody td {
+    padding: 12px 18px;
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--text-2);
+    vertical-align: middle;
+  }
+  .rf-table tbody tr:last-child td { border-bottom: none; }
+  .rf-table tbody tr:hover { background: #fafbff; }
+  .rf-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .rf-prop-link {
+    color: var(--text);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .rf-prop-link:hover { color: var(--brand-1); text-decoration: underline; }
+
+  .rf-tag {
+    display: inline-flex; align-items: center;
+    padding: 1px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .rf-tag-occupied { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .rf-tag-free     { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+
+  .rf-rev-cell {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px;
+  }
+  .rf-rev-bar {
+    flex: 1;
+    max-width: 70px;
+    height: 5px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .rf-rev-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #34d399, #10b981);
+    border-radius: 999px;
+    transition: width .3s;
+    min-width: 2px;
+  }
+
+  .rf-rating {
+    display: inline-flex; align-items: center;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .rf-muted { color: var(--muted-2); }
+
+  .rf-empty {
+    text-align: center;
+    padding: 52px 24px;
+  }
+  .rf-empty-ico {
+    width: 56px; height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .rf-empty-ico svg { width: 26px; height: 26px; }
+  .rf-empty h4 {
+    font-size: 15px; font-weight: 800;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .rf-empty p { font-size: 13px; }
+
+  @media (max-width: 720px) {
+    .rf-table table,
+    .rf-table thead,
+    .rf-table tbody,
+    .rf-table th,
+    .rf-table td,
+    .rf-table tr { display: block; }
+    .rf-table thead { display: none; }
+    .rf-table tbody tr {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line-2);
+    }
+    .rf-table tbody td {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      padding: 5px 0;
+      border: none;
+      text-align: right;
+    }
+    .rf-table tbody td::before {
+      content: attr(data-label);
+      font-size: 10.5px; font-weight: 800;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      text-align: left;
+    }
+    .rf-num { text-align: right; }
+    .rf-rev-cell { flex: 1; }
+    .rf-rev-bar { max-width: 60px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rf-rev-bar-fill { transition: none; }
+  }
+</style>
+{% endblock %}

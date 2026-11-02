@@ -1,0 +1,481 @@
+{% extends 'restaurant/base.html' %}
+{% block title %}{% if order %}Edit Order #{{ order.id }}{% else %}New Order{% endif %} — Restaurant{% endblock %}
+{% block page_title %}{% if order %}Edit Order #{{ order.id }}{% else %}New Order{% endif %}{% endblock %}
+{% block breadcrumb %}<span class="crumb">{% if order %}Edit{% else %}New{% endif %} Order</span>{% endblock %}
+
+{% block content %}
+
+<!-- ============ Header ============ -->
+<div class="of-header">
+  <a href="{% url 'restaurant_order_list' %}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Back to orders
+  </a>
+  <h1>{% if order %}Edit Order #{{ order.id }}{% else %}Create a new order{% endif %}</h1>
+  <p>Select items, add customer details, and choose how the order is fulfilled.</p>
+</div>
+
+<form method="post" class="of-layout" id="orderForm" novalidate>
+  {% csrf_token %}
+
+  <!-- ============ Left Column: Main Form ============ -->
+  <div class="of-main">
+    
+    <!-- Section 1: Customer -->
+    <section class="of-section">
+      <header class="of-section-head">
+        <span class="of-step">1</span>
+        <div>
+          <h2>Customer Details</h2>
+          <p>Who's placing the order.</p>
+        </div>
+      </header>
+
+      <div class="of-grid">
+        <div class="of-field">
+          <label for="id_customer_name">Customer name <span class="req">*</span></label>
+          <div class="of-input-icon">
+            <span class="of-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input class="input" type="text" id="id_customer_name" name="customer_name"
+                   value="{{ order.customer_name|default:'' }}" placeholder="e.g. Jane Mwangi" required>
+          </div>
+        </div>
+
+        <div class="of-field">
+          <label for="id_customer_phone">Phone</label>
+          <div class="of-input-icon">
+            <span class="of-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <input class="input" type="text" id="id_customer_phone" name="customer_phone"
+                   value="{{ order.customer_phone|default:'' }}" placeholder="+254 7XX XXX XXX">
+          </div>
+        </div>
+
+        <div class="of-field of-full">
+          <label for="id_customer_address">Delivery Address</label>
+          <input class="input" type="text" id="id_customer_address" name="customer_address"
+                 value="{{ order.customer_address|default:'' }}" placeholder="Required for delivery orders">
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Fulfillment -->
+    <section class="of-section">
+      <header class="of-section-head">
+        <span class="of-step">2</span>
+        <div>
+          <h2>Fulfillment</h2>
+          <p>How the customer is receiving this order.</p>
+        </div>
+      </header>
+
+      <div class="of-types" role="radiogroup" aria-label="Order type">
+        <label class="of-type">
+          <input type="radio" name="order_type" value="dine_in" {% if order.order_type == 'dine_in' or not order %}checked{% endif %}>
+          <span class="of-type-face">
+            <span class="of-type-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 3v7a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17 3c-1.7 0-3 2.2-3 5v6h3"/><path d="M17 3v18"/>
+              </svg>
+            </span>
+            <span class="of-type-label">Dine In</span>
+          </span>
+        </label>
+
+        <label class="of-type">
+          <input type="radio" name="order_type" value="takeaway" {% if order.order_type == 'takeaway' %}checked{% endif %}>
+          <span class="of-type-face">
+            <span class="of-type-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+              </svg>
+            </span>
+            <span class="of-type-label">Takeaway</span>
+          </span>
+        </label>
+
+        <label class="of-type">
+          <input type="radio" name="order_type" value="delivery" {% if order.order_type == 'delivery' %}checked{% endif %}>
+          <span class="of-type-face">
+            <span class="of-type-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </span>
+            <span class="of-type-label">Delivery</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Section 3: The Cart / Menu Items -->
+    <section class="of-section">
+      <header class="of-section-head">
+        <span class="of-step">3</span>
+        <div>
+          <h2>Order Items</h2>
+          <p>Click a dish to add it to the order.</p>
+        </div>
+      </header>
+
+      {% if menu_items %}
+        <div class="of-menu-grid">
+          {% for item in menu_items %}
+          <div class="of-menu-item" data-id="{{ item.id }}" data-price="{{ item.price }}" onclick="toggleItem(this, {{ item.id }}, '{{ item.name|escapejs }}', {{ item.price }})">
+            <div class="of-menu-name">{{ item.name }}</div>
+            <div class="of-menu-price">KES {{ item.price|floatformat:0 }}</div>
+            <div class="of-menu-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="of-empty-menu">
+          No menu items available. <a href="{% url 'restaurant_menu_add' %}">Add some first.</a>
+        </div>
+      {% endif %}
+
+      <!-- Hidden inputs where JS injects selected items -->
+      <div id="hiddenItems"></div>
+    </section>
+
+    <!-- Section 4: Payment / Extras -->
+    <section class="of-section">
+      <header class="of-section-head">
+        <span class="of-step">4</span>
+        <div>
+          <h2>Payment & Extras</h2>
+          <p>Add delivery fees or special instructions.</p>
+        </div>
+      </header>
+
+      <div class="of-grid">
+        <div class="of-field">
+          <label for="id_delivery_fee">Delivery Fee (KES)</label>
+          <div class="of-money">
+            <span class="of-money-prefix">KES</span>
+            <input class="input" type="number" id="id_delivery_fee" name="delivery_fee"
+                   step="0.01" min="0" value="{{ order.delivery_fee|default:'0.00' }}" oninput="calcTotal()">
+          </div>
+        </div>
+
+        <div class="of-field">
+          <label for="id_payment_policy">Payment Policy</label>
+          <select class="input" id="id_payment_policy" name="payment_policy">
+            <option value="pay_on_delivery" {% if order.payment_policy == 'pay_on_delivery' or not order %}selected{% endif %}>Pay on delivery</option>
+            <option value="pay_on_pickup" {% if order.payment_policy == 'pay_on_pickup' %}selected{% endif %}>Pay on pickup</option>
+            <option value="pay_now" {% if order.payment_policy == 'pay_now' %}selected{% endif %}>Pay now (Cash/Card)</option>
+          </select>
+        </div>
+
+        <div class="of-field of-full">
+          <label for="id_special_instructions">Special Instructions / Notes</label>
+          <textarea class="input" id="id_special_instructions" name="special_instructions" rows="2" placeholder="e.g. Extra spicy, no onions, ring bell on arrival…">{{ order.special_instructions|default:'' }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <div class="of-actions">
+      <a href="{% url 'restaurant_order_list' %}" class="btn secondary">Cancel</a>
+      <button type="submit" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        {% if order %}Save Changes{% else %}Create Order{% endif %}
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ Right Column: Summary Aside ============ -->
+  <aside class="of-aside">
+    
+    <!-- Live Receipt -->
+    <div class="of-receipt">
+      <div class="of-receipt-header">
+        <span class="of-receipt-title">Order Summary</span>
+        <span class="of-receipt-badge" id="receiptCount">0 items</span>
+      </div>
+      
+      <div class="of-receipt-items" id="receiptItems">
+        <div class="of-receipt-empty" id="receiptEmpty">Click items on the left to build this order.</div>
+      </div>
+
+      <div class="of-receipt-totals">
+        <div class="of-receipt-row">
+          <span>Subtotal</span>
+          <span id="receiptSubtotal">KES 0</span>
+        </div>
+        <div class="of-receipt-row">
+          <span>Delivery Fee</span>
+          <span id="receiptDelivery">KES 0</span>
+        </div>
+        <div class="of-receipt-row of-receipt-grand">
+          <span>Total</span>
+          <span id="receiptTotal">KES 0</span>
+        </div>
+      </div>
+      
+      <!-- Readonly display of total for visual confirmation (actual submission is via hidden items below) -->
+      <input type="hidden" id="final_total" name="total_amount" value="0">
+    </div>
+
+    <div class="of-tip">
+      <div class="of-tip-icon accent-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </div>
+      <div>
+        <h4>Building the Cart</h4>
+        <p class="of-tip-text">Clicking a dish selects it. You can click it again to increase the quantity. The final price automatically calculates.</p>
+      </div>
+    </div>
+  </aside>
+</form>
+
+{% endblock %}
+
+
+{% block extra_head %}
+<style>
+  /* ================= New Order page ================= */
+  .of-header { margin-bottom: 20px; max-width: 720px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted);
+    font-weight: 600; margin-bottom: 10px; padding: 4px 8px 4px 4px; border-radius: 8px;
+    transition: color 0.15s, background 0.15s; text-decoration: none;
+  }
+  .back-link:hover { color: var(--brand-2); background: rgba(245,158,11,0.08); }
+  .back-link svg { width: 14px; height: 14px; }
+  .of-header h1 { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; margin-bottom: 6px; }
+  .of-header p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+
+  .of-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .of-layout { grid-template-columns: 1fr; } }
+
+  /* Form Card */
+  .of-main { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 6px 24px 22px; }
+  .of-section { padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .of-section:last-of-type { border-bottom: none; }
+  .of-section-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .of-step { 
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: #fff; font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(245,158,11,0.35); 
+  }
+  .of-section-head h2 { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; margin-bottom: 2px; }
+  .of-section-head p { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  .of-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .of-field.of-full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .of-grid { grid-template-columns: 1fr; } }
+  
+  .of-field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .of-field .req { color: var(--danger); margin-left: 2px; }
+  .of-field .input, .of-field select, .of-field textarea { margin-bottom: 0; }
+
+  /* Icons */
+  .of-input-icon { position: relative; display: flex; align-items: center; }
+  .of-input-icon .of-icon { position: absolute; left: 12px; color: var(--muted-2); pointer-events: none; }
+  .of-input-icon .of-icon svg { width: 15px; height: 15px; }
+  .of-input-icon .input { padding-left: 38px; }
+
+  /* Order Types */
+  .of-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .of-type { position: relative; cursor: pointer; display: block; }
+  .of-type input { position: absolute; opacity: 0; pointer-events: none; }
+  .of-type-face {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 14px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff; text-align: center;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .of-type:hover .of-type-face { border-color: #fde68a; background: #fffbeb; }
+  .of-type input:checked + .of-type-face {
+    border-color: var(--brand-1); background: linear-gradient(180deg, #fffbeb, #fef3c7); box-shadow: 0 0 0 4px rgba(245,158,11,0.15);
+  }
+  .of-type-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: #f1f5f9; color: var(--muted); }
+  .of-type-icon svg { width: 18px; height: 18px; }
+  .of-type input:checked + .of-type-face .of-type-icon { background: linear-gradient(135deg, #fbbf24, #f97316); color: #fff; box-shadow: 0 6px 14px rgba(245,158,11,0.35); }
+  .of-type-label { font-size: 13px; font-weight: 700; color: var(--text); }
+
+  /* Menu Item Grid Builder */
+  .of-menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 8px; }
+  .of-menu-item {
+    position: relative; padding: 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    transition: all 0.15s; background: #fff; user-select: none;
+  }
+  .of-menu-item:hover { border-color: var(--brand-1); background: #fffaf0; }
+  .of-menu-item.selected { border-color: var(--brand-1); background: #fef3c7; box-shadow: 0 4px 10px rgba(245,158,11,0.15); }
+  .of-menu-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; padding-right: 20px; }
+  .of-menu-price { font-size: 12px; color: var(--brand-2); font-weight: 600; }
+  .of-menu-check {
+    position: absolute; top: 10px; right: 10px; width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--line); display: grid; place-items: center; background: #fff; transition: all 0.15s;
+  }
+  .of-menu-check svg { width: 10px; height: 10px; color: #fff; opacity: 0; }
+  .of-menu-item.selected .of-menu-check { background: var(--brand-1); border-color: var(--brand-1); }
+  .of-menu-item.selected .of-menu-check svg { opacity: 1; }
+  .of-empty-menu { padding: 20px; text-align: center; background: #f8fafc; border-radius: 10px; font-size: 13px; color: var(--muted); }
+
+  /* Money / Actions */
+  .of-money { position: relative; display: flex; align-items: center; }
+  .of-money-prefix { position: absolute; left: 12px; font-size: 12px; font-weight: 700; color: var(--muted); pointer-events: none; }
+  .of-money .input { padding-left: 46px; }
+
+  .of-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+
+  /* Aside / Receipt */
+  .of-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+  @media (max-width: 960px) { .of-aside { position: static; } }
+
+  .of-receipt { background: #fff; border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .of-receipt-header { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f8fafc; border-bottom: 1px solid var(--line-2); }
+  .of-receipt-title { font-size: 14px; font-weight: 800; color: var(--text); }
+  .of-receipt-badge { background: #e2e8f0; color: var(--muted); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+
+  .of-receipt-items { padding: 16px; max-height: 300px; overflow-y: auto; border-bottom: 1px dashed var(--line); }
+  .of-receipt-empty { font-size: 12.5px; color: var(--muted-2); text-align: center; padding: 10px 0; font-style: italic; }
+  .of-cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+  .of-cart-row:last-child { margin-bottom: 0; }
+  .of-cart-qty { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #fef3c7; color: #b45309; border-radius: 6px; font-size: 10px; font-weight: 800; margin-right: 6px; }
+  .of-cart-name { font-weight: 600; color: var(--text-2); }
+  .of-cart-price { font-weight: 700; color: var(--text); }
+
+  .of-receipt-totals { padding: 16px; background: #fafbfe; }
+  .of-receipt-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .of-receipt-row:last-child { margin-bottom: 0; }
+  .of-receipt-grand { font-size: 16px; font-weight: 800; color: var(--brand-2); padding-top: 12px; border-top: 1px solid var(--line-2); margin-top: 8px; }
+
+  /* Tips */
+  .of-tip { background: #fff; border: 1px solid var(--line-2); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); display: flex; gap: 12px; align-items: flex-start; }
+  .of-tip-icon { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+  .of-tip-icon svg { width: 16px; height: 16px; }
+  .accent-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  .of-tip h4 { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .of-tip-text { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  // Store cart state: { id: { name, price, qty } }
+  var cart = {};
+
+  function toggleItem(el, id, name, price) {
+    if (cart[id]) {
+      // Increment quantity
+      cart[id].qty += 1;
+    } else {
+      // Add to cart
+      cart[id] = { name: name, price: parseFloat(price), qty: 1 };
+      el.classList.add('selected');
+    }
+    updateUI();
+  }
+
+  function updateUI() {
+    var hiddenContainer = document.getElementById('hiddenItems');
+    var receiptItems = document.getElementById('receiptItems');
+    var receiptEmpty = document.getElementById('receiptEmpty');
+    var receiptCount = document.getElementById('receiptCount');
+    
+    // Clear previous
+    hiddenContainer.innerHTML = '';
+    if (receiptEmpty) receiptEmpty.remove();
+    
+    var html = '';
+    var totalItems = 0;
+    var subtotal = 0;
+
+    for (var id in cart) {
+      var item = cart[id];
+      totalItems += item.qty;
+      subtotal += item.price * item.qty;
+
+      // Hidden inputs for form submission (based on your view expecting item_<id> = qty)
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'item_' + id;
+      input.value = item.qty;
+      hiddenContainer.appendChild(input);
+
+      // Receipt rows
+      html += `<div class="of-cart-row" onclick="decrementItem('${id}', this)" style="cursor:pointer;" title="Click to remove one">
+        <span class="of-cart-name"><span class="of-cart-qty">${item.qty}x</span> ${item.name}</span>
+        <span class="of-cart-price">KES ${(item.price * item.qty).toLocaleString()}</span>
+      </div>`;
+    }
+
+    receiptItems.innerHTML = html;
+    if (totalItems === 0) {
+      receiptItems.innerHTML = '<div class="of-receipt-empty" id="receiptEmpty">Click items on the left to build this order.</div>';
+    }
+    
+    receiptCount.textContent = totalItems + ' item' + (totalItems !== 1 ? 's' : '');
+
+    // Calculate delivery and final total
+    var deliveryFee = parseFloat(document.getElementById('id_delivery_fee').value) || 0;
+    var finalTotal = subtotal + deliveryFee;
+
+    document.getElementById('receiptSubtotal').textContent = 'KES ' + subtotal.toLocaleString();
+    document.getElementById('receiptDelivery').textContent = 'KES ' + deliveryFee.toLocaleString();
+    document.getElementById('receiptTotal').textContent = 'KES ' + finalTotal.toLocaleString();
+    
+    // Set the actual total amount submitted to the server
+    document.getElementById('final_total').value = finalTotal;
+  }
+
+  // Allow clicking the receipt row to decrement/remove
+  function decrementItem(id, rowEl) {
+    if (!cart[id]) return;
+    
+    cart[id].qty -= 1;
+    if (cart[id].qty <= 0) {
+      delete cart[id];
+      // Un-highlight the menu tile
+      var menuEl = document.querySelector(`.of-menu-item[data-id="${id}"]`);
+      if (menuEl) menuEl.classList.remove('selected');
+    }
+    updateUI();
+  }
+
+  // Recalculate when delivery fee changes
+  function calcTotal() {
+    updateUI();
+  }
+
+  // Initialize if editing an existing order
+  {% if order %}
+    {% for item in order.items.all %}
+      {% if item.menu_item_id %}
+        toggleItem(
+          document.querySelector('.of-menu-item[data-id="{{ item.menu_item_id }}"]'),
+          {{ item.menu_item_id }}, 
+          '{{ item.name_snapshot|escapejs }}', 
+          {{ item.unit_price }}
+        );
+        {% if item.quantity > 1 %}
+          // If quantity was > 1, we need to adjust it back down (since toggle adds 1)
+          cart[{{ item.menu_item_id }}].qty = {{ item.quantity }};
+          updateUI();
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+</script>
+{% endblock %}
